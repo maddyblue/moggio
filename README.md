@@ -11,7 +11,7 @@ An MPD-compatible audio player written in Go.
    * flac
    * mp3
    * spc (Super Nintendo)
-   * nsf[e] (Nintendo)
+   * nsf, nsfe (Nintendo)
 1. Support for the Google Music protocol.
 1. Support for archive files (.zip, .rar, .nsf, etc.).
 1. Pure Go except for sound driver interfaces.
