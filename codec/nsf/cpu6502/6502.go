@@ -641,6 +641,24 @@ func RTI(c *Cpu, b byte, v uint16, m Mode) {
 	c.PC = uint16(c.stackPop()) + uint16(c.stackPop())<<8
 }
 
+func TRB(c *Cpu, b byte, v uint16, m Mode) {
+	if c.A&c.Mem[v] != 0 {
+		c.P &= ^P_Z
+	} else {
+		c.P |= P_Z
+	}
+	c.Mem[v] &= ^c.A
+}
+
+func TSB(c *Cpu, b byte, v uint16, m Mode) {
+	if c.A&c.Mem[v] != 0 {
+		c.P &= ^P_Z
+	} else {
+		c.P |= P_Z
+	}
+	c.Mem[v] |= c.A
+}
+
 const null = 0
 
 var Opcodes = []Instruction{
@@ -697,6 +715,8 @@ var Opcodes = []Instruction{
 	{STY, null, 0x84, 0x94, null, 0x8c, null, null, null, null, null, null, null},
 	{TAX, null, null, null, null, null, null, null, null, null, null, 0xaa, null},
 	{TAY, null, null, null, null, null, null, null, null, null, null, 0xa8, null},
+	{TRB, null, 0x14, null, null, 0x1c, null, null, null, null, null, null, null},
+	{TSB, null, 0x04, null, null, 0x0c, null, null, null, null, null, null, null},
 	{TSX, null, null, null, null, null, null, null, null, null, null, 0xba, null},
 	{TXA, null, null, null, null, null, null, null, null, null, null, 0x8a, null},
 	{TXS, null, null, null, null, null, null, null, null, null, null, 0x9a, null},
