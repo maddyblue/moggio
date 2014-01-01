@@ -363,6 +363,17 @@ func (c *Cpu) stackPop() byte {
 	return c.Mem[uint16(c.S)+0x100]
 }
 
+func JSR(c *Cpu, b byte, v uint16) {
+	a := c.PC - 1
+	c.stackPush(byte(a >> 8))
+	c.stackPush(byte(a & 0xff))
+	c.PC = v
+}
+
+func RTS(c *Cpu, b byte, v uint16) {
+	c.PC = (uint16(c.stackPop()) | uint16(c.stackPop())<<8) + 1
+}
+
 const null = 0
 
 var Opcodes = []Instruction{
@@ -387,6 +398,8 @@ var Opcodes = []Instruction{
 	{PLA, null, null, null, null, null, null, null, null, null, null, 0x68, null},
 	{TXA, null, null, null, null, null, null, null, null, null, null, 0x8a, null},
 	{INY, null, null, null, null, null, null, null, null, null, null, 0xc8, null},
+	{JSR, null, null, null, null, 0x20, null, null, null, null, null, null, null},
+	{RTS, null, null, null, null, null, null, null, null, null, null, 0x60, null},
 	/*
 		{AND, 0x29, 0x25, 0x35, null, 0x2d, 0x3d, 0x39, null, 0x21, 0x31, null, null},
 		{ASL, null, 0x06, 0x16, null, 0x0e, 0x1e, null, null, null, null, 0x0a, null},
@@ -406,7 +419,6 @@ var Opcodes = []Instruction{
 		{DEY, null, null, null, null, null, null, null, null, null, null, 0x88, null},
 		{EOR, 0x49, 0x45, 0x55, null, 0x4d, 0x5d, 0x59, null, 0x41, 0x51, null, null},
 		{INC, null, 0xe6, 0xf6, null, 0xee, 0xfe, null, null, null, null, null, null},
-		{JSR, null, null, null, null, 0x20, null, null, null, null, null, null, null},
 		{LSR, null, 0x46, 0x56, null, 0x4e, 0x5e, null, null, null, null, 0x4a, null},
 		{NOP, null, null, null, null, null, null, null, null, null, null, 0xea, null},
 		{ORA, 0x09, 0x05, 0x15, null, 0x0d, 0x1d, 0x19, null, 0x01, 0x11, null, null},
@@ -415,7 +427,6 @@ var Opcodes = []Instruction{
 		{ROL, null, 0x26, 0x36, null, 0x2e, 0x3e, null, null, null, null, 0x2a, null},
 		{ROR, null, 0x66, 0x76, null, 0x6e, 0x7e, null, null, null, null, 0x6a, null},
 		{RTI, null, null, null, null, null, null, null, null, null, null, 0x40, null},
-		{RTS, null, null, null, null, null, null, null, null, null, null, 0x60, null},
 		{SBC, 0xe9, 0xe5, 0xf5, null, 0xed, 0xfd, 0xf9, null, 0xe1, 0xf1, null, null},
 		{SEC, null, null, null, null, null, null, null, null, null, null, 0x38, null},
 		{SED, null, null, null, null, null, null, null, null, null, null, 0xf8, null},
