@@ -43,6 +43,8 @@ func (m Mode) Format() string {
 		return "$%04[2]x"
 	case MODE_IND:
 		return "($%04[2]X)"
+	case MODE_INDX:
+		return "($%02[2]X,X)"
 	case MODE_BRA:
 		return "$%02[1]x"
 	default:
@@ -121,6 +123,13 @@ func (c *Cpu) Step() {
 		v |= uint16(c.Mem[c.PC]) << 8
 		v = uint16(c.Mem[v]) + uint16(c.Mem[v+1])<<8
 		c.PC++
+	case MODE_INDX:
+		v = uint16(c.Mem[c.PC])
+		c.PC++
+		t := v + uint16(c.X)
+		t &= 0xff
+		t = uint16(c.Mem[t]) + uint16(c.Mem[t+1])<<8
+		b = c.Mem[t]
 	case MODE_SNGL:
 		// nothing
 	default:
@@ -236,6 +245,11 @@ func LDX(c *Cpu, b byte, v uint16) {
 	c.setNV(c.X)
 }
 
+func LDY(c *Cpu, b byte, v uint16) {
+	c.Y = b
+	c.setNV(c.Y)
+}
+
 func STA(c *Cpu, b byte, v uint16) { c.Mem[v] = c.A }
 func STX(c *Cpu, b byte, v uint16) { c.Mem[v] = c.X }
 func STY(c *Cpu, b byte, v uint16) { c.Mem[v] = c.Y }
@@ -305,6 +319,7 @@ var Opcodes = []Instruction{
 	{CPY, 0xc0, 0xc4, null, null, 0xcc, null, null, null, null, null, null, null},
 	{STY, null, 0x84, 0x94, null, 0x8c, null, null, null, null, null, null, null},
 	{JMP, null, null, null, null, 0x4c, null, null, 0x6c, null, null, null, null},
+	{LDY, 0xa0, 0xa4, 0xb4, null, 0xac, 0xbc, null, null, null, null, null, null},
 	/*
 		{AND, 0x29, 0x25, 0x35, null, 0x2d, 0x3d, 0x39, null, 0x21, 0x31, null, null},
 		{ASL, null, 0x06, 0x16, null, 0x0e, 0x1e, null, null, null, null, 0x0a, null},
@@ -326,7 +341,6 @@ var Opcodes = []Instruction{
 		{INC, null, 0xe6, 0xf6, null, 0xee, 0xfe, null, null, null, null, null, null},
 		{INY, null, null, null, null, null, null, null, null, null, null, 0xc8, null},
 		{JSR, null, null, null, null, 0x20, null, null, null, null, null, null, null},
-		{LDY, 0xa0, 0xa4, 0xb4, null, 0xac, 0xbc, null, null, null, null, null, null},
 		{LSR, null, 0x46, 0x56, null, 0x4e, 0x5e, null, null, null, null, 0x4a, null},
 		{NOP, null, null, null, null, null, null, null, null, null, null, 0xea, null},
 		{ORA, 0x09, 0x05, 0x15, null, 0x0d, 0x1d, 0x19, null, 0x01, 0x11, null, null},
