@@ -200,19 +200,29 @@ func (c *Cpu) setNV(v byte) {
 }
 
 func (c *Cpu) SEC() { c.P |= P_C }
-func (c *Cpu) CLC() { c.P &= 0xfe }
+func (c *Cpu) CLC() { c.P &= ^P_C }
 func (c *Cpu) SEV() { c.P |= P_V }
-func (c *Cpu) CLV() { c.P &= 0xbf }
+func (c *Cpu) CLV() { c.P &= ^P_V }
+func (c *Cpu) SEI() { c.P |= P_I }
+func (c *Cpu) CLI() { c.P &= ^P_I }
+func (c *Cpu) SED() { c.P |= P_D }
+func (c *Cpu) CLD() { c.P &= ^P_D }
 
 func (c *Cpu) C() bool       { return c.p(P_C) }
 func (c *Cpu) Z() bool       { return c.p(P_Z) }
 func (c *Cpu) V() bool       { return c.p(P_V) }
+func (c *Cpu) N() bool       { return c.p(P_N) }
 func (c *Cpu) p(v byte) bool { return c.P&v != 0 }
 
 const (
-	P_C = 0x01
-	P_Z = 0x02
-	P_V = 0x40
+	P_C byte = 1 << iota
+	P_Z
+	P_I
+	P_D
+	P_B
+	_
+	P_V
+	P_N
 )
 
 func (c *Cpu) String() string {
@@ -252,6 +262,7 @@ func init() {
 }
 
 func BRK(c *Cpu, b byte, v uint16, m Mode) {}
+func NOP(c *Cpu, b byte, v uint16, m Mode) {}
 
 func ADC(c *Cpu, b byte, v uint16, m Mode) {
 	if (c.A^b)&0x80 != 0 {
@@ -271,6 +282,31 @@ func ADC(c *Cpu, b byte, v uint16, m Mode) {
 	} else {
 		c.CLC()
 		if c.V() && a < 0x80 {
+			c.CLV()
+		}
+	}
+	c.A = byte(a & 0xff)
+	c.setNV(c.A)
+}
+
+func SBC(c *Cpu, b byte, v uint16, m Mode) {
+	if (c.A^b)&0x80 != 0 {
+		c.SEV()
+	} else {
+		c.CLV()
+	}
+	a := 0xff + uint16(c.A) - uint16(b)
+	if c.C() {
+		a++
+	}
+	if a < 0x100 {
+		c.CLC()
+		if c.V() && a < 0x80 {
+			c.CLV()
+		}
+	} else {
+		c.SEC()
+		if c.V() && a >= 0x180 {
 			c.CLV()
 		}
 	}
@@ -302,9 +338,28 @@ func TAX(c *Cpu, b byte, v uint16, m Mode) {
 	c.setNV(c.X)
 }
 
+func TAY(c *Cpu, b byte, v uint16, m Mode) {
+	c.Y = c.A
+	c.setNV(c.Y)
+}
+
+func TYA(c *Cpu, b byte, v uint16, m Mode) {
+	c.A = c.Y
+	c.setNV(c.A)
+}
+
 func TXA(c *Cpu, b byte, v uint16, m Mode) {
 	c.A = c.X
 	c.setNV(c.A)
+}
+
+func TSX(c *Cpu, b byte, v uint16, m Mode) {
+	c.X = c.S
+	c.setNV(c.X)
+}
+
+func TXS(c *Cpu, b byte, v uint16, m Mode) {
+	c.S = c.X
 }
 
 func INX(c *Cpu, b byte, v uint16, m Mode) {
@@ -317,9 +372,24 @@ func INY(c *Cpu, b byte, v uint16, m Mode) {
 	c.setNV(c.Y)
 }
 
+func INC(c *Cpu, b byte, v uint16, m Mode) {
+	c.Mem[v] = (c.Mem[v] + 1) & 0xff
+	c.setNV(c.Mem[v])
+}
+
 func DEX(c *Cpu, b byte, v uint16, m Mode) {
 	c.X = (c.X - 1) & 0xff
 	c.setNV(c.X)
+}
+
+func DEY(c *Cpu, b byte, v uint16, m Mode) {
+	c.Y = (c.Y - 1) & 0xff
+	c.setNV(c.Y)
+}
+
+func DEC(c *Cpu, b byte, v uint16, m Mode) {
+	c.Mem[v] = (c.Mem[v] - 1) & 0xff
+	c.setNV(c.Mem[v])
 }
 
 func CMP(c *Cpu, b byte, v uint16, m Mode) { c.compare(c.A, b) }
@@ -355,6 +425,30 @@ func BNE(c *Cpu, b byte, v uint16, m Mode) {
 
 func BEQ(c *Cpu, b byte, v uint16, m Mode) {
 	if c.Z() {
+		c.jump(uint16(b))
+	}
+}
+
+func BPL(c *Cpu, b byte, v uint16, m Mode) {
+	if !c.N() {
+		c.jump(uint16(b))
+	}
+}
+
+func BMI(c *Cpu, b byte, v uint16, m Mode) {
+	if c.N() {
+		c.jump(uint16(b))
+	}
+}
+
+func BVC(c *Cpu, b byte, v uint16, m Mode) {
+	if !c.V() {
+		c.jump(uint16(b))
+	}
+}
+
+func BVS(c *Cpu, b byte, v uint16, m Mode) {
+	if c.V() {
 		c.jump(uint16(b))
 	}
 }
@@ -413,12 +507,65 @@ func AND(c *Cpu, b byte, v uint16, m Mode) {
 	c.setNV(c.A)
 }
 
+func ORA(c *Cpu, b byte, v uint16, m Mode) {
+	c.A |= b
+	c.setNV(c.A)
+}
+
 func ASL(c *Cpu, b byte, v uint16, m Mode) {
 	if m == MODE_SNGL {
+		c.setCarryBit(c.A, 7)
 		c.A <<= 1
 		c.setNV(c.A)
 	} else {
+		c.setCarryBit(c.Mem[v], 7)
 		c.Mem[v] <<= 1
+		c.setNV(c.Mem[v])
+	}
+}
+
+func ROL(c *Cpu, b byte, v uint16, m Mode) {
+	var s byte
+	if c.C() {
+		s = 0x01
+	}
+	if m == MODE_SNGL {
+		c.setCarryBit(c.A, 7)
+		c.A <<= 1
+		c.A |= s
+		c.setNV(c.A)
+	} else {
+		c.setCarryBit(c.Mem[v], 7)
+		c.Mem[v] <<= 1
+		c.Mem[v] |= s
+		c.setNV(c.Mem[v])
+	}
+}
+
+func LSR(c *Cpu, b byte, v uint16, m Mode) {
+	if m == MODE_SNGL {
+		c.A >>= 1
+		c.setNV(c.A)
+	} else {
+		c.setCarryBit(c.Mem[v], 0)
+		c.Mem[v] >>= 1
+		c.setNV(c.Mem[v])
+	}
+}
+
+func ROR(c *Cpu, b byte, v uint16, m Mode) {
+	var s byte
+	if c.C() {
+		s = 0x80
+	}
+	if m == MODE_SNGL {
+		c.A >>= 1
+		c.A |= s
+		c.setNV(c.A)
+	} else {
+		c.setCarryBit(c.Mem[v], 0)
+		c.Mem[v] >>= 1
+		c.Mem[v] |= s
 		c.setNV(c.Mem[v])
 	}
 }
@@ -441,8 +588,54 @@ func BIT(c *Cpu, b byte, v uint16, m Mode) {
 	}
 }
 
-func (c *Cpu) setCarryBit7(b byte) {
-	c.P = c.P&0xfe | b>>7
+func CLC(c *Cpu, b byte, v uint16, m Mode) {
+	c.CLC()
+}
+
+func SEC(c *Cpu, b byte, v uint16, m Mode) {
+	c.SEC()
+}
+
+func CLI(c *Cpu, b byte, v uint16, m Mode) {
+	c.CLI()
+}
+
+func SEI(c *Cpu, b byte, v uint16, m Mode) {
+	c.SEI()
+}
+
+func CLD(c *Cpu, b byte, v uint16, m Mode) {
+	c.CLD()
+}
+
+func SED(c *Cpu, b byte, v uint16, m Mode) {
+	c.SED()
+}
+
+func CLV(c *Cpu, b byte, v uint16, m Mode) {
+	c.CLV()
+}
+
+func (c *Cpu) setCarryBit(b byte, i uint) {
+	c.P = c.P&0xfe | b>>i
+}
+
+func EOR(c *Cpu, b byte, v uint16, m Mode) {
+	c.A ^= b
+	c.setNV(c.A)
+}
+
+func PHP(c *Cpu, b byte, v uint16, m Mode) {
+	c.stackPush(c.P)
+}
+
+func PLP(c *Cpu, b byte, v uint16, m Mode) {
+	c.P = c.stackPop()
+}
+
+func RTI(c *Cpu, b byte, v uint16, m Mode) {
+	c.P = c.stackPop()
+	c.PC = uint16(c.stackPop()) + uint16(c.stackPop())<<8
 }
 
 const null = 0
@@ -450,62 +643,59 @@ const null = 0
 var Opcodes = []Instruction{
 	/* F,  Imm,   ZP,  ZPX,  ZPY,  ABS, ABSX, ABSY,  IND, INDX, INDY, SNGL, BRA */
 	{ADC, 0x69, 0x65, 0x75, null, 0x6d, 0x7d, 0x79, null, 0x61, 0x71, null, null},
-	{LDA, 0xa9, 0xa5, 0xb5, null, 0xad, 0xbd, 0xb9, null, 0xa1, 0xb1, null, null},
-	{STA, null, 0x85, 0x95, null, 0x8d, 0x9d, 0x99, null, 0x81, 0x91, null, null},
-	{TAX, null, null, null, null, null, null, null, null, null, null, 0xaa, null},
-	{INX, null, null, null, null, null, null, null, null, null, null, 0xe8, null},
-	{BRK, null, null, null, null, null, null, null, null, null, null, 0x00, null},
-	{DEX, null, null, null, null, null, null, null, null, null, null, 0xca, null},
-	{STX, null, 0x86, null, 0x96, 0x8e, null, null, null, null, null, null, null},
-	{CPX, 0xe0, 0xe4, null, null, 0xec, null, null, null, null, null, null, null},
-	{LDX, 0xa2, 0xa6, null, 0xb6, 0xae, null, 0xbe, null, null, null, null, null},
-	{BNE, null, null, null, null, null, null, null, null, null, null, null, 0xd0},
-	{CMP, 0xc9, 0xc5, 0xd5, null, 0xcd, 0xdd, 0xd9, null, 0xc1, 0xd1, null, null},
-	{CPY, 0xc0, 0xc4, null, null, 0xcc, null, null, null, null, null, null, null},
-	{STY, null, 0x84, 0x94, null, 0x8c, null, null, null, null, null, null, null},
-	{JMP, null, null, null, null, 0x4c, null, null, 0x6c, null, null, null, null},
-	{LDY, 0xa0, 0xa4, 0xb4, null, 0xac, 0xbc, null, null, null, null, null, null},
-	{PHA, null, null, null, null, null, null, null, null, null, null, 0x48, null},
-	{PLA, null, null, null, null, null, null, null, null, null, null, 0x68, null},
-	{TXA, null, null, null, null, null, null, null, null, null, null, 0x8a, null},
-	{INY, null, null, null, null, null, null, null, null, null, null, 0xc8, null},
-	{JSR, null, null, null, null, 0x20, null, null, null, null, null, null, null},
-	{RTS, null, null, null, null, null, null, null, null, null, null, 0x60, null},
 	{AND, 0x29, 0x25, 0x35, null, 0x2d, 0x3d, 0x39, null, 0x21, 0x31, null, null},
 	{ASL, null, 0x06, 0x16, null, 0x0e, 0x1e, null, null, null, null, 0x0a, null},
 	{BCC, null, null, null, null, null, null, null, null, null, null, null, 0x90},
 	{BCS, null, null, null, null, null, null, null, null, null, null, null, 0xb0},
 	{BEQ, null, null, null, null, null, null, null, null, null, null, null, 0xf0},
 	{BIT, null, 0x24, null, null, 0x2c, null, null, null, null, null, null, null},
-
-	/*
-		{BMI, null, null, null, null, null, null, null, null, null, null, null, 0x30},
-		{BPL, null, null, null, null, null, null, null, null, null, null, null, 0x10},
-		{BVC, null, null, null, null, null, null, null, null, null, null, null, 0x50},
-		{BVS, null, null, null, null, null, null, null, null, null, null, null, 0x70},
-		{CLC, null, null, null, null, null, null, null, null, null, null, 0x18, null},
-		{CLD, null, null, null, null, null, null, null, null, null, null, 0xd8, null},
-		{CLI, null, null, null, null, null, null, null, null, null, null, 0x58, null},
-		{CLV, null, null, null, null, null, null, null, null, null, null, 0xb8, null},
-		{DEC, null, 0xc6, 0xd6, null, 0xce, 0xde, null, null, null, null, null, null},
-		{DEY, null, null, null, null, null, null, null, null, null, null, 0x88, null},
-		{EOR, 0x49, 0x45, 0x55, null, 0x4d, 0x5d, 0x59, null, 0x41, 0x51, null, null},
-		{INC, null, 0xe6, 0xf6, null, 0xee, 0xfe, null, null, null, null, null, null},
-		{LSR, null, 0x46, 0x56, null, 0x4e, 0x5e, null, null, null, null, 0x4a, null},
-		{NOP, null, null, null, null, null, null, null, null, null, null, 0xea, null},
-		{ORA, 0x09, 0x05, 0x15, null, 0x0d, 0x1d, 0x19, null, 0x01, 0x11, null, null},
-		{PHP, null, null, null, null, null, null, null, null, null, null, 0x08, null},
-		{PLP, null, null, null, null, null, null, null, null, null, null, 0x28, null},
-		{ROL, null, 0x26, 0x36, null, 0x2e, 0x3e, null, null, null, null, 0x2a, null},
-		{ROR, null, 0x66, 0x76, null, 0x6e, 0x7e, null, null, null, null, 0x6a, null},
-		{RTI, null, null, null, null, null, null, null, null, null, null, 0x40, null},
-		{SBC, 0xe9, 0xe5, 0xf5, null, 0xed, 0xfd, 0xf9, null, 0xe1, 0xf1, null, null},
-		{SEC, null, null, null, null, null, null, null, null, null, null, 0x38, null},
-		{SED, null, null, null, null, null, null, null, null, null, null, 0xf8, null},
-		{SEI, null, null, null, null, null, null, null, null, null, null, 0x78, null},
-		{TAY, null, null, null, null, null, null, null, null, null, null, 0xa8, null},
-		{TSX, null, null, null, null, null, null, null, null, null, null, 0xba, null},
-		{TXS, null, null, null, null, null, null, null, null, null, null, 0x9a, null},
-		{TYA, null, null, null, null, null, null, null, null, null, null, 0x98, null},
-	*/
+	{BMI, null, null, null, null, null, null, null, null, null, null, null, 0x30},
+	{BNE, null, null, null, null, null, null, null, null, null, null, null, 0xd0},
+	{BPL, null, null, null, null, null, null, null, null, null, null, null, 0x10},
+	{BRK, null, null, null, null, null, null, null, null, null, null, 0x00, null},
+	{BVC, null, null, null, null, null, null, null, null, null, null, null, 0x50},
+	{BVS, null, null, null, null, null, null, null, null, null, null, null, 0x70},
+	{CLC, null, null, null, null, null, null, null, null, null, null, 0x18, null},
+	{CLD, null, null, null, null, null, null, null, null, null, null, 0xd8, null},
+	{CLI, null, null, null, null, null, null, null, null, null, null, 0x58, null},
+	{CLV, null, null, null, null, null, null, null, null, null, null, 0xb8, null},
+	{CMP, 0xc9, 0xc5, 0xd5, null, 0xcd, 0xdd, 0xd9, null, 0xc1, 0xd1, null, null},
+	{CPX, 0xe0, 0xe4, null, null, 0xec, null, null, null, null, null, null, null},
+	{CPY, 0xc0, 0xc4, null, null, 0xcc, null, null, null, null, null, null, null},
+	{DEC, null, 0xc6, 0xd6, null, 0xce, 0xde, null, null, null, null, null, null},
+	{DEX, null, null, null, null, null, null, null, null, null, null, 0xca, null},
+	{DEY, null, null, null, null, null, null, null, null, null, null, 0x88, null},
+	{EOR, 0x49, 0x45, 0x55, null, 0x4d, 0x5d, 0x59, null, 0x41, 0x51, null, null},
+	{INC, null, 0xe6, 0xf6, null, 0xee, 0xfe, null, null, null, null, null, null},
+	{INX, null, null, null, null, null, null, null, null, null, null, 0xe8, null},
+	{INY, null, null, null, null, null, null, null, null, null, null, 0xc8, null},
+	{JMP, null, null, null, null, 0x4c, null, null, 0x6c, null, null, null, null},
+	{JSR, null, null, null, null, 0x20, null, null, null, null, null, null, null},
+	{LDA, 0xa9, 0xa5, 0xb5, null, 0xad, 0xbd, 0xb9, null, 0xa1, 0xb1, null, null},
+	{LDX, 0xa2, 0xa6, null, 0xb6, 0xae, null, 0xbe, null, null, null, null, null},
+	{LDY, 0xa0, 0xa4, 0xb4, null, 0xac, 0xbc, null, null, null, null, null, null},
+	{LSR, null, 0x46, 0x56, null, 0x4e, 0x5e, null, null, null, null, 0x4a, null},
+	{NOP, null, null, null, null, null, null, null, null, null, null, 0xea, null},
+	{ORA, 0x09, 0x05, 0x15, null, 0x0d, 0x1d, 0x19, null, 0x01, 0x11, null, null},
+	{PHA, null, null, null, null, null, null, null, null, null, null, 0x48, null},
+	{PHP, null, null, null, null, null, null, null, null, null, null, 0x08, null},
+	{PLA, null, null, null, null, null, null, null, null, null, null, 0x68, null},
+	{PLP, null, null, null, null, null, null, null, null, null, null, 0x28, null},
+	{ROL, null, 0x26, 0x36, null, 0x2e, 0x3e, null, null, null, null, 0x2a, null},
+	{ROR, null, 0x66, 0x76, null, 0x6e, 0x7e, null, null, null, null, 0x6a, null},
+	{RTI, null, null, null, null, null, null, null, null, null, null, 0x40, null},
+	{RTS, null, null, null, null, null, null, null, null, null, null, 0x60, null},
+	{SBC, 0xe9, 0xe5, 0xf5, null, 0xed, 0xfd, 0xf9, null, 0xe1, 0xf1, null, null},
+	{SEC, null, null, null, null, null, null, null, null, null, null, 0x38, null},
+	{SED, null, null, null, null, null, null, null, null, null, null, 0xf8, null},
+	{SEI, null, null, null, null, null, null, null, null, null, null, 0x78, null},
+	{STA, null, 0x85, 0x95, null, 0x8d, 0x9d, 0x99, null, 0x81, 0x91, null, null},
+	{STX, null, 0x86, null, 0x96, 0x8e, null, null, null, null, null, null, null},
+	{STY, null, 0x84, 0x94, null, 0x8c, null, null, null, null, null, null, null},
+	{TAX, null, null, null, null, null, null, null, null, null, null, 0xaa, null},
+	{TAY, null, null, null, null, null, null, null, null, null, null, 0xa8, null},
+	{TSX, null, null, null, null, null, null, null, null, null, null, 0xba, null},
+	{TXA, null, null, null, null, null, null, null, null, null, null, 0x8a, null},
+	{TXS, null, null, null, null, null, null, null, null, null, null, 0x9a, null},
+	{TYA, null, null, null, null, null, null, null, null, null, null, 0x98, null},
 }
