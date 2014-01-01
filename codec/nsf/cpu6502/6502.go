@@ -2,18 +2,17 @@ package cpu6502
 
 import "fmt"
 
-type opcode byte
 
 type Instruction struct {
 	Name            string
-	Imm             opcode
-	ZP, ZPX, ZPY    opcode
-	ABS, ABSX, ABSY opcode
-	IND, INDX, INDY opcode
-	SNGL, BRA       opcode
+	Imm             byte
+	ZP, ZPX, ZPY    byte
+	ABS, ABSX, ABSY byte
+	IND, INDX, INDY byte
+	SNGL, BRA       byte
 }
 
-var Optable map[opcode]*Op
+var Optable [0xff]*Op
 
 type Op struct {
 	F    func(*Cpu, byte)
@@ -47,8 +46,8 @@ type Cpu struct {
 func (c *Cpu) Step() {
 	inst := c.Mem[c.PC]
 	c.PC++
-	o, ok := Optable[opcode(inst)]
-	if !ok {
+	o := Optable[inst]
+	if o == nil {
 		return
 	}
 	var v byte
@@ -99,7 +98,6 @@ func (c *Cpu) Print() {
 }
 
 func init() {
-	Optable = make(map[opcode]*Op)
 	for _, inst := range Opcodes {
 		if inst.Imm != null {
 			Optable[inst.Imm] = &Op{
