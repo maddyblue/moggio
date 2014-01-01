@@ -18,7 +18,7 @@ type Instruction struct {
 
 var Optable [0xff]*Op
 
-type Func func(*Cpu, operand)
+type Func func(*Cpu, byte, uint16)
 
 type Op struct {
 	Mode
@@ -36,11 +36,15 @@ type Mode int
 func (m Mode) Format() string {
 	switch m {
 	case MODE_IMM:
-		return "#$%02x"
-	case MODE_ZP, MODE_BRA:
-		return "$%02x"
+		return "#$%02[1]x"
+	case MODE_ZP:
+		return "$%02[2]x"
 	case MODE_ABS:
-		return "$%04x"
+		return "$%04[2]x"
+	case MODE_IND:
+		return "($%04[2]X)"
+	case MODE_BRA:
+		return "$%02[1]x"
 	default:
 		return ""
 	}
@@ -95,19 +99,27 @@ func (c *Cpu) Step() {
 		panic(fmt.Sprintf("bad opcode 0x%02x", inst))
 		return
 	}
-	var v operand
+	var b byte
+	var v uint16
 	switch o.Mode {
 	case MODE_IMM, MODE_BRA:
-		v = operand(c.Mem[c.PC])
+		b = c.Mem[c.PC]
 		c.PC++
 	case MODE_ZP:
-		b := c.Mem[c.PC]
-		v = operand(c.Mem[b])
+		v = uint16(c.Mem[c.PC])
+		b = c.Mem[v]
 		c.PC++
 	case MODE_ABS:
-		v = operand(c.Mem[c.PC])
+		v = uint16(c.Mem[c.PC])
 		c.PC++
-		v |= operand(c.Mem[c.PC]) << 8
+		v |= uint16(c.Mem[c.PC]) << 8
+		c.PC++
+		b = c.Mem[v]
+	case MODE_IND:
+		v = uint16(c.Mem[c.PC])
+		c.PC++
+		v |= uint16(c.Mem[c.PC]) << 8
+		v = uint16(c.Mem[v]) + uint16(c.Mem[v+1])<<8
 		c.PC++
 	case MODE_SNGL:
 		// nothing
@@ -116,10 +128,10 @@ func (c *Cpu) Step() {
 	}
 	m := o.Mode.Format()
 	if m != "" {
-		m = fmt.Sprintf(m, v)
+		m = fmt.Sprintf(m, b, v)
 	}
-	//fmt.Printf("PC: 0x%04X, inst: 0x%02X %v %s\n", c.PC, inst, o, m)
-	o.F(c, v)
+	fmt.Printf("PC: 0x%04X, inst: 0x%02X %v %s\n", c.PC, inst, o, m)
+	o.F(c, b, v)
 }
 
 func (c *Cpu) setNV(v byte) {
@@ -187,17 +199,15 @@ func init() {
 	}
 }
 
-type operand uint16
+func BRK(c *Cpu, b byte, v uint16) {}
 
-func BRK(c *Cpu, v operand) {}
-
-func ADC(c *Cpu, v operand) {
-	if (c.A^byte(v))&0x80 != 0 {
+func ADC(c *Cpu, b byte, v uint16) {
+	if (c.A^b)&0x80 != 0 {
 		c.CLV()
 	} else {
 		c.SEV()
 	}
-	a := operand(c.A) + v
+	a := uint16(c.A) + uint16(b)
 	if c.C() {
 		a++
 	}
@@ -216,42 +226,38 @@ func ADC(c *Cpu, v operand) {
 	c.setNV(c.A)
 }
 
-func LDA(c *Cpu, v operand) {
-	c.A = byte(v)
+func LDA(c *Cpu, b byte, v uint16) {
+	c.A = b
 	c.setNV(c.A)
 }
 
-func LDX(c *Cpu, v operand) {
-	c.X = byte(v)
+func LDX(c *Cpu, b byte, v uint16) {
+	c.X = b
 	c.setNV(c.X)
 }
 
-func STA(c *Cpu, v operand) {
-	c.Mem[v] = c.A
-}
+func STA(c *Cpu, b byte, v uint16) { c.Mem[v] = c.A }
+func STX(c *Cpu, b byte, v uint16) { c.Mem[v] = c.X }
+func STY(c *Cpu, b byte, v uint16) { c.Mem[v] = c.Y }
 
-func STX(c *Cpu, v operand) {
-	c.Mem[v] = c.X
-}
-
-func TAX(c *Cpu, v operand) {
+func TAX(c *Cpu, b byte, v uint16) {
 	c.X = c.A
 	c.setNV(c.X)
 }
 
-func INX(c *Cpu, v operand) {
+func INX(c *Cpu, b byte, v uint16) {
 	c.X = (c.X + 1) & 0xff
 	c.setNV(c.X)
 }
 
-func DEX(c *Cpu, v operand) {
+func DEX(c *Cpu, b byte, v uint16) {
 	c.X = (c.X - 1) & 0xff
 	c.setNV(c.X)
 }
 
-func CPX(c *Cpu, v operand) {
-	compare(c, c.X, byte(v))
-}
+func CMP(c *Cpu, b byte, v uint16) { compare(c, c.A, b) }
+func CPX(c *Cpu, b byte, v uint16) { compare(c, c.X, b) }
+func CPY(c *Cpu, b byte, v uint16) { compare(c, c.Y, b) }
 
 func compare(c *Cpu, r, v byte) {
 	if r >= v {
@@ -262,18 +268,22 @@ func compare(c *Cpu, r, v byte) {
 	c.setNV(r - v)
 }
 
-func BNE(c *Cpu, v operand) {
+func BNE(c *Cpu, b byte, v uint16) {
 	if !c.Z() {
-		jump(c, v)
+		jump(c, uint16(b))
 	}
 }
 
-func jump(c *Cpu, v operand) {
+func jump(c *Cpu, v uint16) {
 	if v > 0x7f {
-		c.PC -= 0x100 - uint16(v)
+		c.PC -= 0x100 - v
 	} else {
-		c.PC += uint16(v)
+		c.PC += v
 	}
+}
+
+func JMP(c *Cpu, b byte, v uint16) {
+	c.PC = uint16(v)
 }
 
 const null = 0
@@ -291,6 +301,10 @@ var Opcodes = []Instruction{
 	{CPX, 0xe0, 0xe4, null, null, 0xec, null, null, null, null, null, null, null},
 	{LDX, 0xa2, 0xa6, null, 0xb6, 0xae, null, 0xbe, null, null, null, null, null},
 	{BNE, null, null, null, null, null, null, null, null, null, null, null, 0xd0},
+	{CMP, 0xc9, 0xc5, 0xd5, null, 0xcd, 0xdd, 0xd9, null, 0xc1, 0xd1, null, null},
+	{CPY, 0xc0, 0xc4, null, null, 0xcc, null, null, null, null, null, null, null},
+	{STY, null, 0x84, 0x94, null, 0x8c, null, null, null, null, null, null, null},
+	{JMP, null, null, null, null, 0x4c, null, null, 0x6c, null, null, null, null},
 	/*
 		{AND, 0x29, 0x25, 0x35, null, 0x2d, 0x3d, 0x39, null, 0x21, 0x31, null, null},
 		{ASL, null, 0x06, 0x16, null, 0x0e, 0x1e, null, null, null, null, 0x0a, null},
@@ -306,14 +320,11 @@ var Opcodes = []Instruction{
 		{CLD, null, null, null, null, null, null, null, null, null, null, 0xd8, null},
 		{CLI, null, null, null, null, null, null, null, null, null, null, 0x58, null},
 		{CLV, null, null, null, null, null, null, null, null, null, null, 0xb8, null},
-		{CMP, 0xc9, 0xc5, 0xd5, null, 0xcd, 0xdd, 0xd9, null, 0xc1, 0xd1, null, null},
-		{CPY, 0xc0, 0xc4, null, null, 0xcc, null, null, null, null, null, null, null},
 		{DEC, null, 0xc6, 0xd6, null, 0xce, 0xde, null, null, null, null, null, null},
 		{DEY, null, null, null, null, null, null, null, null, null, null, 0x88, null},
 		{EOR, 0x49, 0x45, 0x55, null, 0x4d, 0x5d, 0x59, null, 0x41, 0x51, null, null},
 		{INC, null, 0xe6, 0xf6, null, 0xee, 0xfe, null, null, null, null, null, null},
 		{INY, null, null, null, null, null, null, null, null, null, null, 0xc8, null},
-		{JMP, null, null, null, null, 0x4c, null, null, 0x6c, null, null, null, null},
 		{JSR, null, null, null, null, 0x20, null, null, null, null, null, null, null},
 		{LDY, 0xa0, 0xa4, 0xb4, null, 0xac, 0xbc, null, null, null, null, null, null},
 		{LSR, null, 0x46, 0x56, null, 0x4e, 0x5e, null, null, null, null, 0x4a, null},
@@ -331,7 +342,6 @@ var Opcodes = []Instruction{
 		{SEC, null, null, null, null, null, null, null, null, null, null, 0x38, null},
 		{SED, null, null, null, null, null, null, null, null, null, null, 0xf8, null},
 		{SEI, null, null, null, null, null, null, null, null, null, null, 0x78, null},
-		{STY, null, 0x84, 0x94, null, 0x8c, null, null, null, null, null, null, null},
 		{TAY, null, null, null, null, null, null, null, null, null, null, 0xa8, null},
 		{TSX, null, null, null, null, null, null, null, null, null, null, 0xba, null},
 		{TXA, null, null, null, null, null, null, null, null, null, null, 0x8a, null},
