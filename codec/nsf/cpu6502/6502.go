@@ -41,6 +41,10 @@ func (m Mode) Format() string {
 		return "$%02[2]x"
 	case MODE_ABS:
 		return "$%04[2]x"
+	case MODE_ABSX:
+		return "$%04[2]x,X"
+	case MODE_ABSY:
+		return "$%04[2]x,Y"
 	case MODE_IND:
 		return "($%04[2]X)"
 	case MODE_INDX:
@@ -119,6 +123,20 @@ func (c *Cpu) Step() {
 		c.PC++
 		v |= uint16(c.Mem[c.PC]) << 8
 		c.PC++
+		b = c.Mem[v]
+	case MODE_ABSX:
+		v = uint16(c.Mem[c.PC])
+		c.PC++
+		v |= uint16(c.Mem[c.PC]) << 8
+		c.PC++
+		v += uint16(c.X)
+		b = c.Mem[v]
+	case MODE_ABSY:
+		v = uint16(c.Mem[c.PC])
+		c.PC++
+		v |= uint16(c.Mem[c.PC]) << 8
+		c.PC++
+		v += uint16(c.Y)
 		b = c.Mem[v]
 	case MODE_IND:
 		v = uint16(c.Mem[c.PC])
@@ -268,9 +286,19 @@ func TAX(c *Cpu, b byte, v uint16) {
 	c.setNV(c.X)
 }
 
+func TXA(c *Cpu, b byte, v uint16) {
+	c.A = c.X
+	c.setNV(c.A)
+}
+
 func INX(c *Cpu, b byte, v uint16) {
 	c.X = (c.X + 1) & 0xff
 	c.setNV(c.X)
+}
+
+func INY(c *Cpu, b byte, v uint16) {
+	c.Y = (c.Y + 1) & 0xff
+	c.setNV(c.Y)
 }
 
 func DEX(c *Cpu, b byte, v uint16) {
@@ -278,11 +306,11 @@ func DEX(c *Cpu, b byte, v uint16) {
 	c.setNV(c.X)
 }
 
-func CMP(c *Cpu, b byte, v uint16) { compare(c, c.A, b) }
-func CPX(c *Cpu, b byte, v uint16) { compare(c, c.X, b) }
-func CPY(c *Cpu, b byte, v uint16) { compare(c, c.Y, b) }
+func CMP(c *Cpu, b byte, v uint16) { c.compare(c.A, b) }
+func CPX(c *Cpu, b byte, v uint16) { c.compare(c.X, b) }
+func CPY(c *Cpu, b byte, v uint16) { c.compare(c.Y, b) }
 
-func compare(c *Cpu, r, v byte) {
+func (c *Cpu) compare(r, v byte) {
 	if r >= v {
 		c.SEC()
 	} else {
@@ -293,11 +321,11 @@ func compare(c *Cpu, r, v byte) {
 
 func BNE(c *Cpu, b byte, v uint16) {
 	if !c.Z() {
-		jump(c, uint16(b))
+		c.jump(uint16(b))
 	}
 }
 
-func jump(c *Cpu, v uint16) {
+func (c *Cpu) jump(v uint16) {
 	if v > 0x7f {
 		c.PC -= 0x100 - v
 	} else {
@@ -307,6 +335,32 @@ func jump(c *Cpu, v uint16) {
 
 func JMP(c *Cpu, b byte, v uint16) {
 	c.PC = uint16(v)
+}
+
+func PHA(c *Cpu, b byte, v uint16) {
+	c.stackPush(c.A)
+}
+
+func PLA(c *Cpu, b byte, v uint16) {
+	c.A = c.stackPop()
+	c.setNV(c.A)
+}
+
+func (c *Cpu) stackPush(b byte) {
+	c.Mem[uint16(c.S)+0x100] = b
+	if c.S == 0 {
+		// wrap
+		c.S = 0xff
+	} else {
+		c.S--
+	}
+}
+
+func (c *Cpu) stackPop() byte {
+	if c.S < 0xff {
+		c.S++
+	}
+	return c.Mem[uint16(c.S)+0x100]
 }
 
 const null = 0
@@ -329,6 +383,10 @@ var Opcodes = []Instruction{
 	{STY, null, 0x84, 0x94, null, 0x8c, null, null, null, null, null, null, null},
 	{JMP, null, null, null, null, 0x4c, null, null, 0x6c, null, null, null, null},
 	{LDY, 0xa0, 0xa4, 0xb4, null, 0xac, 0xbc, null, null, null, null, null, null},
+	{PHA, null, null, null, null, null, null, null, null, null, null, 0x48, null},
+	{PLA, null, null, null, null, null, null, null, null, null, null, 0x68, null},
+	{TXA, null, null, null, null, null, null, null, null, null, null, 0x8a, null},
+	{INY, null, null, null, null, null, null, null, null, null, null, 0xc8, null},
 	/*
 		{AND, 0x29, 0x25, 0x35, null, 0x2d, 0x3d, 0x39, null, 0x21, 0x31, null, null},
 		{ASL, null, 0x06, 0x16, null, 0x0e, 0x1e, null, null, null, null, 0x0a, null},
@@ -348,14 +406,11 @@ var Opcodes = []Instruction{
 		{DEY, null, null, null, null, null, null, null, null, null, null, 0x88, null},
 		{EOR, 0x49, 0x45, 0x55, null, 0x4d, 0x5d, 0x59, null, 0x41, 0x51, null, null},
 		{INC, null, 0xe6, 0xf6, null, 0xee, 0xfe, null, null, null, null, null, null},
-		{INY, null, null, null, null, null, null, null, null, null, null, 0xc8, null},
 		{JSR, null, null, null, null, 0x20, null, null, null, null, null, null, null},
 		{LSR, null, 0x46, 0x56, null, 0x4e, 0x5e, null, null, null, null, 0x4a, null},
 		{NOP, null, null, null, null, null, null, null, null, null, null, 0xea, null},
 		{ORA, 0x09, 0x05, 0x15, null, 0x0d, 0x1d, 0x19, null, 0x01, 0x11, null, null},
-		{PHA, null, null, null, null, null, null, null, null, null, null, 0x48, null},
 		{PHP, null, null, null, null, null, null, null, null, null, null, 0x08, null},
-		{PLA, null, null, null, null, null, null, null, null, null, null, 0x68, null},
 		{PLP, null, null, null, null, null, null, null, null, null, null, 0x28, null},
 		{ROL, null, 0x26, 0x36, null, 0x2e, 0x3e, null, null, null, null, 0x2a, null},
 		{ROR, null, 0x66, 0x76, null, 0x6e, 0x7e, null, null, null, null, 0x6a, null},
@@ -367,7 +422,6 @@ var Opcodes = []Instruction{
 		{SEI, null, null, null, null, null, null, null, null, null, null, 0x78, null},
 		{TAY, null, null, null, null, null, null, null, null, null, null, 0xa8, null},
 		{TSX, null, null, null, null, null, null, null, null, null, null, 0xba, null},
-		{TXA, null, null, null, null, null, null, null, null, null, null, 0x8a, null},
 		{TXS, null, null, null, null, null, null, null, null, null, null, 0x9a, null},
 		{TYA, null, null, null, null, null, null, null, null, null, null, 0x98, null},
 	*/
