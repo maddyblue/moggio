@@ -90,6 +90,7 @@ func (c *Cpu) Run() {
 }
 
 func (c *Cpu) Step() {
+	pc := c.PC
 	inst := c.Mem[c.PC]
 	c.PC++
 	if inst == 0 {
@@ -139,7 +140,8 @@ func (c *Cpu) Step() {
 	if m != "" {
 		m = fmt.Sprintf(m, b, v)
 	}
-	fmt.Printf("PC: 0x%04X, inst: 0x%02X %v %s\n", c.PC, inst, o, m)
+	fmt.Printf("PC: 0x%04X, inst: 0x%02X %v %s\n", pc, inst, o, m)
+	_ = pc
 	o.F(c, b, v)
 }
 
