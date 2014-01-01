@@ -239,6 +239,9 @@ func (c *Cpu) String() string {
 func init() {
 	populate := func(i Instruction, m Mode, v byte) {
 		if v != null {
+			if Optable[v] != nil {
+				panic("duplicate instruction")
+			}
 			Optable[v] = &Op{
 				F:    i.F,
 				Mode: m,
