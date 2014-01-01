@@ -1,10 +1,14 @@
 package cpu6502
 
-import "fmt"
-
+import (
+	"fmt"
+	"reflect"
+	"runtime"
+	"strings"
+)
 
 type Instruction struct {
-	Name            string
+	F               Func
 	Imm             byte
 	ZP, ZPX, ZPY    byte
 	ABS, ABSX, ABSY byte
@@ -14,16 +18,36 @@ type Instruction struct {
 
 var Optable [0xff]*Op
 
+type Func func(*Cpu, operand)
+
 type Op struct {
-	F    func(*Cpu, byte)
-	Name string
-	Mode mode
+	Mode
+	F Func
 }
 
-type mode int
+func (o *Op) String() string {
+	n := runtime.FuncForPC(reflect.ValueOf(o.F).Pointer()).Name()
+	n = n[strings.LastIndex(n, ".")+1:]
+	return n
+}
+
+type Mode int
+
+func (m Mode) Format() string {
+	switch m {
+	case MODE_IMM:
+		return "#$%02x"
+	case MODE_ZP, MODE_BRA:
+		return "$%02x"
+	case MODE_ABS:
+		return "$%04x"
+	default:
+		return ""
+	}
+}
 
 const (
-	MODE_IMM mode = iota
+	MODE_IMM Mode = iota
 	MODE_ZP
 	MODE_ZPX
 	MODE_ZPY
@@ -41,23 +65,60 @@ type Cpu struct {
 	A, X, Y, S, P byte
 	PC            uint16
 	Mem           [0xffff]byte
+	Halt          bool
+}
+
+func New() *Cpu {
+	c := Cpu{
+		S:  0xff,
+		P:  0x30,
+		PC: 0x0600,
+	}
+	return &c
+}
+
+func (c *Cpu) Run() {
+	for !c.Halt {
+		c.Step()
+	}
 }
 
 func (c *Cpu) Step() {
 	inst := c.Mem[c.PC]
 	c.PC++
-	o := Optable[inst]
-	if o == nil {
+	if inst == 0 {
+		c.Halt = true
 		return
 	}
-	var v byte
+	o := Optable[inst]
+	if o == nil {
+		panic(fmt.Sprintf("bad opcode 0x%02x", inst))
+		return
+	}
+	var v operand
 	switch o.Mode {
-	case MODE_IMM:
-		v = c.Mem[c.PC]
+	case MODE_IMM, MODE_BRA:
+		v = operand(c.Mem[c.PC])
 		c.PC++
+	case MODE_ZP:
+		b := c.Mem[c.PC]
+		v = operand(c.Mem[b])
+		c.PC++
+	case MODE_ABS:
+		v = operand(c.Mem[c.PC])
+		c.PC++
+		v |= operand(c.Mem[c.PC]) << 8
+		c.PC++
+	case MODE_SNGL:
+		// nothing
 	default:
 		panic("6502: bad address mode")
 	}
+	m := o.Mode.Format()
+	if m != "" {
+		m = fmt.Sprintf(m, v)
+	}
+	//fmt.Printf("PC: 0x%04X, inst: 0x%02X %v %s\n", c.PC, inst, o, m)
 	o.F(c, v)
 }
 
@@ -80,120 +141,201 @@ func (c *Cpu) SEV() { c.P |= P_V }
 func (c *Cpu) CLV() { c.P &= 0xbf }
 
 func (c *Cpu) C() bool       { return c.p(P_C) }
+func (c *Cpu) Z() bool       { return c.p(P_Z) }
 func (c *Cpu) V() bool       { return c.p(P_V) }
 func (c *Cpu) p(v byte) bool { return c.P&v != 0 }
 
 const (
 	P_C = 0x01
+	P_Z = 0x02
 	P_V = 0x40
 )
 
-func (c *Cpu) Print() {
+func (c *Cpu) String() string {
 	const f = "%2s: %5d 0x%04[2]X %016[2]b\n"
-	fmt.Printf(f, "A", c.A)
-	fmt.Printf(f, "X", c.X)
-	fmt.Printf(f, "Y", c.Y)
-	fmt.Printf(f, "P", c.P)
-	fmt.Printf(f, "PC", c.PC)
+	s := ""
+	s += fmt.Sprintf(f, "A", c.A)
+	s += fmt.Sprintf(f, "X", c.X)
+	s += fmt.Sprintf(f, "Y", c.Y)
+	s += fmt.Sprintf(f, "P", c.P)
+	s += fmt.Sprintf(f, "PC", c.PC)
+	return s
 }
 
 func init() {
-	for _, inst := range Opcodes {
-		if inst.Imm != null {
-			Optable[inst.Imm] = &Op{
-				F:    Functions[inst.Name],
-				Name: inst.Name,
-				Mode: MODE_IMM,
+	populate := func(i Instruction, m Mode, v byte) {
+		if v != null {
+			Optable[v] = &Op{
+				F:    i.F,
+				Mode: m,
 			}
 		}
 	}
+	for _, i := range Opcodes {
+		populate(i, MODE_IMM, i.Imm)
+		populate(i, MODE_ZP, i.ZP)
+		populate(i, MODE_ZPX, i.ZPX)
+		populate(i, MODE_ZPY, i.ZPY)
+		populate(i, MODE_ABS, i.ABS)
+		populate(i, MODE_ABSX, i.ABSX)
+		populate(i, MODE_ABSY, i.ABSY)
+		populate(i, MODE_IND, i.IND)
+		populate(i, MODE_INDX, i.INDX)
+		populate(i, MODE_INDY, i.INDY)
+		populate(i, MODE_SNGL, i.SNGL)
+		populate(i, MODE_BRA, i.BRA)
+	}
 }
 
-var Functions = map[string]func(*Cpu, byte){
-	"ADC": func(c *Cpu, v byte) {
-		if (c.A^v)&0x80 != 0 {
+type operand uint16
+
+func BRK(c *Cpu, v operand) {}
+
+func ADC(c *Cpu, v operand) {
+	if (c.A^byte(v))&0x80 != 0 {
+		c.CLV()
+	} else {
+		c.SEV()
+	}
+	a := operand(c.A) + v
+	if c.C() {
+		a++
+	}
+	if a > 0xff {
+		c.SEC()
+		if c.V() && a >= 0x180 {
 			c.CLV()
-		} else {
-			c.SEV()
 		}
-		a := int(c.A) + int(v)
-		if c.C() {
-			a++
+	} else {
+		c.CLC()
+		if c.V() && a < 0x80 {
+			c.CLV()
 		}
-		if a > 0xff {
-			c.SEC()
-			if c.V() && a >= 0x180 {
-				c.CLV()
-			}
-		} else {
-			c.CLC()
-			if c.V() && a < 0x80 {
-				c.CLV()
-			}
-		}
-		c.A = byte(a & 0xff)
-		c.setNV(c.A)
-	},
+	}
+	c.A = byte(a & 0xff)
+	c.setNV(c.A)
+}
+
+func LDA(c *Cpu, v operand) {
+	c.A = byte(v)
+	c.setNV(c.A)
+}
+
+func LDX(c *Cpu, v operand) {
+	c.X = byte(v)
+	c.setNV(c.X)
+}
+
+func STA(c *Cpu, v operand) {
+	c.Mem[v] = c.A
+}
+
+func STX(c *Cpu, v operand) {
+	c.Mem[v] = c.X
+}
+
+func TAX(c *Cpu, v operand) {
+	c.X = c.A
+	c.setNV(c.X)
+}
+
+func INX(c *Cpu, v operand) {
+	c.X = (c.X + 1) & 0xff
+	c.setNV(c.X)
+}
+
+func DEX(c *Cpu, v operand) {
+	c.X = (c.X - 1) & 0xff
+	c.setNV(c.X)
+}
+
+func CPX(c *Cpu, v operand) {
+	compare(c, c.X, byte(v))
+}
+
+func compare(c *Cpu, r, v byte) {
+	if r >= v {
+		c.SEC()
+	} else {
+		c.CLC()
+	}
+	c.setNV(r - v)
+}
+
+func BNE(c *Cpu, v operand) {
+	if !c.Z() {
+		jump(c, v)
+	}
+}
+
+func jump(c *Cpu, v operand) {
+	if v > 0x7f {
+		c.PC -= 0x100 - uint16(v)
+	} else {
+		c.PC += uint16(v)
+	}
 }
 
 const null = 0
 
 var Opcodes = []Instruction{
-	/* Name, Imm,  ZP,   ZPX,  ZPY,  ABS, ABSX, ABSY,  IND, INDX, INDY, SNGL, BRA */
-	{"ADC", 0x69, 0x65, 0x75, null, 0x6d, 0x7d, 0x79, null, 0x61, 0x71, null, null},
-	{"AND", 0x29, 0x25, 0x35, null, 0x2d, 0x3d, 0x39, null, 0x21, 0x31, null, null},
-	{"ASL", null, 0x06, 0x16, null, 0x0e, 0x1e, null, null, null, null, 0x0a, null},
-	{"BCC", null, null, null, null, null, null, null, null, null, null, null, 0x90},
-	{"BCS", null, null, null, null, null, null, null, null, null, null, null, 0xb0},
-	{"BEQ", null, null, null, null, null, null, null, null, null, null, null, 0xf0},
-	{"BIT", null, 0x24, null, null, 0x2c, null, null, null, null, null, null, null},
-	{"BMI", null, null, null, null, null, null, null, null, null, null, null, 0x30},
-	{"BNE", null, null, null, null, null, null, null, null, null, null, null, 0xd0},
-	{"BPL", null, null, null, null, null, null, null, null, null, null, null, 0x10},
-	{"BRK", null, null, null, null, null, null, null, null, null, null, 0x00, null},
-	{"BVC", null, null, null, null, null, null, null, null, null, null, null, 0x50},
-	{"BVS", null, null, null, null, null, null, null, null, null, null, null, 0x70},
-	{"CLC", null, null, null, null, null, null, null, null, null, null, 0x18, null},
-	{"CLD", null, null, null, null, null, null, null, null, null, null, 0xd8, null},
-	{"CLI", null, null, null, null, null, null, null, null, null, null, 0x58, null},
-	{"CLV", null, null, null, null, null, null, null, null, null, null, 0xb8, null},
-	{"CMP", 0xc9, 0xc5, 0xd5, null, 0xcd, 0xdd, 0xd9, null, 0xc1, 0xd1, null, null},
-	{"CPX", 0xe0, 0xe4, null, null, 0xec, null, null, null, null, null, null, null},
-	{"CPY", 0xc0, 0xc4, null, null, 0xcc, null, null, null, null, null, null, null},
-	{"DEC", null, 0xc6, 0xd6, null, 0xce, 0xde, null, null, null, null, null, null},
-	{"DEX", null, null, null, null, null, null, null, null, null, null, 0xca, null},
-	{"DEY", null, null, null, null, null, null, null, null, null, null, 0x88, null},
-	{"EOR", 0x49, 0x45, 0x55, null, 0x4d, 0x5d, 0x59, null, 0x41, 0x51, null, null},
-	{"INC", null, 0xe6, 0xf6, null, 0xee, 0xfe, null, null, null, null, null, null},
-	{"INX", null, null, null, null, null, null, null, null, null, null, 0xe8, null},
-	{"INY", null, null, null, null, null, null, null, null, null, null, 0xc8, null},
-	{"JMP", null, null, null, null, 0x4c, null, null, 0x6c, null, null, null, null},
-	{"JSR", null, null, null, null, 0x20, null, null, null, null, null, null, null},
-	{"LDA", 0xa9, 0xa5, 0xb5, null, 0xad, 0xbd, 0xb9, null, 0xa1, 0xb1, null, null},
-	{"LDX", 0xa2, 0xa6, null, 0xb6, 0xae, null, 0xbe, null, null, null, null, null},
-	{"LDY", 0xa0, 0xa4, 0xb4, null, 0xac, 0xbc, null, null, null, null, null, null},
-	{"LSR", null, 0x46, 0x56, null, 0x4e, 0x5e, null, null, null, null, 0x4a, null},
-	{"NOP", null, null, null, null, null, null, null, null, null, null, 0xea, null},
-	{"ORA", 0x09, 0x05, 0x15, null, 0x0d, 0x1d, 0x19, null, 0x01, 0x11, null, null},
-	{"PHA", null, null, null, null, null, null, null, null, null, null, 0x48, null},
-	{"PHP", null, null, null, null, null, null, null, null, null, null, 0x08, null},
-	{"PLA", null, null, null, null, null, null, null, null, null, null, 0x68, null},
-	{"PLP", null, null, null, null, null, null, null, null, null, null, 0x28, null},
-	{"ROL", null, 0x26, 0x36, null, 0x2e, 0x3e, null, null, null, null, 0x2a, null},
-	{"ROR", null, 0x66, 0x76, null, 0x6e, 0x7e, null, null, null, null, 0x6a, null},
-	{"RTI", null, null, null, null, null, null, null, null, null, null, 0x40, null},
-	{"RTS", null, null, null, null, null, null, null, null, null, null, 0x60, null},
-	{"SBC", 0xe9, 0xe5, 0xf5, null, 0xed, 0xfd, 0xf9, null, 0xe1, 0xf1, null, null},
-	{"SEC", null, null, null, null, null, null, null, null, null, null, 0x38, null},
-	{"SED", null, null, null, null, null, null, null, null, null, null, 0xf8, null},
-	{"SEI", null, null, null, null, null, null, null, null, null, null, 0x78, null},
-	{"STA", null, 0x85, 0x95, null, 0x8d, 0x9d, 0x99, null, 0x81, 0x91, null, null},
-	{"STX", null, 0x86, null, 0x96, 0x8e, null, null, null, null, null, null, null},
-	{"STY", null, 0x84, 0x94, null, 0x8c, null, null, null, null, null, null, null},
-	{"TAX", null, null, null, null, null, null, null, null, null, null, 0xaa, null},
-	{"TAY", null, null, null, null, null, null, null, null, null, null, 0xa8, null},
-	{"TSX", null, null, null, null, null, null, null, null, null, null, 0xba, null},
-	{"TXA", null, null, null, null, null, null, null, null, null, null, 0x8a, null},
-	{"TXS", null, null, null, null, null, null, null, null, null, null, 0x9a, null},
-	{"TYA", null, null, null, null, null, null, null, null, null, null, 0x98, null},
+	/* F, Imm,  ZP,   ZPX,  ZPY,  ABS, ABSX, ABSY,  IND, INDX, INDY, SNGL, BRA */
+	{ADC, 0x69, 0x65, 0x75, null, 0x6d, 0x7d, 0x79, null, 0x61, 0x71, null, null},
+	{LDA, 0xa9, 0xa5, 0xb5, null, 0xad, 0xbd, 0xb9, null, 0xa1, 0xb1, null, null},
+	{STA, null, 0x85, 0x95, null, 0x8d, 0x9d, 0x99, null, 0x81, 0x91, null, null},
+	{TAX, null, null, null, null, null, null, null, null, null, null, 0xaa, null},
+	{INX, null, null, null, null, null, null, null, null, null, null, 0xe8, null},
+	{BRK, null, null, null, null, null, null, null, null, null, null, 0x00, null},
+	{DEX, null, null, null, null, null, null, null, null, null, null, 0xca, null},
+	{STX, null, 0x86, null, 0x96, 0x8e, null, null, null, null, null, null, null},
+	{CPX, 0xe0, 0xe4, null, null, 0xec, null, null, null, null, null, null, null},
+	{LDX, 0xa2, 0xa6, null, 0xb6, 0xae, null, 0xbe, null, null, null, null, null},
+	{BNE, null, null, null, null, null, null, null, null, null, null, null, 0xd0},
+	/*
+		{AND, 0x29, 0x25, 0x35, null, 0x2d, 0x3d, 0x39, null, 0x21, 0x31, null, null},
+		{ASL, null, 0x06, 0x16, null, 0x0e, 0x1e, null, null, null, null, 0x0a, null},
+		{BCC, null, null, null, null, null, null, null, null, null, null, null, 0x90},
+		{BCS, null, null, null, null, null, null, null, null, null, null, null, 0xb0},
+		{BEQ, null, null, null, null, null, null, null, null, null, null, null, 0xf0},
+		{BIT, null, 0x24, null, null, 0x2c, null, null, null, null, null, null, null},
+		{BMI, null, null, null, null, null, null, null, null, null, null, null, 0x30},
+		{BPL, null, null, null, null, null, null, null, null, null, null, null, 0x10},
+		{BVC, null, null, null, null, null, null, null, null, null, null, null, 0x50},
+		{BVS, null, null, null, null, null, null, null, null, null, null, null, 0x70},
+		{CLC, null, null, null, null, null, null, null, null, null, null, 0x18, null},
+		{CLD, null, null, null, null, null, null, null, null, null, null, 0xd8, null},
+		{CLI, null, null, null, null, null, null, null, null, null, null, 0x58, null},
+		{CLV, null, null, null, null, null, null, null, null, null, null, 0xb8, null},
+		{CMP, 0xc9, 0xc5, 0xd5, null, 0xcd, 0xdd, 0xd9, null, 0xc1, 0xd1, null, null},
+		{CPY, 0xc0, 0xc4, null, null, 0xcc, null, null, null, null, null, null, null},
+		{DEC, null, 0xc6, 0xd6, null, 0xce, 0xde, null, null, null, null, null, null},
+		{DEY, null, null, null, null, null, null, null, null, null, null, 0x88, null},
+		{EOR, 0x49, 0x45, 0x55, null, 0x4d, 0x5d, 0x59, null, 0x41, 0x51, null, null},
+		{INC, null, 0xe6, 0xf6, null, 0xee, 0xfe, null, null, null, null, null, null},
+		{INY, null, null, null, null, null, null, null, null, null, null, 0xc8, null},
+		{JMP, null, null, null, null, 0x4c, null, null, 0x6c, null, null, null, null},
+		{JSR, null, null, null, null, 0x20, null, null, null, null, null, null, null},
+		{LDY, 0xa0, 0xa4, 0xb4, null, 0xac, 0xbc, null, null, null, null, null, null},
+		{LSR, null, 0x46, 0x56, null, 0x4e, 0x5e, null, null, null, null, 0x4a, null},
+		{NOP, null, null, null, null, null, null, null, null, null, null, 0xea, null},
+		{ORA, 0x09, 0x05, 0x15, null, 0x0d, 0x1d, 0x19, null, 0x01, 0x11, null, null},
+		{PHA, null, null, null, null, null, null, null, null, null, null, 0x48, null},
+		{PHP, null, null, null, null, null, null, null, null, null, null, 0x08, null},
+		{PLA, null, null, null, null, null, null, null, null, null, null, 0x68, null},
+		{PLP, null, null, null, null, null, null, null, null, null, null, 0x28, null},
+		{ROL, null, 0x26, 0x36, null, 0x2e, 0x3e, null, null, null, null, 0x2a, null},
+		{ROR, null, 0x66, 0x76, null, 0x6e, 0x7e, null, null, null, null, 0x6a, null},
+		{RTI, null, null, null, null, null, null, null, null, null, null, 0x40, null},
+		{RTS, null, null, null, null, null, null, null, null, null, null, 0x60, null},
+		{SBC, 0xe9, 0xe5, 0xf5, null, 0xed, 0xfd, 0xf9, null, 0xe1, 0xf1, null, null},
+		{SEC, null, null, null, null, null, null, null, null, null, null, 0x38, null},
+		{SED, null, null, null, null, null, null, null, null, null, null, 0xf8, null},
+		{SEI, null, null, null, null, null, null, null, null, null, null, 0x78, null},
+		{STY, null, 0x84, 0x94, null, 0x8c, null, null, null, null, null, null, null},
+		{TAY, null, null, null, null, null, null, null, null, null, null, 0xa8, null},
+		{TSX, null, null, null, null, null, null, null, null, null, null, 0xba, null},
+		{TXA, null, null, null, null, null, null, null, null, null, null, 0x8a, null},
+		{TXS, null, null, null, null, null, null, null, null, null, null, 0x9a, null},
+		{TYA, null, null, null, null, null, null, null, null, null, null, 0x98, null},
+	*/
 }
