@@ -124,13 +124,13 @@ func (c *Cpu) Step() {
 		c.PC++
 	case MODE_ZPX:
 		v = uint16(c.Mem[c.PC])
-		t := v + uint16(r.X)
+		t := v + uint16(c.X)
 		t &= 0xff
 		b = c.Mem[t]
 		c.PC++
 	case MODE_ZPY:
 		v = uint16(c.Mem[c.PC])
-		t := v + uint16(r.Y)
+		t := v + uint16(c.Y)
 		t &= 0xff
 		b = c.Mem[t]
 		c.PC++
