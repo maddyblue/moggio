@@ -18,7 +18,7 @@ type Instruction struct {
 
 var Optable [0xff]*Op
 
-type Func func(*Cpu, byte, uint16)
+type Func func(*Cpu, byte, uint16, Mode)
 
 type Op struct {
 	Mode
@@ -183,7 +183,7 @@ func (c *Cpu) Step() {
 	}
 	fmt.Printf("PC: 0x%04X, inst: 0x%02X %v %s\n", pc, inst, o, m)
 	_ = pc
-	o.F(c, b, v)
+	o.F(c, b, v, o.Mode)
 }
 
 func (c *Cpu) setNV(v byte) {
@@ -251,9 +251,9 @@ func init() {
 	}
 }
 
-func BRK(c *Cpu, b byte, v uint16) {}
+func BRK(c *Cpu, b byte, v uint16, m Mode) {}
 
-func ADC(c *Cpu, b byte, v uint16) {
+func ADC(c *Cpu, b byte, v uint16, m Mode) {
 	if (c.A^b)&0x80 != 0 {
 		c.CLV()
 	} else {
@@ -278,53 +278,53 @@ func ADC(c *Cpu, b byte, v uint16) {
 	c.setNV(c.A)
 }
 
-func LDA(c *Cpu, b byte, v uint16) {
+func LDA(c *Cpu, b byte, v uint16, m Mode) {
 	c.A = b
 	c.setNV(c.A)
 }
 
-func LDX(c *Cpu, b byte, v uint16) {
+func LDX(c *Cpu, b byte, v uint16, m Mode) {
 	c.X = b
 	c.setNV(c.X)
 }
 
-func LDY(c *Cpu, b byte, v uint16) {
+func LDY(c *Cpu, b byte, v uint16, m Mode) {
 	c.Y = b
 	c.setNV(c.Y)
 }
 
-func STA(c *Cpu, b byte, v uint16) { c.Mem[v] = c.A }
-func STX(c *Cpu, b byte, v uint16) { c.Mem[v] = c.X }
-func STY(c *Cpu, b byte, v uint16) { c.Mem[v] = c.Y }
+func STA(c *Cpu, b byte, v uint16, m Mode) { c.Mem[v] = c.A }
+func STX(c *Cpu, b byte, v uint16, m Mode) { c.Mem[v] = c.X }
+func STY(c *Cpu, b byte, v uint16, m Mode) { c.Mem[v] = c.Y }
 
-func TAX(c *Cpu, b byte, v uint16) {
+func TAX(c *Cpu, b byte, v uint16, m Mode) {
 	c.X = c.A
 	c.setNV(c.X)
 }
 
-func TXA(c *Cpu, b byte, v uint16) {
+func TXA(c *Cpu, b byte, v uint16, m Mode) {
 	c.A = c.X
 	c.setNV(c.A)
 }
 
-func INX(c *Cpu, b byte, v uint16) {
+func INX(c *Cpu, b byte, v uint16, m Mode) {
 	c.X = (c.X + 1) & 0xff
 	c.setNV(c.X)
 }
 
-func INY(c *Cpu, b byte, v uint16) {
+func INY(c *Cpu, b byte, v uint16, m Mode) {
 	c.Y = (c.Y + 1) & 0xff
 	c.setNV(c.Y)
 }
 
-func DEX(c *Cpu, b byte, v uint16) {
+func DEX(c *Cpu, b byte, v uint16, m Mode) {
 	c.X = (c.X - 1) & 0xff
 	c.setNV(c.X)
 }
 
-func CMP(c *Cpu, b byte, v uint16) { c.compare(c.A, b) }
-func CPX(c *Cpu, b byte, v uint16) { c.compare(c.X, b) }
-func CPY(c *Cpu, b byte, v uint16) { c.compare(c.Y, b) }
+func CMP(c *Cpu, b byte, v uint16, m Mode) { c.compare(c.A, b) }
+func CPX(c *Cpu, b byte, v uint16, m Mode) { c.compare(c.X, b) }
+func CPY(c *Cpu, b byte, v uint16, m Mode) { c.compare(c.Y, b) }
 
 func (c *Cpu) compare(r, v byte) {
 	if r >= v {
@@ -335,8 +335,26 @@ func (c *Cpu) compare(r, v byte) {
 	c.setNV(r - v)
 }
 
-func BNE(c *Cpu, b byte, v uint16) {
+func BCC(c *Cpu, b byte, v uint16, m Mode) {
+	if !c.C() {
+		c.jump(uint16(b))
+	}
+}
+
+func BCS(c *Cpu, b byte, v uint16, m Mode) {
+	if c.C() {
+		c.jump(uint16(b))
+	}
+}
+
+func BNE(c *Cpu, b byte, v uint16, m Mode) {
 	if !c.Z() {
+		c.jump(uint16(b))
+	}
+}
+
+func BEQ(c *Cpu, b byte, v uint16, m Mode) {
+	if c.Z() {
 		c.jump(uint16(b))
 	}
 }
@@ -349,15 +367,15 @@ func (c *Cpu) jump(v uint16) {
 	}
 }
 
-func JMP(c *Cpu, b byte, v uint16) {
+func JMP(c *Cpu, b byte, v uint16, m Mode) {
 	c.PC = uint16(v)
 }
 
-func PHA(c *Cpu, b byte, v uint16) {
+func PHA(c *Cpu, b byte, v uint16, m Mode) {
 	c.stackPush(c.A)
 }
 
-func PLA(c *Cpu, b byte, v uint16) {
+func PLA(c *Cpu, b byte, v uint16, m Mode) {
 	c.A = c.stackPop()
 	c.setNV(c.A)
 }
@@ -379,15 +397,52 @@ func (c *Cpu) stackPop() byte {
 	return c.Mem[uint16(c.S)+0x100]
 }
 
-func JSR(c *Cpu, b byte, v uint16) {
+func JSR(c *Cpu, b byte, v uint16, m Mode) {
 	a := c.PC - 1
 	c.stackPush(byte(a >> 8))
 	c.stackPush(byte(a & 0xff))
 	c.PC = v
 }
 
-func RTS(c *Cpu, b byte, v uint16) {
+func RTS(c *Cpu, b byte, v uint16, m Mode) {
 	c.PC = (uint16(c.stackPop()) | uint16(c.stackPop())<<8) + 1
+}
+
+func AND(c *Cpu, b byte, v uint16, m Mode) {
+	c.A &= b
+	c.setNV(c.A)
+}
+
+func ASL(c *Cpu, b byte, v uint16, m Mode) {
+	if m == MODE_SNGL {
+		c.A <<= 1
+		c.setNV(c.A)
+	} else {
+		c.Mem[v] <<= 1
+		c.setNV(c.Mem[v])
+	}
+}
+
+func BIT(c *Cpu, b byte, v uint16, m Mode) {
+	if b&0x80 != 0 {
+		c.P |= 0x80
+	} else {
+		c.P &= 0x7f
+	}
+	if b&0x40 != 0 {
+		c.P |= 0x40
+	} else {
+		c.P &= 0xbf
+	}
+	if c.A&b != 0 {
+		c.P &= 0xfd
+	} else {
+		c.P |= 0x02
+	}
+}
+
+func (c *Cpu) setCarryBit7(b byte) {
+	c.P = c.P&0xfe | b>>7
 }
 
 const null = 0
@@ -416,13 +471,14 @@ var Opcodes = []Instruction{
 	{INY, null, null, null, null, null, null, null, null, null, null, 0xc8, null},
 	{JSR, null, null, null, null, 0x20, null, null, null, null, null, null, null},
 	{RTS, null, null, null, null, null, null, null, null, null, null, 0x60, null},
+	{AND, 0x29, 0x25, 0x35, null, 0x2d, 0x3d, 0x39, null, 0x21, 0x31, null, null},
+	{ASL, null, 0x06, 0x16, null, 0x0e, 0x1e, null, null, null, null, 0x0a, null},
+	{BCC, null, null, null, null, null, null, null, null, null, null, null, 0x90},
+	{BCS, null, null, null, null, null, null, null, null, null, null, null, 0xb0},
+	{BEQ, null, null, null, null, null, null, null, null, null, null, null, 0xf0},
+	{BIT, null, 0x24, null, null, 0x2c, null, null, null, null, null, null, null},
+
 	/*
-		{AND, 0x29, 0x25, 0x35, null, 0x2d, 0x3d, 0x39, null, 0x21, 0x31, null, null},
-		{ASL, null, 0x06, 0x16, null, 0x0e, 0x1e, null, null, null, null, 0x0a, null},
-		{BCC, null, null, null, null, null, null, null, null, null, null, null, 0x90},
-		{BCS, null, null, null, null, null, null, null, null, null, null, null, 0xb0},
-		{BEQ, null, null, null, null, null, null, null, null, null, null, null, 0xf0},
-		{BIT, null, 0x24, null, null, 0x2c, null, null, null, null, null, null, null},
 		{BMI, null, null, null, null, null, null, null, null, null, null, null, 0x30},
 		{BPL, null, null, null, null, null, null, null, null, null, null, null, 0x10},
 		{BVC, null, null, null, null, null, null, null, null, null, null, null, 0x50},
