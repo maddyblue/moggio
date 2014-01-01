@@ -39,6 +39,10 @@ func (m Mode) Format() string {
 		return "#$%02[1]x"
 	case MODE_ZP:
 		return "$%02[2]x"
+	case MODE_ZPX:
+		return "$%02[2]x,X"
+	case MODE_ZPY:
+		return "$%02[2]x,Y"
 	case MODE_ABS:
 		return "$%04[2]x"
 	case MODE_ABSX:
@@ -117,6 +121,18 @@ func (c *Cpu) Step() {
 	case MODE_ZP:
 		v = uint16(c.Mem[c.PC])
 		b = c.Mem[v]
+		c.PC++
+	case MODE_ZPX:
+		v = uint16(c.Mem[c.PC])
+		t := v + uint16(r.X)
+		t &= 0xff
+		b = c.Mem[t]
+		c.PC++
+	case MODE_ZPY:
+		v = uint16(c.Mem[c.PC])
+		t := v + uint16(r.Y)
+		t &= 0xff
+		b = c.Mem[t]
 		c.PC++
 	case MODE_ABS:
 		v = uint16(c.Mem[c.PC])
