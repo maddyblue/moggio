@@ -45,6 +45,8 @@ func (m Mode) Format() string {
 		return "($%04[2]X)"
 	case MODE_INDX:
 		return "($%02[2]X,X)"
+	case MODE_INDY:
+		return "($%02[2]X),Y"
 	case MODE_BRA:
 		return "$%02[1]x"
 	default:
@@ -130,6 +132,11 @@ func (c *Cpu) Step() {
 		t := v + uint16(c.X)
 		t &= 0xff
 		t = uint16(c.Mem[t]) + uint16(c.Mem[t+1])<<8
+		b = c.Mem[t]
+	case MODE_INDY:
+		v = uint16(c.Mem[c.PC])
+		c.PC++
+		t := uint16(c.Mem[v]) + uint16(c.Mem[v+1])<<8 + uint16(c.Y)
 		b = c.Mem[t]
 	case MODE_SNGL:
 		// nothing
