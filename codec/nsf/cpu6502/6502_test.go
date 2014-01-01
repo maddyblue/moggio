@@ -2,6 +2,7 @@ package cpu6502
 
 import (
 	"fmt"
+	"io/ioutil"
 	"testing"
 )
 
@@ -175,6 +176,25 @@ func Test6502(t *testing.T) {
 			c.PC != test.End.PC ||
 			c.P != test.End.P {
 			t.Fatalf("bad cpu state %s, got:\n%sexpected:\n%s", test.Name, c, &test.End)
+		}
+	}
+}
+
+// Download from https://github.com/Klaus2m5/6502_65C02_functional_tests/blob/master/bin_files/6502_functional_test.bin
+// GPL, so not included here.
+func TestFunctional(t *testing.T) {
+	b, err := ioutil.ReadFile("6502_functional_test.bin")
+	if err != nil {
+		t.Fatal(err)
+	}
+	c := New()
+	c.PC = 0x0400
+	copy(c.Mem[:], b)
+	for !c.Halt {
+		pc := c.PC
+		c.Step()
+		if c.PC == pc {
+			t.Fatal()
 		}
 	}
 }
