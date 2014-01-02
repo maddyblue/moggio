@@ -236,6 +236,7 @@ func (c *Cpu) String() string {
 	s += fmt.Sprintf(f, "X", c.X)
 	s += fmt.Sprintf(f, "Y", c.Y)
 	s += fmt.Sprintf(f, "P", c.P)
+	s += fmt.Sprintf(f, "S", c.S)
 	s += fmt.Sprintf(f, "PC", c.PC)
 	return s
 }
