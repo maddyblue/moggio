@@ -199,7 +199,9 @@ func TestFunctional(t *testing.T) {
 		pc := c.PC
 		c.Step()
 		if c.PC == pc {
-			t.Fatal()
+			t.Fatalf("repeated PC: 0x%04X", pc)
+		} else if c.PC <= 0x1ff {
+			t.Fatalf("low PC: 0x%04X", c.PC)
 		}
 	}
 }
