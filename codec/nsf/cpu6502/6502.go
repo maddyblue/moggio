@@ -351,9 +351,17 @@ func LDY(c *Cpu, b byte, v uint16, m Mode) {
 	c.setNV(c.Y)
 }
 
-func STA(c *Cpu, b byte, v uint16, m Mode) { c.M.Write(v, c.A) }
-func STX(c *Cpu, b byte, v uint16, m Mode) { c.M.Write(v, c.X) }
-func STY(c *Cpu, b byte, v uint16, m Mode) { c.M.Write(v, c.Y) }
+func STA(c *Cpu, b byte, v uint16, m Mode) {
+	c.M.Write(v, c.A)
+}
+
+func STX(c *Cpu, b byte, v uint16, m Mode) {
+	c.M.Write(v, c.X)
+}
+
+func STY(c *Cpu, b byte, v uint16, m Mode) {
+	c.M.Write(v, c.Y)
+}
 
 func TAX(c *Cpu, b byte, v uint16, m Mode) {
 	c.X = c.A
