@@ -111,7 +111,6 @@ func (c *Cpu) Step() {
 	c.PC++
 	o := Optable[inst]
 	if o == nil {
-		panic(fmt.Sprintf("bad opcode 0x%02x", inst))
 		return
 	}
 	var b byte
