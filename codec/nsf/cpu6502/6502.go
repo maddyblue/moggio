@@ -707,7 +707,7 @@ func PHP(c *Cpu, b byte, v uint16, m Mode) {
 }
 
 func PLP(c *Cpu, b byte, v uint16, m Mode) {
-	c.P = c.stackPop()
+	c.P = c.stackPop() | 0x30
 }
 
 func RTI(c *Cpu, b byte, v uint16, m Mode) {
