@@ -169,7 +169,7 @@ var CpuTests = []CpuTest{
 
 func Test6502(t *testing.T) {
 	for _, test := range CpuTests {
-		r := make(Ram, 0xffff)
+		r := make(Ram, 0xffff+1)
 		c := New(r)
 		copy(r[c.PC:], test.Mem)
 		c.Run()
@@ -191,7 +191,7 @@ func TestFunctional(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	r := make(Ram, 0xffff)
+	r := make(Ram, 0xffff+1)
 	copy(r[:], b)
 	c := New(r)
 	c.PC = 0x0400
