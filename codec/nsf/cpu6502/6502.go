@@ -75,6 +75,7 @@ const (
 	MODE_INDY
 	MODE_SNGL
 	MODE_BRA
+	IRQ = 0xfffe
 )
 
 type Memory interface {
@@ -272,7 +273,11 @@ func init() {
 }
 
 func BRK(c *Cpu, b byte, v uint16, m Mode) {
-	c.Halt = true
+	c.stackPush(byte(c.PC >> 8))
+	c.stackPush(byte(c.PC & 0xff))
+	c.stackPush(c.P | P_B)
+	c.P |= P_I
+	c.PC = uint16(c.M.Read(IRQ)) + uint16(c.M.Read(IRQ+1)<<8)
 }
 
 func NOP(c *Cpu, b byte, v uint16, m Mode) {}
