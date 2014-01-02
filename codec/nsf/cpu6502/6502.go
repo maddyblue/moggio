@@ -274,7 +274,7 @@ func init() {
 }
 
 func BRK(c *Cpu, b byte, v uint16, m Mode) {
-	a := uint16(c.M.Read(IRQ)) + uint16(c.M.Read(IRQ+1)<<8)
+	a := uint16(c.M.Read(IRQ)) + uint16(c.M.Read(IRQ+1))<<8
 	if a == 0 {
 		c.Halt = true
 		return
