@@ -115,7 +115,7 @@ func (c *Cpu) Step() {
 		return
 	}
 	var b byte
-	var v uint16
+	var v, t uint16
 	switch o.Mode {
 	case MODE_IMM, MODE_BRA:
 		b = c.M.Read(c.PC)
@@ -126,13 +126,13 @@ func (c *Cpu) Step() {
 		c.PC++
 	case MODE_ZPX:
 		v = uint16(c.M.Read(c.PC))
-		t := v + uint16(c.X)
+		t = v + uint16(c.X)
 		t &= 0xff
 		b = c.M.Read(t)
 		c.PC++
 	case MODE_ZPY:
 		v = uint16(c.M.Read(c.PC))
-		t := v + uint16(c.Y)
+		t = v + uint16(c.Y)
 		t &= 0xff
 		b = c.M.Read(t)
 		c.PC++
@@ -147,13 +147,15 @@ func (c *Cpu) Step() {
 		c.PC++
 		v |= uint16(c.M.Read(c.PC)) << 8
 		c.PC++
-		b = c.M.Read(v + uint16(c.X))
+		t = v + uint16(c.X)
+		b = c.M.Read(t)
 	case MODE_ABSY:
 		v = uint16(c.M.Read(c.PC))
 		c.PC++
 		v |= uint16(c.M.Read(c.PC)) << 8
 		c.PC++
-		b = c.M.Read(v + uint16(c.Y))
+		t = v + uint16(c.Y)
+		b = c.M.Read(t)
 	case MODE_IND:
 		v = uint16(c.M.Read(c.PC))
 		c.PC++
@@ -163,14 +165,14 @@ func (c *Cpu) Step() {
 	case MODE_INDX:
 		v = uint16(c.M.Read(c.PC))
 		c.PC++
-		t := v + uint16(c.X)
+		t = v + uint16(c.X)
 		t &= 0xff
 		t = uint16(c.M.Read(t)) + uint16(c.M.Read(t+1))<<8
 		b = c.M.Read(t)
 	case MODE_INDY:
 		v = uint16(c.M.Read(c.PC))
 		c.PC++
-		t := uint16(c.M.Read(v)) + uint16(c.M.Read(v+1))<<8 + uint16(c.Y)
+		t = uint16(c.M.Read(v)) + uint16(c.M.Read(v+1))<<8 + uint16(c.Y)
 		b = c.M.Read(t)
 	case MODE_SNGL:
 		// nothing
