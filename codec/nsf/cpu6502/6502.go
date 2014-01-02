@@ -84,18 +84,54 @@ type Memory interface {
 }
 
 type Cpu struct {
+	Register
+	M    Memory
+	Halt bool
+
+	// If non nil, will record registers on each step.
+	L  []Log
+	LI int // Log index
+}
+
+func (c *Cpu) StringLog() string {
+	s := ""
+	o := c.LI
+	for i := range c.L {
+		li := (i + o) % len(c.L)
+		s += fmt.Sprintf("\n%v", c.L[li])
+	}
+	return s
+}
+
+type Register struct {
 	A, X, Y, S, P byte
 	PC            uint16
-	M             Memory
-	Halt          bool
+}
+
+type Log struct {
+	R    Register
+	O    *Op
+	I    byte // instruction
+	V, T uint16
+	B    byte
+}
+
+func (l Log) String() string {
+	m := l.O.Mode.Format()
+	if m != "" {
+		m = fmt.Sprintf(m, l.B, l.V)
+	}
+	return fmt.Sprintf("PC: 0x%04X, inst: 0x%02X %3v %-10s v: 0x%04X b: 0x%02X t: 0x%04X p: 0b%08b s: 0x%02X", l.R.PC, l.I, l.O, m, l.V, l.B, l.T, l.R.P, l.R.S)
 }
 
 func New(m Memory) *Cpu {
 	c := Cpu{
-		S:  0xff,
-		P:  0x30,
-		PC: 0x0600,
-		M:  m,
+		Register: Register{
+			S:  0xff,
+			P:  0x30,
+			PC: 0x0600,
+		},
+		M: m,
 	}
 	return &c
 }
@@ -179,15 +215,20 @@ func (c *Cpu) Step() {
 	default:
 		panic("6502: bad address mode")
 	}
-	/*
-		m := o.Mode.Format()
-		if m != "" {
-			m = fmt.Sprintf(m, b, v)
-		}
-		fmt.Printf("PC: 0x%04X, inst: 0x%02X %3v %-10s v: 0x%04X b: 0x%02X t: 0x%04X \n", pc, inst, o, m, v, b, t)
-		//*/
 	_ = pc
 	o.F(c, b, v, o.Mode)
+	if c.L != nil {
+		c.L[c.LI] = Log{
+			R: c.Register,
+			O: o,
+			I: inst,
+			V: v,
+			T: t,
+			B: b,
+		}
+		c.LI++
+		c.LI %= len(c.L)
+	}
 }
 
 func (c *Cpu) setNV(v byte) {
@@ -231,7 +272,7 @@ const (
 
 func (c *Cpu) String() string {
 	const f = "%2s: %5d 0x%04[2]X %016[2]b\n"
-	s := ""
+	s := "\n"
 	s += fmt.Sprintf(f, "A", c.A)
 	s += fmt.Sprintf(f, "X", c.X)
 	s += fmt.Sprintf(f, "Y", c.Y)
