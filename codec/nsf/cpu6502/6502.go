@@ -549,18 +549,11 @@ func PLA(c *Cpu, b byte, v uint16, m Mode) {
 
 func (c *Cpu) stackPush(b byte) {
 	c.M.Write(uint16(c.S)+0x100, b)
-	if c.S == 0 {
-		// wrap
-		c.S = 0xff
-	} else {
-		c.S--
-	}
+	c.S = (c.S - 1) & 0xff
 }
 
 func (c *Cpu) stackPop() byte {
-	if c.S < 0xff {
-		c.S++
-	}
+	c.S = (c.S + 1) & 0xff
 	return c.M.Read(uint16(c.S) + 0x100)
 }
 
