@@ -16,7 +16,7 @@ type Instruction struct {
 	SNGL, BRA       byte
 }
 
-var Optable [0xff]*Op
+var Optable [0xff + 1]*Op
 
 type Func func(*Cpu, byte, uint16, Mode)
 
