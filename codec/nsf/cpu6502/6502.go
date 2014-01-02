@@ -85,16 +85,16 @@ type Memory interface {
 type Cpu struct {
 	A, X, Y, S, P byte
 	PC            uint16
-	Mem           Memory
+	M             Memory
 	Halt          bool
 }
 
 func New(m Memory) *Cpu {
 	c := Cpu{
-		S:   0xff,
-		P:   0x30,
-		PC:  0x0600,
-		Mem: m,
+		S:  0xff,
+		P:  0x30,
+		PC: 0x0600,
+		M:  m,
 	}
 	return &c
 }
@@ -107,7 +107,7 @@ func (c *Cpu) Run() {
 
 func (c *Cpu) Step() {
 	pc := c.PC
-	inst := c.Mem.Read(c.PC)
+	inst := c.M.Read(c.PC)
 	c.PC++
 	if inst == 0 {
 		c.Halt = true
@@ -122,62 +122,62 @@ func (c *Cpu) Step() {
 	var v uint16
 	switch o.Mode {
 	case MODE_IMM, MODE_BRA:
-		b = c.Mem.Read(c.PC)
+		b = c.M.Read(c.PC)
 		c.PC++
 	case MODE_ZP:
-		v = uint16(c.Mem.Read(c.PC))
-		b = c.Mem.Read(v)
+		v = uint16(c.M.Read(c.PC))
+		b = c.M.Read(v)
 		c.PC++
 	case MODE_ZPX:
-		v = uint16(c.Mem.Read(c.PC))
+		v = uint16(c.M.Read(c.PC))
 		t := v + uint16(c.X)
 		t &= 0xff
-		b = c.Mem.Read(t)
+		b = c.M.Read(t)
 		c.PC++
 	case MODE_ZPY:
-		v = uint16(c.Mem.Read(c.PC))
+		v = uint16(c.M.Read(c.PC))
 		t := v + uint16(c.Y)
 		t &= 0xff
-		b = c.Mem.Read(t)
+		b = c.M.Read(t)
 		c.PC++
 	case MODE_ABS:
-		v = uint16(c.Mem.Read(c.PC))
+		v = uint16(c.M.Read(c.PC))
 		c.PC++
-		v |= uint16(c.Mem.Read(c.PC)) << 8
+		v |= uint16(c.M.Read(c.PC)) << 8
 		c.PC++
-		b = c.Mem.Read(v)
+		b = c.M.Read(v)
 	case MODE_ABSX:
-		v = uint16(c.Mem.Read(c.PC))
+		v = uint16(c.M.Read(c.PC))
 		c.PC++
-		v |= uint16(c.Mem.Read(c.PC)) << 8
+		v |= uint16(c.M.Read(c.PC)) << 8
 		c.PC++
 		v += uint16(c.X)
-		b = c.Mem.Read(v)
+		b = c.M.Read(v)
 	case MODE_ABSY:
-		v = uint16(c.Mem.Read(c.PC))
+		v = uint16(c.M.Read(c.PC))
 		c.PC++
-		v |= uint16(c.Mem.Read(c.PC)) << 8
+		v |= uint16(c.M.Read(c.PC)) << 8
 		c.PC++
 		v += uint16(c.Y)
-		b = c.Mem.Read(v)
+		b = c.M.Read(v)
 	case MODE_IND:
-		v = uint16(c.Mem.Read(c.PC))
+		v = uint16(c.M.Read(c.PC))
 		c.PC++
-		v |= uint16(c.Mem.Read(c.PC)) << 8
-		v = uint16(c.Mem.Read(v)) + uint16(c.Mem.Read(v+1))<<8
+		v |= uint16(c.M.Read(c.PC)) << 8
+		v = uint16(c.M.Read(v)) + uint16(c.M.Read(v+1))<<8
 		c.PC++
 	case MODE_INDX:
-		v = uint16(c.Mem.Read(c.PC))
+		v = uint16(c.M.Read(c.PC))
 		c.PC++
 		t := v + uint16(c.X)
 		t &= 0xff
-		t = uint16(c.Mem.Read(t)) + uint16(c.Mem.Read(t+1))<<8
-		b = c.Mem.Read(t)
+		t = uint16(c.M.Read(t)) + uint16(c.M.Read(t+1))<<8
+		b = c.M.Read(t)
 	case MODE_INDY:
-		v = uint16(c.Mem.Read(c.PC))
+		v = uint16(c.M.Read(c.PC))
 		c.PC++
-		t := uint16(c.Mem.Read(v)) + uint16(c.Mem.Read(v+1))<<8 + uint16(c.Y)
-		b = c.Mem.Read(t)
+		t := uint16(c.M.Read(v)) + uint16(c.M.Read(v+1))<<8 + uint16(c.Y)
+		b = c.M.Read(t)
 	case MODE_SNGL:
 		// nothing
 	default:
@@ -340,9 +340,9 @@ func LDY(c *Cpu, b byte, v uint16, m Mode) {
 	c.setNV(c.Y)
 }
 
-func STA(c *Cpu, b byte, v uint16, m Mode) { c.Mem.Write(v, c.A) }
-func STX(c *Cpu, b byte, v uint16, m Mode) { c.Mem.Write(v, c.X) }
-func STY(c *Cpu, b byte, v uint16, m Mode) { c.Mem.Write(v, c.Y) }
+func STA(c *Cpu, b byte, v uint16, m Mode) { c.M.Write(v, c.A) }
+func STX(c *Cpu, b byte, v uint16, m Mode) { c.M.Write(v, c.X) }
+func STY(c *Cpu, b byte, v uint16, m Mode) { c.M.Write(v, c.Y) }
 
 func TAX(c *Cpu, b byte, v uint16, m Mode) {
 	c.X = c.A
@@ -384,8 +384,8 @@ func INY(c *Cpu, b byte, v uint16, m Mode) {
 }
 
 func INC(c *Cpu, b byte, v uint16, m Mode) {
-	c.Mem.Write(v, (c.Mem.Read(v)+1)&0xff)
-	c.setNV(c.Mem.Read(v))
+	c.M.Write(v, (c.M.Read(v)+1)&0xff)
+	c.setNV(c.M.Read(v))
 }
 
 func DEX(c *Cpu, b byte, v uint16, m Mode) {
@@ -399,8 +399,8 @@ func DEY(c *Cpu, b byte, v uint16, m Mode) {
 }
 
 func DEC(c *Cpu, b byte, v uint16, m Mode) {
-	c.Mem.Write(v, (c.Mem.Read(v)-1)&0xff)
-	c.setNV(c.Mem.Read(v))
+	c.M.Write(v, (c.M.Read(v)-1)&0xff)
+	c.setNV(c.M.Read(v))
 }
 
 func CMP(c *Cpu, b byte, v uint16, m Mode) { c.compare(c.A, b) }
@@ -486,7 +486,7 @@ func PLA(c *Cpu, b byte, v uint16, m Mode) {
 }
 
 func (c *Cpu) stackPush(b byte) {
-	c.Mem.Write(uint16(c.S)+0x100, b)
+	c.M.Write(uint16(c.S)+0x100, b)
 	if c.S == 0 {
 		// wrap
 		c.S = 0xff
@@ -499,7 +499,7 @@ func (c *Cpu) stackPop() byte {
 	if c.S < 0xff {
 		c.S++
 	}
-	return c.Mem.Read(uint16(c.S) + 0x100)
+	return c.M.Read(uint16(c.S) + 0x100)
 }
 
 func JSR(c *Cpu, b byte, v uint16, m Mode) {
@@ -529,9 +529,9 @@ func ASL(c *Cpu, b byte, v uint16, m Mode) {
 		c.A <<= 1
 		c.setNV(c.A)
 	} else {
-		c.setCarryBit(c.Mem.Read(v), 7)
-		c.Mem.Write(v, c.Mem.Read(v)<<1)
-		c.setNV(c.Mem.Read(v))
+		c.setCarryBit(c.M.Read(v), 7)
+		c.M.Write(v, c.M.Read(v)<<1)
+		c.setNV(c.M.Read(v))
 	}
 }
 
@@ -546,10 +546,10 @@ func ROL(c *Cpu, b byte, v uint16, m Mode) {
 		c.A |= s
 		c.setNV(c.A)
 	} else {
-		c.setCarryBit(c.Mem.Read(v), 7)
-		c.Mem.Write(v, c.Mem.Read(v)<<1)
-		c.Mem.Write(v, c.Mem.Read(v)|s)
-		c.setNV(c.Mem.Read(v))
+		c.setCarryBit(c.M.Read(v), 7)
+		c.M.Write(v, c.M.Read(v)<<1)
+		c.M.Write(v, c.M.Read(v)|s)
+		c.setNV(c.M.Read(v))
 	}
 }
 
@@ -558,9 +558,9 @@ func LSR(c *Cpu, b byte, v uint16, m Mode) {
 		c.A >>= 1
 		c.setNV(c.A)
 	} else {
-		c.setCarryBit(c.Mem.Read(v), 0)
-		c.Mem.Write(v, c.Mem.Read(v)>>1)
-		c.setNV(c.Mem.Read(v))
+		c.setCarryBit(c.M.Read(v), 0)
+		c.M.Write(v, c.M.Read(v)>>1)
+		c.setNV(c.M.Read(v))
 	}
 }
 
@@ -574,10 +574,10 @@ func ROR(c *Cpu, b byte, v uint16, m Mode) {
 		c.A |= s
 		c.setNV(c.A)
 	} else {
-		c.setCarryBit(c.Mem.Read(v), 0)
-		c.Mem.Write(v, c.Mem.Read(v)>>1)
-		c.Mem.Write(v, c.Mem.Read(v)|s)
-		c.setNV(c.Mem.Read(v))
+		c.setCarryBit(c.M.Read(v), 0)
+		c.M.Write(v, c.M.Read(v)>>1)
+		c.M.Write(v, c.M.Read(v)|s)
+		c.setNV(c.M.Read(v))
 	}
 }
 
@@ -650,21 +650,21 @@ func RTI(c *Cpu, b byte, v uint16, m Mode) {
 }
 
 func TRB(c *Cpu, b byte, v uint16, m Mode) {
-	if c.A&c.Mem.Read(v) != 0 {
+	if c.A&c.M.Read(v) != 0 {
 		c.P &= ^P_Z
 	} else {
 		c.P |= P_Z
 	}
-	c.Mem.Write(v, c.Mem.Read(v) & ^c.A)
+	c.M.Write(v, c.M.Read(v) & ^c.A)
 }
 
 func TSB(c *Cpu, b byte, v uint16, m Mode) {
-	if c.A&c.Mem.Read(v) != 0 {
+	if c.A&c.M.Read(v) != 0 {
 		c.P &= ^P_Z
 	} else {
 		c.P |= P_Z
 	}
-	c.Mem.Write(v, c.Mem.Read(v)|c.A)
+	c.M.Write(v, c.M.Read(v)|c.A)
 }
 
 const null = 0
