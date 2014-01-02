@@ -12,6 +12,11 @@ type CpuTest struct {
 	End  Cpu
 }
 
+type Ram []byte
+
+func (r Ram) Read(v uint16) byte     { return r[v] }
+func (r Ram) Write(v uint16, b byte) { r[v] = b }
+
 var CpuTests = []CpuTest{
 	{
 		Name: "load, set",
@@ -165,9 +170,10 @@ var CpuTests = []CpuTest{
 
 func Test6502(t *testing.T) {
 	for _, test := range CpuTests {
-		c := New()
-		copy(c.Mem[c.PC:], test.Mem)
 		fmt.Println(test.Name)
+		r := make(Ram, 0xffff)
+		c := New(r)
+		copy(r[c.PC:], test.Mem)
 		c.Run()
 		if c.A != test.End.A ||
 			c.X != test.End.X ||
@@ -187,9 +193,10 @@ func TestFunctional(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	c := New()
+	r := make(Ram, 0xffff)
+	copy(r[:], b)
+	c := New(r)
 	c.PC = 0x0400
-	copy(c.Mem[:], b)
 	for !c.Halt {
 		pc := c.PC
 		c.Step()
