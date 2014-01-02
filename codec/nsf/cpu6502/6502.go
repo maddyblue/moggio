@@ -192,14 +192,14 @@ func (c *Cpu) Step() {
 
 func (c *Cpu) setNV(v byte) {
 	if v != 0 {
-		c.P &= 0xfd
+		c.P &= ^P_Z
 	} else {
-		c.P |= 0x02
+		c.P |= P_Z
 	}
 	if v&0x80 != 0 {
-		c.P |= 0x80
+		c.P |= P_N
 	} else {
-		c.P &= 0x7f
+		c.P &= ^P_N
 	}
 }
 
@@ -596,19 +596,19 @@ func ROR(c *Cpu, b byte, v uint16, m Mode) {
 
 func BIT(c *Cpu, b byte, v uint16, m Mode) {
 	if b&0x80 != 0 {
-		c.P |= 0x80
+		c.P |= P_N
 	} else {
-		c.P &= 0x7f
+		c.P &= ^P_N
 	}
 	if b&0x40 != 0 {
-		c.P |= 0x40
+		c.P |= P_V
 	} else {
-		c.P &= 0xbf
+		c.P &= ^P_V
 	}
 	if c.A&b != 0 {
-		c.P &= 0xfd
+		c.P &= ^P_Z
 	} else {
-		c.P |= 0x02
+		c.P |= P_Z
 	}
 }
 
