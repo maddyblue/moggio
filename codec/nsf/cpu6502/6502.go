@@ -274,11 +274,16 @@ func init() {
 }
 
 func BRK(c *Cpu, b byte, v uint16, m Mode) {
+	a := uint16(c.M.Read(IRQ)) + uint16(c.M.Read(IRQ+1)<<8)
+	if a == 0 {
+		c.Halt = true
+		return
+	}
 	c.stackPush(byte(c.PC >> 8))
 	c.stackPush(byte(c.PC & 0xff))
 	c.stackPush(c.P | P_B)
+	c.PC = a
 	c.P |= P_I
-	c.PC = uint16(c.M.Read(IRQ)) + uint16(c.M.Read(IRQ+1)<<8)
 }
 
 func NOP(c *Cpu, b byte, v uint16, m Mode) {}
