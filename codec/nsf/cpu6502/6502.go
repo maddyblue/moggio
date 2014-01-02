@@ -641,7 +641,11 @@ func CLV(c *Cpu, b byte, v uint16, m Mode) {
 }
 
 func (c *Cpu) setCarryBit(b byte, i uint) {
-	c.P = c.P&0xfe | b>>i
+	if b>>i&0x01 != 0 {
+		c.P |= P_C
+	} else {
+		c.P &= ^P_C
+	}
 }
 
 func EOR(c *Cpu, b byte, v uint16, m Mode) {
