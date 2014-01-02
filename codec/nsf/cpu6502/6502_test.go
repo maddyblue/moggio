@@ -196,17 +196,20 @@ func TestFunctional(t *testing.T) {
 	c := New(r)
 	c.L = make([]Log, 20)
 	c.PC = 0x0400
+	i := 0
 	for !c.Halt {
 		pc := c.PC
 		c.Step()
 		if c.PC == pc {
 			t.Log(c.StringLog())
 			t.Log(c.String())
+			t.Log(i, "instructions ran")
 			t.Fatalf("repeated PC: 0x%04X", pc)
 		} else if c.PC <= 0x1ff {
 			t.Log(c.StringLog())
 			t.Log(c.String())
 			t.Fatalf("low PC: 0x%04X", c.PC)
 		}
+		i++
 	}
 }
