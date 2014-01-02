@@ -185,7 +185,7 @@ func (c *Cpu) Step() {
 			m = fmt.Sprintf(m, b, v)
 		}
 		fmt.Printf("PC: 0x%04X, inst: 0x%02X %v %s\n", pc, inst, o, m)
-	*/
+		//*/
 	_ = pc
 	o.F(c, b, v, o.Mode)
 }
