@@ -147,15 +147,13 @@ func (c *Cpu) Step() {
 		c.PC++
 		v |= uint16(c.M.Read(c.PC)) << 8
 		c.PC++
-		v += uint16(c.X)
-		b = c.M.Read(v)
+		b = c.M.Read(v + uint16(c.X))
 	case MODE_ABSY:
 		v = uint16(c.M.Read(c.PC))
 		c.PC++
 		v |= uint16(c.M.Read(c.PC)) << 8
 		c.PC++
-		v += uint16(c.Y)
-		b = c.M.Read(v)
+		b = c.M.Read(v + uint16(c.Y))
 	case MODE_IND:
 		v = uint16(c.M.Read(c.PC))
 		c.PC++
