@@ -109,10 +109,6 @@ func (c *Cpu) Step() {
 	pc := c.PC
 	inst := c.M.Read(c.PC)
 	c.PC++
-	if inst == 0 {
-		c.Halt = true
-		return
-	}
 	o := Optable[inst]
 	if o == nil {
 		panic(fmt.Sprintf("bad opcode 0x%02x", inst))
@@ -270,9 +266,16 @@ func init() {
 		populate(i, MODE_SNGL, i.SNGL)
 		populate(i, MODE_BRA, i.BRA)
 	}
+	Optable[0] = &Op{
+		F:    BRK,
+		Mode: MODE_BRA,
+	}
 }
 
-func BRK(c *Cpu, b byte, v uint16, m Mode) {}
+func BRK(c *Cpu, b byte, v uint16, m Mode) {
+	c.Halt = true
+}
+
 func NOP(c *Cpu, b byte, v uint16, m Mode) {}
 
 func ADC(c *Cpu, b byte, v uint16, m Mode) {
@@ -681,7 +684,7 @@ var Opcodes = []Instruction{
 	{BMI, null, null, null, null, null, null, null, null, null, null, null, 0x30},
 	{BNE, null, null, null, null, null, null, null, null, null, null, null, 0xd0},
 	{BPL, null, null, null, null, null, null, null, null, null, null, null, 0x10},
-	{BRK, null, null, null, null, null, null, null, null, null, null, 0x00, null},
+	{BRK, null, null, null, null, null, null, null, null, null, null, null, 0x00},
 	{BVC, null, null, null, null, null, null, null, null, null, null, null, 0x50},
 	{BVS, null, null, null, null, null, null, null, null, null, null, null, 0x70},
 	{CLC, null, null, null, null, null, null, null, null, null, null, 0x18, null},
