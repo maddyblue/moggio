@@ -1,7 +1,6 @@
 package cpu6502
 
 import (
-	"fmt"
 	"io/ioutil"
 	"testing"
 )
@@ -170,7 +169,6 @@ var CpuTests = []CpuTest{
 
 func Test6502(t *testing.T) {
 	for _, test := range CpuTests {
-		fmt.Println(test.Name)
 		r := make(Ram, 0xffff)
 		c := New(r)
 		copy(r[c.PC:], test.Mem)
