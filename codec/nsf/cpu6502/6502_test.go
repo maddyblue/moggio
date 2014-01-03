@@ -198,6 +198,9 @@ func TestFunctional(t *testing.T) {
 	c.PC = 0x0400
 	i := 0
 	for !c.Halt {
+		if c.PC == 0x3399 {
+			break
+		}
 		pc := c.PC
 		c.Step()
 		if c.PC == pc {
