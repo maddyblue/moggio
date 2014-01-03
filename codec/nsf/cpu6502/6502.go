@@ -1,3 +1,4 @@
+// Package cpu6502 implements a 6502 emulator.
 package cpu6502
 
 import (
