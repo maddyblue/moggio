@@ -121,7 +121,7 @@ func (l Log) String() string {
 	if m != "" {
 		m = fmt.Sprintf(m, l.B, l.V)
 	}
-	return fmt.Sprintf("PC: 0x%04X, inst: 0x%02X %3v %-10s v: 0x%04X b: 0x%02X t: 0x%04X p: 0b%08b s: 0x%02X", l.R.PC, l.I, l.O, m, l.V, l.B, l.T, l.R.P, l.R.S)
+	return fmt.Sprintf("%04X : %02X %3v %-8s v: %04X b: %02X t: %04X p: %08b s: %02X a: %02X x: %02X y: %02X", l.R.PC, l.I, l.O, m, l.V, l.B, l.T, l.R.P, l.R.S, l.R.A, l.R.X, l.R.Y)
 }
 
 func New(m Memory) *Cpu {
