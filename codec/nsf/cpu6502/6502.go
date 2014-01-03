@@ -218,8 +218,10 @@ func (c *Cpu) Step() {
 	_ = pc
 	o.F(c, b, v, o.Mode)
 	if c.L != nil {
+		r := c.Register
+		r.PC = pc
 		c.L[c.LI] = Log{
-			R: c.Register,
+			R: r,
 			O: o,
 			I: inst,
 			V: v,
