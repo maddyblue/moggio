@@ -17,4 +17,4 @@ An MPD-compatible audio player written in Go.
 1. Pure Go except for sound driver interfaces.
 1. Runs on Windows, Linux, Mac OSX.
 
-[![Analytics](https://ga-beacon.appspot.com/UA-46765694-1/mog?pixel)](https://github.com/mjibson/goread)
+![Analytics](https://ga-beacon.appspot.com/UA-46765694-1/mog?pixel)
