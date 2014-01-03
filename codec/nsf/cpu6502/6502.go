@@ -40,21 +40,21 @@ func (m Mode) Format() string {
 	case MODE_ZP:
 		return "$%02[2]x"
 	case MODE_ZPX:
-		return "$%02[2]x,X"
+		return "$%02[3]x,X"
 	case MODE_ZPY:
-		return "$%02[2]x,Y"
+		return "$%02[3]x,Y"
 	case MODE_ABS:
 		return "$%04[2]x"
 	case MODE_ABSX:
-		return "$%04[2]x,X"
+		return "$%04[3]x,X"
 	case MODE_ABSY:
-		return "$%04[2]x,Y"
+		return "$%04[3]x,Y"
 	case MODE_IND:
 		return "($%04[2]X)"
 	case MODE_INDX:
-		return "($%02[2]X,X)"
+		return "($%02[3]X,X)"
 	case MODE_INDY:
-		return "($%02[2]X),Y"
+		return "($%02[3]X),Y"
 	case MODE_BRA:
 		return "$%02[1]x"
 	default:
@@ -119,7 +119,7 @@ type Log struct {
 func (l Log) String() string {
 	m := l.O.Mode.Format()
 	if m != "" {
-		m = fmt.Sprintf(m, l.B, l.V)
+		m = fmt.Sprintf(m, l.B, l.V, l.T)
 	}
 	return fmt.Sprintf("%04X : %02X %3v %-8s v: %04X b: %02X t: %04X p: %08b s: %02X a: %02X x: %02X y: %02X", l.R.PC, l.I, l.O, m, l.V, l.B, l.T, l.R.P, l.R.S, l.R.A, l.R.X, l.R.Y)
 }
@@ -161,16 +161,16 @@ func (c *Cpu) Step() {
 		b = c.M.Read(v)
 		c.PC++
 	case MODE_ZPX:
-		v = uint16(c.M.Read(c.PC))
-		t = v + uint16(c.X)
-		t &= 0xff
-		b = c.M.Read(t)
+		t = uint16(c.M.Read(c.PC))
+		v = t + uint16(c.X)
+		v &= 0xff
+		b = c.M.Read(v)
 		c.PC++
 	case MODE_ZPY:
-		v = uint16(c.M.Read(c.PC))
-		t = v + uint16(c.Y)
-		t &= 0xff
-		b = c.M.Read(t)
+		t = uint16(c.M.Read(c.PC))
+		v = t + uint16(c.Y)
+		v &= 0xff
+		b = c.M.Read(v)
 		c.PC++
 	case MODE_ABS:
 		v = uint16(c.M.Read(c.PC))
@@ -179,19 +179,19 @@ func (c *Cpu) Step() {
 		c.PC++
 		b = c.M.Read(v)
 	case MODE_ABSX:
-		v = uint16(c.M.Read(c.PC))
+		t = uint16(c.M.Read(c.PC))
 		c.PC++
-		v |= uint16(c.M.Read(c.PC)) << 8
+		t |= uint16(c.M.Read(c.PC)) << 8
 		c.PC++
-		t = v + uint16(c.X)
-		b = c.M.Read(t)
+		v = t + uint16(c.X)
+		b = c.M.Read(v)
 	case MODE_ABSY:
-		v = uint16(c.M.Read(c.PC))
+		t = uint16(c.M.Read(c.PC))
 		c.PC++
-		v |= uint16(c.M.Read(c.PC)) << 8
+		t |= uint16(c.M.Read(c.PC)) << 8
 		c.PC++
-		t = v + uint16(c.Y)
-		b = c.M.Read(t)
+		v = t + uint16(c.Y)
+		b = c.M.Read(v)
 	case MODE_IND:
 		v = uint16(c.M.Read(c.PC))
 		c.PC++
@@ -199,17 +199,17 @@ func (c *Cpu) Step() {
 		v = uint16(c.M.Read(v)) + uint16(c.M.Read(v+1))<<8
 		c.PC++
 	case MODE_INDX:
-		v = uint16(c.M.Read(c.PC))
+		t = uint16(c.M.Read(c.PC))
 		c.PC++
-		t = v + uint16(c.X)
-		t &= 0xff
-		t = uint16(c.M.Read(t)) + uint16(c.M.Read(t+1))<<8
-		b = c.M.Read(t)
+		v = t + uint16(c.X)
+		v &= 0xff
+		v = uint16(c.M.Read(v)) + uint16(c.M.Read(v+1))<<8
+		b = c.M.Read(v)
 	case MODE_INDY:
-		v = uint16(c.M.Read(c.PC))
+		t = uint16(c.M.Read(c.PC))
 		c.PC++
-		t = uint16(c.M.Read(v)) + uint16(c.M.Read(v+1))<<8 + uint16(c.Y)
-		b = c.M.Read(t)
+		v = uint16(c.M.Read(t)) + uint16(c.M.Read(t+1))<<8 + uint16(c.Y)
+		b = c.M.Read(v)
 	case MODE_SNGL:
 		// nothing
 	default:
