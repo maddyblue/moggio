@@ -612,6 +612,7 @@ func ROL(c *Cpu, b byte, v uint16, m Mode) {
 
 func LSR(c *Cpu, b byte, v uint16, m Mode) {
 	if m == MODE_SNGL {
+		c.setCarryBit(c.A, 0)
 		c.A >>= 1
 		c.setNV(c.A)
 	} else {
@@ -627,6 +628,7 @@ func ROR(c *Cpu, b byte, v uint16, m Mode) {
 		s = 0x80
 	}
 	if m == MODE_SNGL {
+		c.setCarryBit(c.A, 0)
 		c.A >>= 1
 		c.A |= s
 		c.setNV(c.A)
