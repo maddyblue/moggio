@@ -340,19 +340,43 @@ func ADC(c *Cpu, b byte, v uint16, m Mode) {
 	} else {
 		c.SEV()
 	}
-	a := uint16(c.A) + uint16(b)
-	if c.C() {
-		a++
-	}
-	if a > 0xff {
-		c.SEC()
-		if c.V() && a >= 0x180 {
-			c.CLV()
+	var a uint16
+	if c.D() {
+		a = uint16(c.A&0xf) + uint16(b&0xf)
+		if c.C() {
+			a++
+		}
+		if a >= 10 {
+			a = 0x10 | (a+6)&0xf
+		}
+		a += uint16(c.A&0xf0) + uint16(b&0xf0)
+		if a >= 160 {
+			c.SEC()
+			if c.V() && a >= 0x180 {
+				c.CLV()
+			}
+			a += 0x60
+		} else {
+			c.CLC()
+			if c.V() && a < 0x80 {
+				c.CLV()
+			}
 		}
 	} else {
-		c.CLC()
-		if c.V() && a < 0x80 {
-			c.CLV()
+		a = uint16(c.A) + uint16(b)
+		if c.C() {
+			a++
+		}
+		if a > 0xff {
+			c.SEC()
+			if c.V() && a >= 0x180 {
+				c.CLV()
+			}
+		} else {
+			c.CLC()
+			if c.V() && a < 0x80 {
+				c.CLV()
+			}
 		}
 	}
 	c.A = byte(a & 0xff)
@@ -365,19 +389,48 @@ func SBC(c *Cpu, b byte, v uint16, m Mode) {
 	} else {
 		c.CLV()
 	}
-	a := 0xff + uint16(c.A) - uint16(b)
-	if c.C() {
-		a++
-	}
-	if a < 0x100 {
-		c.CLC()
-		if c.V() && a < 0x80 {
-			c.CLV()
+	var a uint16
+	if c.D() {
+		var w uint16
+		a = 0xf + uint16(c.A&0xf) - uint16(b&0xf)
+		if c.C() {
+			a++
 		}
+		if a < 0x10 {
+			a -= 6
+		} else {
+			w = 0x10
+			a -= 0x10
+		}
+		w += 0xf0 + uint16(c.A&0xf0) - uint16(b&0xf0)
+		if w < 0x100 {
+			c.CLC()
+			if c.V() && w < 0x80 {
+				c.CLV()
+			}
+			w -= 0x60
+		} else {
+			c.SEC()
+			if c.V() && w >= 0x180 {
+				c.CLV()
+			}
+		}
+		a += w
 	} else {
-		c.SEC()
-		if c.V() && a >= 0x180 {
-			c.CLV()
+		a = 0xff + uint16(c.A) - uint16(b)
+		if c.C() {
+			a++
+		}
+		if a < 0x100 {
+			c.CLC()
+			if c.V() && a < 0x80 {
+				c.CLV()
+			}
+		} else {
+			c.SEC()
+			if c.V() && a >= 0x180 {
+				c.CLV()
+			}
 		}
 	}
 	c.A = byte(a & 0xff)
