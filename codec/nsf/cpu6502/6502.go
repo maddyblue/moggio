@@ -257,6 +257,9 @@ func (c *Cpu) CLD() { c.P &= ^P_D }
 
 func (c *Cpu) C() bool       { return c.p(P_C) }
 func (c *Cpu) Z() bool       { return c.p(P_Z) }
+func (c *Cpu) I() bool       { return c.p(P_I) }
+func (c *Cpu) D() bool       { return c.p(P_D) }
+func (c *Cpu) B() bool       { return c.p(P_B) }
 func (c *Cpu) V() bool       { return c.p(P_V) }
 func (c *Cpu) N() bool       { return c.p(P_N) }
 func (c *Cpu) p(v byte) bool { return c.P&v != 0 }
