@@ -106,8 +106,9 @@ type Cpu struct {
 	Halt bool
 
 	// If non nil, will record registers on each step.
-	L  []Log
-	LI int // Log index
+	L     []Log
+	LI    int // Log index
+	Debug bool
 }
 
 func (c *Cpu) StringLog() string {
@@ -234,10 +235,10 @@ func (c *Cpu) Step() {
 	}
 	_ = pc
 	o.F(c, b, v, o.Mode)
-	if c.L != nil {
+	if c.L != nil || c.Debug {
 		r := c.Register
 		r.PC = pc
-		c.L[c.LI] = Log{
+		l := Log{
 			R: r,
 			O: o,
 			I: inst,
@@ -245,8 +246,14 @@ func (c *Cpu) Step() {
 			T: t,
 			B: b,
 		}
-		c.LI++
-		c.LI %= len(c.L)
+		if c.L != nil {
+			c.L[c.LI] = l
+			c.LI++
+			c.LI %= len(c.L)
+		}
+		if c.Debug {
+			fmt.Println(l)
+		}
 	}
 }
 
