@@ -24,6 +24,8 @@ import (
 	"strings"
 )
 
+type timing map[Mode]int
+
 type Instruction struct {
 	F               Func
 	Imm             byte
@@ -31,6 +33,7 @@ type Instruction struct {
 	ABS, ABSX, ABSY byte
 	IND, INDX, INDY byte
 	SNGL, BRA       byte
+	TIM             timing
 }
 
 var Optable [0xff + 1]*Op
@@ -40,6 +43,7 @@ type Func func(*Cpu, byte, uint16, Mode)
 type Op struct {
 	Mode
 	F Func
+	T int
 }
 
 func (o *Op) String() string {
@@ -100,15 +104,22 @@ type Memory interface {
 	Write(uint16, byte)
 }
 
+type Ticker interface {
+	Tick()
+}
+
 type Cpu struct {
 	Register
 	M    Memory
+	T    Ticker
 	Halt bool
 
 	// If non nil, will record registers on each step.
 	L     []Log
 	LI    int // Log index
 	Debug bool
+
+	stepCycles int
 }
 
 func (c *Cpu) StringLog() string {
@@ -130,6 +141,7 @@ type Log struct {
 	R    Register
 	O    *Op
 	I    byte // instruction
+	C    int  // cycles
 	V, T uint16
 	B    byte
 }
@@ -139,7 +151,7 @@ func (l Log) String() string {
 	if m != "" {
 		m = fmt.Sprintf(m, l.B, l.V, l.T)
 	}
-	return fmt.Sprintf("%04X : %02X %3v %-8s v: %04X b: %02X t: %04X p: %08b s: %02X a: %02X x: %02X y: %02X", l.R.PC, l.I, l.O, m, l.V, l.B, l.T, l.R.P, l.R.S, l.R.A, l.R.X, l.R.Y)
+	return fmt.Sprintf("%04X: %02X %3v %-8s p=%08b s=%02X a=%02X x=%02X y=%02X v=%04X b=%02X t=%04X c=%d", l.R.PC, l.I, l.O, m, l.R.P, l.R.S, l.R.A, l.R.X, l.R.Y, l.V, l.B, l.T, l.C)
 }
 
 func New(m Memory) *Cpu {
@@ -160,8 +172,21 @@ func (c *Cpu) Run() {
 	}
 }
 
+func (c *Cpu) Tick(i int) {
+	if i == 0 {
+		panic("cpu6502: cannot tick for 0")
+	}
+	for ; i > 0; i-- {
+		if c.T != nil {
+			c.T.Tick()
+		}
+		c.stepCycles++
+	}
+}
+
 func (c *Cpu) Step() {
 	pc := c.PC
+	c.stepCycles = 0
 	inst := c.M.Read(c.PC)
 	c.PC++
 	o := Optable[inst]
@@ -235,6 +260,7 @@ func (c *Cpu) Step() {
 	}
 	_ = pc
 	o.F(c, b, v, o.Mode)
+	c.Tick(o.T)
 	if c.L != nil || c.Debug {
 		r := c.Register
 		r.PC = pc
@@ -242,6 +268,7 @@ func (c *Cpu) Step() {
 			R: r,
 			O: o,
 			I: inst,
+			C: c.stepCycles,
 			V: v,
 			T: t,
 			B: b,
@@ -316,10 +343,13 @@ func init() {
 		if v != null {
 			if Optable[v] != nil {
 				panic("duplicate instruction")
+			} else if i.TIM[m] == 0 {
+				panic("no timing information")
 			}
 			Optable[v] = &Op{
 				F:    i.F,
 				Mode: m,
+				T:    i.TIM[m],
 			}
 		}
 	}
@@ -340,6 +370,7 @@ func init() {
 	Optable[0] = &Op{
 		F:    BRK,
 		Mode: MODE_BRA,
+		T:    _K[MODE_BRA],
 	}
 }
 
@@ -609,6 +640,7 @@ func BVS(c *Cpu, b byte, v uint16, m Mode) {
 }
 
 func (c *Cpu) jump(v uint16) {
+	c.Tick(1)
 	if v > 0x7f {
 		c.PC -= 0x100 - v
 	} else {
@@ -817,64 +849,119 @@ func TSB(c *Cpu, b byte, v uint16, m Mode) {
 
 const null = 0
 
+var (
+	_1 = timing{
+		MODE_IMM:  2,
+		MODE_ZP:   3,
+		MODE_ZPX:  4,
+		MODE_ZPY:  4,
+		MODE_ABS:  4,
+		MODE_ABSX: 4,
+		MODE_ABSY: 4,
+		MODE_INDX: 6,
+		MODE_INDY: 5,
+	}
+	_2 = timing{
+		MODE_SNGL: 2,
+		MODE_IMM:  2,
+		MODE_ZP:   5,
+		MODE_ZPX:  6,
+		MODE_ABS:  6,
+		MODE_ABSX: 7,
+	}
+	_3 = timing{
+		MODE_IMM:  2,
+		MODE_ZP:   3,
+		MODE_ZPX:  4,
+		MODE_ZPY:  4,
+		MODE_ABS:  4,
+		MODE_ABSX: 5,
+		MODE_ABSY: 5,
+		MODE_INDX: 6,
+		MODE_INDY: 6,
+	}
+	_B = timing{
+		MODE_BRA: 2,
+	}
+	_S = timing{
+		MODE_SNGL: 2,
+	}
+	_S3 = timing{
+		MODE_SNGL: 3,
+	}
+	_S4 = timing{
+		MODE_SNGL: 4,
+	}
+	_S6 = timing{
+		MODE_SNGL: 6,
+	}
+	_K = timing{
+		MODE_BRA: 7,
+	}
+	_J = timing{
+		MODE_ABS: 3,
+		MODE_IND: 5,
+	}
+)
+
 var Opcodes = []Instruction{
-	/* F,  Imm,   ZP,  ZPX,  ZPY,  ABS, ABSX, ABSY,  IND, INDX, INDY, SNGL, BRA */
-	{ADC, 0x69, 0x65, 0x75, null, 0x6d, 0x7d, 0x79, null, 0x61, 0x71, null, null},
-	{AND, 0x29, 0x25, 0x35, null, 0x2d, 0x3d, 0x39, null, 0x21, 0x31, null, null},
-	{ASL, null, 0x06, 0x16, null, 0x0e, 0x1e, null, null, null, null, 0x0a, null},
-	{BCC, null, null, null, null, null, null, null, null, null, null, null, 0x90},
-	{BCS, null, null, null, null, null, null, null, null, null, null, null, 0xb0},
-	{BEQ, null, null, null, null, null, null, null, null, null, null, null, 0xf0},
-	{BIT, null, 0x24, null, null, 0x2c, null, null, null, null, null, null, null},
-	{BMI, null, null, null, null, null, null, null, null, null, null, null, 0x30},
-	{BNE, null, null, null, null, null, null, null, null, null, null, null, 0xd0},
-	{BPL, null, null, null, null, null, null, null, null, null, null, null, 0x10},
-	{BRK, null, null, null, null, null, null, null, null, null, null, null, 0x00},
-	{BVC, null, null, null, null, null, null, null, null, null, null, null, 0x50},
-	{BVS, null, null, null, null, null, null, null, null, null, null, null, 0x70},
-	{CLC, null, null, null, null, null, null, null, null, null, null, 0x18, null},
-	{CLD, null, null, null, null, null, null, null, null, null, null, 0xd8, null},
-	{CLI, null, null, null, null, null, null, null, null, null, null, 0x58, null},
-	{CLV, null, null, null, null, null, null, null, null, null, null, 0xb8, null},
-	{CMP, 0xc9, 0xc5, 0xd5, null, 0xcd, 0xdd, 0xd9, null, 0xc1, 0xd1, null, null},
-	{CPX, 0xe0, 0xe4, null, null, 0xec, null, null, null, null, null, null, null},
-	{CPY, 0xc0, 0xc4, null, null, 0xcc, null, null, null, null, null, null, null},
-	{DEC, null, 0xc6, 0xd6, null, 0xce, 0xde, null, null, null, null, null, null},
-	{DEX, null, null, null, null, null, null, null, null, null, null, 0xca, null},
-	{DEY, null, null, null, null, null, null, null, null, null, null, 0x88, null},
-	{EOR, 0x49, 0x45, 0x55, null, 0x4d, 0x5d, 0x59, null, 0x41, 0x51, null, null},
-	{INC, null, 0xe6, 0xf6, null, 0xee, 0xfe, null, null, null, null, null, null},
-	{INX, null, null, null, null, null, null, null, null, null, null, 0xe8, null},
-	{INY, null, null, null, null, null, null, null, null, null, null, 0xc8, null},
-	{JMP, null, null, null, null, 0x4c, null, null, 0x6c, null, null, null, null},
-	{JSR, null, null, null, null, 0x20, null, null, null, null, null, null, null},
-	{LDA, 0xa9, 0xa5, 0xb5, null, 0xad, 0xbd, 0xb9, null, 0xa1, 0xb1, null, null},
-	{LDX, 0xa2, 0xa6, null, 0xb6, 0xae, null, 0xbe, null, null, null, null, null},
-	{LDY, 0xa0, 0xa4, 0xb4, null, 0xac, 0xbc, null, null, null, null, null, null},
-	{LSR, null, 0x46, 0x56, null, 0x4e, 0x5e, null, null, null, null, 0x4a, null},
-	{NOP, null, null, null, null, null, null, null, null, null, null, 0xea, null},
-	{ORA, 0x09, 0x05, 0x15, null, 0x0d, 0x1d, 0x19, null, 0x01, 0x11, null, null},
-	{PHA, null, null, null, null, null, null, null, null, null, null, 0x48, null},
-	{PHP, null, null, null, null, null, null, null, null, null, null, 0x08, null},
-	{PLA, null, null, null, null, null, null, null, null, null, null, 0x68, null},
-	{PLP, null, null, null, null, null, null, null, null, null, null, 0x28, null},
-	{ROL, null, 0x26, 0x36, null, 0x2e, 0x3e, null, null, null, null, 0x2a, null},
-	{ROR, null, 0x66, 0x76, null, 0x6e, 0x7e, null, null, null, null, 0x6a, null},
-	{RTI, null, null, null, null, null, null, null, null, null, null, 0x40, null},
-	{RTS, null, null, null, null, null, null, null, null, null, null, 0x60, null},
-	{SBC, 0xe9, 0xe5, 0xf5, null, 0xed, 0xfd, 0xf9, null, 0xe1, 0xf1, null, null},
-	{SEC, null, null, null, null, null, null, null, null, null, null, 0x38, null},
-	{SED, null, null, null, null, null, null, null, null, null, null, 0xf8, null},
-	{SEI, null, null, null, null, null, null, null, null, null, null, 0x78, null},
-	{STA, null, 0x85, 0x95, null, 0x8d, 0x9d, 0x99, null, 0x81, 0x91, null, null},
-	{STX, null, 0x86, null, 0x96, 0x8e, null, null, null, null, null, null, null},
-	{STY, null, 0x84, 0x94, null, 0x8c, null, null, null, null, null, null, null},
-	{TAX, null, null, null, null, null, null, null, null, null, null, 0xaa, null},
-	{TAY, null, null, null, null, null, null, null, null, null, null, 0xa8, null},
-	{TRB, null, 0x14, null, null, 0x1c, null, null, null, null, null, null, null},
-	{TSB, null, 0x04, null, null, 0x0c, null, null, null, null, null, null, null},
-	{TSX, null, null, null, null, null, null, null, null, null, null, 0xba, null},
-	{TXA, null, null, null, null, null, null, null, null, null, null, 0x8a, null},
-	{TXS, null, null, null, null, null, null, null, null, null, null, 0x9a, null},
-	{TYA, null, null, null, null, null, null, null, null, null, null, 0x98, null},
+	/* F,  Imm,   ZP,  ZPX,  ZPY,  ABS, ABSX, ABSY,  IND, INDX, INDY, SNGL,  BRA, TIM */
+	{ADC, 0x69, 0x65, 0x75, null, 0x6d, 0x7d, 0x79, null, 0x61, 0x71, null, null, _1},
+	{AND, 0x29, 0x25, 0x35, null, 0x2d, 0x3d, 0x39, null, 0x21, 0x31, null, null, _1},
+	{ASL, null, 0x06, 0x16, null, 0x0e, 0x1e, null, null, null, null, 0x0a, null, _2},
+	{BCC, null, null, null, null, null, null, null, null, null, null, null, 0x90, _B},
+	{BCS, null, null, null, null, null, null, null, null, null, null, null, 0xb0, _B},
+	{BEQ, null, null, null, null, null, null, null, null, null, null, null, 0xf0, _B},
+	{BIT, null, 0x24, null, null, 0x2c, null, null, null, null, null, null, null, _3},
+	{BMI, null, null, null, null, null, null, null, null, null, null, null, 0x30, _B},
+	{BNE, null, null, null, null, null, null, null, null, null, null, null, 0xd0, _B},
+	{BPL, null, null, null, null, null, null, null, null, null, null, null, 0x10, _B},
+	{BRK, null, null, null, null, null, null, null, null, null, null, null, 0x00, _K},
+	{BVC, null, null, null, null, null, null, null, null, null, null, null, 0x50, _B},
+	{BVS, null, null, null, null, null, null, null, null, null, null, null, 0x70, _B},
+	{CLC, null, null, null, null, null, null, null, null, null, null, 0x18, null, _S},
+	{CLD, null, null, null, null, null, null, null, null, null, null, 0xd8, null, _S},
+	{CLI, null, null, null, null, null, null, null, null, null, null, 0x58, null, _S},
+	{CLV, null, null, null, null, null, null, null, null, null, null, 0xb8, null, _S},
+	{CMP, 0xc9, 0xc5, 0xd5, null, 0xcd, 0xdd, 0xd9, null, 0xc1, 0xd1, null, null, _1},
+	{CPX, 0xe0, 0xe4, null, null, 0xec, null, null, null, null, null, null, null, _2},
+	{CPY, 0xc0, 0xc4, null, null, 0xcc, null, null, null, null, null, null, null, _2},
+	{DEC, null, 0xc6, 0xd6, null, 0xce, 0xde, null, null, null, null, null, null, _2},
+	{DEX, null, null, null, null, null, null, null, null, null, null, 0xca, null, _S},
+	{DEY, null, null, null, null, null, null, null, null, null, null, 0x88, null, _S},
+	{EOR, 0x49, 0x45, 0x55, null, 0x4d, 0x5d, 0x59, null, 0x41, 0x51, null, null, _1},
+	{INC, null, 0xe6, 0xf6, null, 0xee, 0xfe, null, null, null, null, null, null, _2},
+	{INX, null, null, null, null, null, null, null, null, null, null, 0xe8, null, _S},
+	{INY, null, null, null, null, null, null, null, null, null, null, 0xc8, null, _S},
+	{JMP, null, null, null, null, 0x4c, null, null, 0x6c, null, null, null, null, _J},
+	{JSR, null, null, null, null, 0x20, null, null, null, null, null, null, null, _2},
+	{LDA, 0xa9, 0xa5, 0xb5, null, 0xad, 0xbd, 0xb9, null, 0xa1, 0xb1, null, null, _1},
+	{LDX, 0xa2, 0xa6, null, 0xb6, 0xae, null, 0xbe, null, null, null, null, null, _1},
+	{LDY, 0xa0, 0xa4, 0xb4, null, 0xac, 0xbc, null, null, null, null, null, null, _1},
+	{LSR, null, 0x46, 0x56, null, 0x4e, 0x5e, null, null, null, null, 0x4a, null, _2},
+	{NOP, null, null, null, null, null, null, null, null, null, null, 0xea, null, _S},
+	{ORA, 0x09, 0x05, 0x15, null, 0x0d, 0x1d, 0x19, null, 0x01, 0x11, null, null, _1},
+	{PHA, null, null, null, null, null, null, null, null, null, null, 0x48, null, _S3},
+	{PHP, null, null, null, null, null, null, null, null, null, null, 0x08, null, _S3},
+	{PLA, null, null, null, null, null, null, null, null, null, null, 0x68, null, _S4},
+	{PLP, null, null, null, null, null, null, null, null, null, null, 0x28, null, _S4},
+	{ROL, null, 0x26, 0x36, null, 0x2e, 0x3e, null, null, null, null, 0x2a, null, _2},
+	{ROR, null, 0x66, 0x76, null, 0x6e, 0x7e, null, null, null, null, 0x6a, null, _2},
+	{RTI, null, null, null, null, null, null, null, null, null, null, 0x40, null, _S6},
+	{RTS, null, null, null, null, null, null, null, null, null, null, 0x60, null, _S6},
+	{SBC, 0xe9, 0xe5, 0xf5, null, 0xed, 0xfd, 0xf9, null, 0xe1, 0xf1, null, null, _1},
+	{SEC, null, null, null, null, null, null, null, null, null, null, 0x38, null, _S},
+	{SED, null, null, null, null, null, null, null, null, null, null, 0xf8, null, _S},
+	{SEI, null, null, null, null, null, null, null, null, null, null, 0x78, null, _S},
+	{STA, null, 0x85, 0x95, null, 0x8d, 0x9d, 0x99, null, 0x81, 0x91, null, null, _3},
+	{STX, null, 0x86, null, 0x96, 0x8e, null, null, null, null, null, null, null, _3},
+	{STY, null, 0x84, 0x94, null, 0x8c, null, null, null, null, null, null, null, _3},
+	{TAX, null, null, null, null, null, null, null, null, null, null, 0xaa, null, _S},
+	{TAY, null, null, null, null, null, null, null, null, null, null, 0xa8, null, _S},
+	{TRB, null, 0x14, null, null, 0x1c, null, null, null, null, null, null, null, _2},
+	{TSB, null, 0x04, null, null, 0x0c, null, null, null, null, null, null, null, _2},
+	{TSX, null, null, null, null, null, null, null, null, null, null, 0xba, null, _S},
+	{TXA, null, null, null, null, null, null, null, null, null, null, 0x8a, null, _S},
+	{TXS, null, null, null, null, null, null, null, null, null, null, 0x9a, null, _S},
+	{TYA, null, null, null, null, null, null, null, null, null, null, 0x98, null, _S},
 }
