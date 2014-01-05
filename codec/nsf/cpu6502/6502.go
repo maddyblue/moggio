@@ -53,19 +53,19 @@ type Mode int
 func (m Mode) Format() string {
 	switch m {
 	case MODE_IMM:
-		return "#$%02[1]x"
+		return "#$%02[1]X"
 	case MODE_ZP:
-		return "$%02[2]x"
+		return "$%02[2]X"
 	case MODE_ZPX:
-		return "$%02[3]x,X"
+		return "$%02[3]X,X"
 	case MODE_ZPY:
-		return "$%02[3]x,Y"
+		return "$%02[3]X,Y"
 	case MODE_ABS:
-		return "$%04[2]x"
+		return "$%04[2]X"
 	case MODE_ABSX:
-		return "$%04[3]x,X"
+		return "$%04[3]X,X"
 	case MODE_ABSY:
-		return "$%04[3]x,Y"
+		return "$%04[3]X,Y"
 	case MODE_IND:
 		return "($%04[2]X)"
 	case MODE_INDX:
@@ -73,7 +73,7 @@ func (m Mode) Format() string {
 	case MODE_INDY:
 		return "($%02[3]X),Y"
 	case MODE_BRA:
-		return "$%02[1]x"
+		return "$%02[1]X"
 	default:
 		return ""
 	}
