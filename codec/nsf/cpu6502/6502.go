@@ -647,7 +647,12 @@ func JSR(c *Cpu, b byte, v uint16, m Mode) {
 }
 
 func RTS(c *Cpu, b byte, v uint16, m Mode) {
-	c.PC = (uint16(c.stackPop()) | uint16(c.stackPop())<<8) + 1
+	c.PC = (uint16(c.stackPop()) | uint16(c.stackPop())<<8)
+	if c.PC == 0 {
+		c.Halt = true
+	} else {
+		c.PC++
+	}
 }
 
 func AND(c *Cpu, b byte, v uint16, m Mode) {
