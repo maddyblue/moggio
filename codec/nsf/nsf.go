@@ -4,6 +4,14 @@ import (
 	"errors"
 	"io"
 	"io/ioutil"
+
+	"github.com/mjibson/mog/codec/nsf/cpu6502"
+)
+
+const (
+	// 1.79 MHz
+	cpuClock   = int(236250000 / 11 / 12)
+	SampleRate = 44100
 )
 
 var (
@@ -42,9 +50,9 @@ func ReadNSF(r io.Reader) (n *NSF, err error) {
 	n.Version = n.b[NSF_VERSION]
 	n.Songs = n.b[NSF_SONGS]
 	n.Start = n.b[NSF_START]
-	n.Load = bLEtoUint16(n.b[NSF_LOAD:])
-	n.Init = bLEtoUint16(n.b[NSF_INIT:])
-	n.Play = bLEtoUint16(n.b[NSF_PLAY:])
+	n.LoadAddr = bLEtoUint16(n.b[NSF_LOAD:])
+	n.InitAddr = bLEtoUint16(n.b[NSF_INIT:])
+	n.PlayAddr = bLEtoUint16(n.b[NSF_PLAY:])
 	n.Song = bToString(n.b[NSF_SONG:])
 	n.Artist = bToString(n.b[NSF_ARTIST:])
 	n.Copyright = bToString(n.b[NSF_COPYRIGHT:])
@@ -53,19 +61,23 @@ func ReadNSF(r io.Reader) (n *NSF, err error) {
 	n.SpeedPAL = bLEtoUint16(n.b[NSF_SPEED_PAL:])
 	n.PALNTSC = n.b[NSF_PAL_NTSC]
 	n.Extra = n.b[NSF_EXTRA]
+	n.Data = n.b[NSF_HEADER_LEN:]
 	return
 }
 
 type NSF struct {
-	b []byte
+	*Ram
+	*cpu6502.Cpu
+
+	b []byte // raw NSF data
 
 	Version byte
 	Songs   byte
 	Start   byte
 
-	Load uint16
-	Init uint16
-	Play uint16
+	LoadAddr uint16
+	InitAddr uint16
+	PlayAddr uint16
 
 	Song      string
 	Artist    string
@@ -77,6 +89,55 @@ type NSF struct {
 	PALNTSC    byte
 	Extra      byte
 	Data       []byte
+
+	frameTicks  int
+	sampleTicks int
+	samples     []int16
+}
+
+func (n *NSF) Tick() {
+	n.Ram.A.Step()
+	n.frameTicks++
+	if n.frameTicks == cpuClock/240 {
+		n.frameTicks = 0
+		n.Ram.A.FrameStep()
+	}
+	n.sampleTicks++
+	if n.sampleTicks >= cpuClock/SampleRate {
+		n.sampleTicks = 0
+		n.samples = append(n.samples, n.Ram.A.Volume())
+	}
+}
+
+func (n *NSF) Init(song byte) {
+	n.Ram = new(Ram)
+	n.Cpu = cpu6502.New(n.Ram)
+	n.Cpu.T = n
+	//n.Cpu.Debug = true
+	copy(n.Ram.M[n.LoadAddr:], n.Data)
+	n.Ram.A.S1.Sweep.NegOffset = 1
+	for i := uint16(0x4000); i <= 0x400f; i++ {
+		n.Ram.Write(i, 0)
+	}
+	n.Ram.Write(0x4010, 0x10)
+	n.Ram.Write(0x4011, 0)
+	n.Ram.Write(0x4012, 0)
+	n.Ram.Write(0x4013, 0)
+	n.Ram.Write(0x4015, 0xf)
+	n.Cpu.A = song - 1
+	n.Cpu.PC = n.InitAddr
+	n.Cpu.Run()
+}
+
+func (n *NSF) Play() []int16 {
+	n.Cpu.PC = n.PlayAddr
+	n.Cpu.Halt = false
+	n.samples = make([]int16, 0)
+	for !n.Cpu.Halt {
+		n.Cpu.Step()
+	}
+	//fmt.Printf("%v\nN: %v\n", n.samples, len(n.samples))
+	return n.samples
 }
 
 // little-endian [2]byte to uint16 conversion
@@ -93,4 +154,28 @@ func bToString(b []byte) string {
 		}
 	}
 	return string(b[:i])
+}
+
+type Ram struct {
+	M [0xffff + 1]byte
+	A Apu
+}
+
+func (r *Ram) Read(v uint16) byte {
+	if v&0xf000 == 0x4000 {
+		return r.A.Read(v)
+	} else {
+		return r.M[v]
+	}
+}
+
+func (r *Ram) Write(v uint16, b byte) {
+	if v == 0x4017 {
+		r.M[v] = b
+		r.A.Write(v, b)
+	} else if v&0xf000 == 0x4000 {
+		r.A.Write(v, b)
+	} else {
+		r.M[v] = b
+	}
 }
