@@ -1,6 +1,7 @@
 package nsf
 
 import (
+	"fmt"
 	"os"
 	"testing"
 	"time"
@@ -39,8 +40,7 @@ func TestNSF(t *testing.T) {
 	defer st.Dispose()
 	st.ConnectToSink()
 
-	for _ = range time.Tick(time.Duration(n.SpeedNTSC) * time.Nanosecond * 1000) {
-		samples := n.Play()
-		st.Write(samples, pulsego.SEEK_RELATIVE)
-	}
+	samples := n.Play(time.Second * 5)
+	fmt.Println("samples", len(samples))
+	st.Write(samples, pulsego.SEEK_RELATIVE)
 }

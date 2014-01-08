@@ -4,13 +4,14 @@ import (
 	"errors"
 	"io"
 	"io/ioutil"
+	"time"
 
 	"github.com/mjibson/mog/codec/nsf/cpu6502"
 )
 
 const (
 	// 1.79 MHz
-	cpuClock   = int(236250000 / 11 / 12)
+	cpuClock   = 236250000 / 11 / 12
 	SampleRate = 44100
 )
 
@@ -90,13 +91,16 @@ type NSF struct {
 	Extra      byte
 	Data       []byte
 
-	frameTicks  int
-	sampleTicks int
+	totalTicks  int64
+	frameTicks  int64
+	sampleTicks int64
+	playTicks   int64
 	samples     []int16
 }
 
 func (n *NSF) Tick() {
 	n.Ram.A.Step()
+	n.totalTicks++
 	n.frameTicks++
 	if n.frameTicks == cpuClock/240 {
 		n.frameTicks = 0
@@ -107,13 +111,13 @@ func (n *NSF) Tick() {
 		n.sampleTicks = 0
 		n.samples = append(n.samples, n.Ram.A.Volume())
 	}
+	n.playTicks++
 }
 
 func (n *NSF) Init(song byte) {
 	n.Ram = new(Ram)
 	n.Cpu = cpu6502.New(n.Ram)
 	n.Cpu.T = n
-	//n.Cpu.Debug = true
 	copy(n.Ram.M[n.LoadAddr:], n.Data)
 	n.Ram.A.S1.Sweep.NegOffset = 1
 	for i := uint16(0x4000); i <= 0x400f; i++ {
@@ -129,14 +133,23 @@ func (n *NSF) Init(song byte) {
 	n.Cpu.Run()
 }
 
-func (n *NSF) Play() []int16 {
-	n.Cpu.PC = n.PlayAddr
-	n.Cpu.Halt = false
+func (n *NSF) Play(d time.Duration) []int16 {
+	playDur := time.Duration(n.SpeedNTSC) * time.Nanosecond * 1000
+	ticksPerPlay := int64(playDur / (time.Second / cpuClock))
+	ticks := int64(d / (time.Second / cpuClock))
 	n.samples = make([]int16, 0)
-	for !n.Cpu.Halt {
-		n.Cpu.Step()
+	n.totalTicks = 0
+	for n.totalTicks < ticks {
+		n.playTicks = 0
+		n.Cpu.PC = n.PlayAddr
+		n.Cpu.Halt = false
+		for !n.Cpu.Halt {
+			n.Cpu.Step()
+		}
+		for i := n.playTicks - ticksPerPlay; i > 0 && n.totalTicks < ticks; i-- {
+			n.Tick()
+		}
 	}
-	//fmt.Printf("%v\nN: %v\n", n.samples, len(n.samples))
 	return n.samples
 }
 
