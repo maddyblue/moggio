@@ -95,7 +95,7 @@ type NSF struct {
 	frameTicks  int64
 	sampleTicks int64
 	playTicks   int64
-	samples     []int16
+	samples     []float32
 }
 
 func (n *NSF) Tick() {
@@ -117,9 +117,9 @@ func (n *NSF) Tick() {
 func (n *NSF) Init(song byte) {
 	n.Ram = new(Ram)
 	n.Cpu = cpu6502.New(n.Ram)
-	n.Cpu.T = n
 	copy(n.Ram.M[n.LoadAddr:], n.Data)
 	n.Ram.A.S1.Sweep.NegOffset = 1
+	n.Ram.A.FC = 4
 	for i := uint16(0x4000); i <= 0x400f; i++ {
 		n.Ram.Write(i, 0)
 	}
@@ -130,14 +130,18 @@ func (n *NSF) Init(song byte) {
 	n.Ram.Write(0x4015, 0xf)
 	n.Cpu.A = song - 1
 	n.Cpu.PC = n.InitAddr
+	n.Cpu.T = nil
+	println("RUN INIT")
 	n.Cpu.Run()
+	println("INIT DONE")
+	n.Cpu.T = n
 }
 
-func (n *NSF) Play(d time.Duration) []int16 {
+func (n *NSF) Play(d time.Duration) []float32 {
 	playDur := time.Duration(n.SpeedNTSC) * time.Nanosecond * 1000
 	ticksPerPlay := int64(playDur / (time.Second / cpuClock))
 	ticks := int64(d / (time.Second / cpuClock))
-	n.samples = make([]int16, 0)
+	n.samples = make([]float32, 0)
 	n.totalTicks = 0
 	for n.totalTicks < ticks {
 		n.playTicks = 0
@@ -146,7 +150,7 @@ func (n *NSF) Play(d time.Duration) []int16 {
 		for !n.Cpu.Halt {
 			n.Cpu.Step()
 		}
-		for i := n.playTicks - ticksPerPlay; i > 0 && n.totalTicks < ticks; i-- {
+		for i := ticksPerPlay - n.playTicks; i > 0 && n.totalTicks < ticks; i-- {
 			n.Tick()
 		}
 	}

@@ -33,14 +33,17 @@ func TestNSF(t *testing.T) {
 	}
 	defer ctx.Dispose()
 	st := ctx.NewStream("default", &pulsego.PulseSampleSpec{
-		Format: pulsego.SAMPLE_S16LE, Rate: SampleRate, Channels: 1})
+		Format: pulsego.SAMPLE_FLOAT32LE, Rate: SampleRate, Channels: 1})
 	if st == nil {
 		t.Fatal("Failed to create a new stream")
 	}
 	defer st.Dispose()
 	st.ConnectToSink()
 
-	samples := n.Play(time.Second * 5)
+	d := time.Second * 2
+	samples := n.Play(d)
 	fmt.Println("samples", len(samples))
 	st.Write(samples, pulsego.SEEK_RELATIVE)
+	fmt.Println(samples[:1000])
+	time.Sleep(d)
 }
