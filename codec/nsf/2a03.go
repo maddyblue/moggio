@@ -3,6 +3,7 @@ package nsf
 type Apu struct {
 	S1, S2 Square
 
+	Odd        bool
 	FC         byte
 	FT         byte
 	IrqDisable bool
@@ -230,11 +231,15 @@ func (s *Square) Clock() {
 }
 
 func (a *Apu) Step() {
-	if a.S1.Enable {
-		a.S1.Clock()
+	if a.Odd {
+		if a.S1.Enable {
+			a.S1.Clock()
+		}
+		if a.S2.Enable {
+			a.S2.Clock()
+		}
 	}
-	if a.S2.Enable {
-		a.S2.Clock()
+	a.Odd = !a.Odd
 	}
 }
 
