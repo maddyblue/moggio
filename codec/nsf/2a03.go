@@ -188,9 +188,7 @@ func (e *Envelope) Control(b byte) {
 }
 
 func (l *Length) Set(b byte) {
-	if !l.Halt {
-		l.Counter = LenLookup[b]
-	}
+	l.Counter = LenLookup[b]
 }
 
 func (l *Length) Enabled() bool {
