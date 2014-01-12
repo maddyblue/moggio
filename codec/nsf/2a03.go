@@ -308,7 +308,7 @@ func (d *Duty) Enabled() bool {
 }
 
 var (
-	PulseOut  [32]float32
+	PulseOut  [31]float32
 	DutyCycle = [4][8]byte{
 		{0, 1, 0, 0, 0, 0, 0, 0},
 		{0, 1, 1, 0, 0, 0, 0, 0},
