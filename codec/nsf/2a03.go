@@ -294,7 +294,7 @@ func (e *Envelope) Output() byte {
 func (s *Square) SweepResult() uint16 {
 	r := int(s.Timer.Tick >> s.Sweep.Shift)
 	if s.Sweep.Negate {
-		r =  - r
+		r = -r
 	}
 	r += int(s.Timer.Tick)
 	if r > 0x7ff {
