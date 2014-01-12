@@ -1,7 +1,5 @@
 package nsf
 
-import "fmt"
-
 type Apu struct {
 	S1, S2 Square
 
@@ -68,7 +66,6 @@ func (a *Apu) Init() {
 }
 
 func (a *Apu) Write(v uint16, b byte) {
-	//fmt.Printf("WRITE %x %08b\n", v, b)
 	switch v & 0xff {
 	case 0x00:
 		a.S1.Control1(b)
@@ -170,7 +167,6 @@ func (a *Apu) Read(v uint16) byte {
 			b |= 0x2
 		}
 	}
-	fmt.Printf("READ %x %08b\n", v, b)
 	return b
 }
 
@@ -180,7 +176,6 @@ func (d *Duty) Clock() {
 	} else {
 		d.Counter--
 	}
-	//println("DUTY", d.Counter)
 }
 
 func (s *Sweep) Clock() (r bool) {
@@ -225,7 +220,6 @@ func (t *Timer) Clock() bool {
 	} else {
 		t.Tick--
 	}
-	//println("TIMR", t.Tick, t.Length)
 	return t.Tick == t.Length
 }
 
