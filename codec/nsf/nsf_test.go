@@ -42,8 +42,10 @@ func TestNSF(t *testing.T) {
 	d := time.Second / 5
 	for {
 		wait := time.After(d)
+		start := time.Now()
 		samples := n.Play(d)
-		println("samples", len(samples))
+		since := time.Since(start)
+		println("samples", len(samples), 100*since/d)
 		st.Write(samples, pulsego.SEEK_RELATIVE)
 		<-wait
 	}
