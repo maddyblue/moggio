@@ -2,11 +2,28 @@ package nsf
 
 type Apu struct {
 	S1, S2 Square
+	Triangle
 
 	Odd        bool
 	FC         byte
 	FT         byte
 	IrqDisable bool
+}
+
+type Triangle struct {
+	Linear
+	Timer
+	Length
+	SI int // sequence index
+
+	Enable bool
+}
+
+type Linear struct {
+	Reload  byte
+	Halt    bool
+	Flag    bool
+	Counter byte
 }
 
 type Square struct {
@@ -84,9 +101,16 @@ func (a *Apu) Write(v uint16, b byte) {
 		a.S2.Control3(b)
 	case 0x07:
 		a.S2.Control4(b)
+	case 0x08:
+		a.Triangle.Control1(b)
+	case 0x0a:
+		a.Triangle.Control2(b)
+	case 0x0b:
+		a.Triangle.Control3(b)
 	case 0x15:
 		a.S1.Disable(b&0x1 == 0)
 		a.S2.Disable(b&0x2 == 0)
+		a.Triangle.Disable(b&0x4 == 0)
 	case 0x17:
 		a.FT = 0
 		if b&0x80 != 0 {
@@ -97,6 +121,28 @@ func (a *Apu) Write(v uint16, b byte) {
 		}
 		a.IrqDisable = b&0x40 != 0
 	}
+}
+
+func (t *Triangle) Control1(b byte) {
+	t.Linear.Control(b)
+	t.Length.Halt = b&0x80 != 0
+}
+
+func (l *Linear) Control(b byte) {
+	l.Flag = b&0x80 != 0
+	l.Reload = b & 0x7f
+}
+
+func (t *Triangle) Control2(b byte) {
+	t.Timer.Length &= 0xff00
+	t.Timer.Length |= uint16(b)
+}
+
+func (t *Triangle) Control3(b byte) {
+	t.Timer.Length &= 0xff
+	t.Timer.Length |= uint16(b&0x7) << 8
+	t.Length.Set(b >> 3)
+	t.Linear.Halt = true
 }
 
 func (s *Square) Control1(b byte) {
@@ -158,6 +204,13 @@ func (s *Square) Disable(b bool) {
 	}
 }
 
+func (t *Triangle) Disable(b bool) {
+	t.Enable = !b
+	if b {
+		t.Length.Counter = 0
+	}
+}
+
 func (a *Apu) Read(v uint16) byte {
 	var b byte
 	if v == 0x4015 {
@@ -166,6 +219,9 @@ func (a *Apu) Read(v uint16) byte {
 		}
 		if a.S2.Length.Counter > 0 {
 			b |= 0x2
+		}
+		if a.Triangle.Length.Counter > 0 {
+			b |= 0x4
 		}
 	}
 	return b
@@ -226,6 +282,16 @@ func (s *Square) Clock() {
 	}
 }
 
+func (t *Triangle) Clock() {
+	if t.Timer.Clock() && t.Length.Counter > 0 && t.Linear.Counter > 0 {
+		if t.SI == 31 {
+			t.SI = 0
+		} else {
+			t.SI++
+		}
+	}
+}
+
 func (a *Apu) Step() {
 	if a.Odd {
 		if a.S1.Enable {
@@ -236,6 +302,8 @@ func (a *Apu) Step() {
 		}
 	}
 	a.Odd = !a.Odd
+	if a.Triangle.Enable {
+		a.Triangle.Clock()
 	}
 }
 
@@ -246,13 +314,26 @@ func (a *Apu) FrameStep() {
 	}
 	if a.FT <= 3 {
 		a.S1.Envelope.Clock()
+		a.Triangle.Linear.Clock()
 	}
 	if a.FT == 1 || a.FT == 3 {
 		a.S1.FrameStep()
 		a.S2.FrameStep()
+		a.Triangle.Length.Clock()
 	}
 	if a.FC == 4 && a.FT == 3 && !a.IrqDisable {
 		// todo: assert cpu irq line
+	}
+}
+
+func (l *Linear) Clock() {
+	if l.Halt {
+		l.Counter = l.Reload
+	} else if l.Counter != 0 {
+		l.Counter--
+	}
+	if !l.Flag {
+		l.Halt = false
 	}
 }
 
@@ -274,7 +355,15 @@ func (l *Length) Clock() {
 
 func (a *Apu) Volume() float32 {
 	p := PulseOut[a.S1.Volume()+a.S2.Volume()]
-	return p
+	t := TndOut[3*a.Triangle.Volume()]
+	return p + t
+}
+
+func (t *Triangle) Volume() uint8 {
+	if t.Enable && t.Linear.Counter > 0 && t.Length.Counter > 0 {
+		return TriLookup[t.SI]
+	}
+	return 0
 }
 
 func (s *Square) Volume() uint8 {
@@ -309,13 +398,14 @@ func (d *Duty) Enabled() bool {
 
 var (
 	PulseOut  [31]float32
+	TndOut    [203]float32
 	DutyCycle = [4][8]byte{
 		{0, 1, 0, 0, 0, 0, 0, 0},
 		{0, 1, 1, 0, 0, 0, 0, 0},
 		{0, 1, 1, 1, 1, 0, 0, 0},
 		{1, 0, 0, 1, 1, 1, 1, 1},
 	}
-	LenLookup = []byte{
+	LenLookup = [...]byte{
 		0x0a, 0xfe, 0x14, 0x02,
 		0x28, 0x04, 0x50, 0x06,
 		0xa0, 0x08, 0x3c, 0x0a,
@@ -325,10 +415,23 @@ var (
 		0xc0, 0x18, 0x48, 0x1a,
 		0x10, 0x1c, 0x20, 0x1e,
 	}
+	TriLookup = [...]byte{
+		0xF, 0xE, 0xD, 0xC,
+		0xB, 0xA, 0x9, 0x8,
+		0x7, 0x6, 0x5, 0x4,
+		0x3, 0x2, 0x1, 0x0,
+		0x0, 0x1, 0x2, 0x3,
+		0x4, 0x5, 0x6, 0x7,
+		0x8, 0x9, 0xA, 0xB,
+		0xC, 0xD, 0xE, 0xF,
+	}
 )
 
 func init() {
 	for i := range PulseOut {
 		PulseOut[i] = 95.88 / (8128/float32(i) + 100)
+	}
+	for i := range TndOut {
+		TndOut[i] = 163.67 / (24329/float32(i) + 100)
 	}
 }
