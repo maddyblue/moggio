@@ -3,11 +3,22 @@ package nsf
 type Apu struct {
 	S1, S2 Square
 	Triangle
+	Noise
 
 	Odd        bool
 	FC         byte
 	FT         byte
 	IrqDisable bool
+}
+
+type Noise struct {
+	Envelope
+	Timer
+	Length
+	Short bool
+	Shift uint16
+
+	Enable bool
 }
 
 type Triangle struct {
@@ -81,6 +92,7 @@ func (a *Apu) Init() {
 	a.Write(0x4013, 0)
 	a.Write(0x4015, 0xf)
 	a.Write(0x4017, 0)
+	a.Noise.Shift = 1
 }
 
 func (a *Apu) Write(v uint16, b byte) {
@@ -107,10 +119,17 @@ func (a *Apu) Write(v uint16, b byte) {
 		a.Triangle.Control2(b)
 	case 0x0b:
 		a.Triangle.Control3(b)
+	case 0x0c:
+		a.Noise.Control1(b)
+	case 0x0e:
+		a.Noise.Control2(b)
+	case 0x0f:
+		a.Noise.Control3(b)
 	case 0x15:
 		a.S1.Disable(b&0x1 == 0)
 		a.S2.Disable(b&0x2 == 0)
 		a.Triangle.Disable(b&0x4 == 0)
+		a.Noise.Disable(b&0x8 == 0)
 	case 0x17:
 		a.FT = 0
 		if b&0x80 != 0 {
@@ -121,6 +140,19 @@ func (a *Apu) Write(v uint16, b byte) {
 		}
 		a.IrqDisable = b&0x40 != 0
 	}
+}
+
+func (n *Noise) Control1(b byte) {
+	n.Envelope.Control(b)
+}
+
+func (n *Noise) Control2(b byte) {
+	n.Timer.Length = NoiseLookup[b&0xf]
+	n.Short = b&0x8 != 0
+}
+
+func (n *Noise) Control3(b byte) {
+	n.Length.Set(b >> 3)
 }
 
 func (t *Triangle) Control1(b byte) {
@@ -209,6 +241,13 @@ func (t *Triangle) Disable(b bool) {
 	}
 }
 
+func (n *Noise) Disable(b bool) {
+	n.Enable = !b
+	if b {
+		n.Length.Counter = 0
+	}
+}
+
 func (a *Apu) Read(v uint16) byte {
 	var b byte
 	if v == 0x4015 {
@@ -220,6 +259,9 @@ func (a *Apu) Read(v uint16) byte {
 		}
 		if a.Triangle.Length.Counter > 0 {
 			b |= 0x4
+		}
+		if a.Noise.Length.Counter > 0 {
+			b |= 0x8
 		}
 	}
 	return b
@@ -290,6 +332,21 @@ func (t *Triangle) Clock() {
 	}
 }
 
+func (n *Noise) Clock() {
+	if n.Timer.Clock() {
+		var feedback uint16
+		if n.Short {
+			feedback = n.Shift & 0x40 << 8
+		} else {
+			feedback = n.Shift << 13
+		}
+		feedback ^= n.Shift << 14
+		n.Shift >>= 1
+		n.Shift &= 0x3fff
+		n.Shift |= feedback
+	}
+}
+
 func (a *Apu) Step() {
 	if a.Odd {
 		if a.S1.Enable {
@@ -297,6 +354,9 @@ func (a *Apu) Step() {
 		}
 		if a.S2.Enable {
 			a.S2.Clock()
+		}
+		if a.Noise.Enable {
+			a.Noise.Clock()
 		}
 	}
 	a.Odd = !a.Odd
@@ -314,11 +374,13 @@ func (a *Apu) FrameStep() {
 		a.S1.Envelope.Clock()
 		a.S2.Envelope.Clock()
 		a.Triangle.Linear.Clock()
+		a.Noise.Envelope.Clock()
 	}
 	if a.FT == 1 || a.FT == 3 {
 		a.S1.FrameStep()
 		a.S2.FrameStep()
 		a.Triangle.Length.Clock()
+		a.Noise.Length.Clock()
 	}
 	if a.FC == 4 && a.FT == 3 && !a.IrqDisable {
 		// todo: assert cpu irq line
@@ -354,8 +416,15 @@ func (l *Length) Clock() {
 
 func (a *Apu) Volume() float32 {
 	p := PulseOut[a.S1.Volume()+a.S2.Volume()]
-	t := TndOut[3*a.Triangle.Volume()]
+	t := TndOut[3*a.Triangle.Volume()+2*a.Noise.Volume()]
 	return p + t
+}
+
+func (n *Noise) Volume() uint8 {
+	if n.Enable && n.Length.Counter > 0 && n.Shift&0x1 != 0 {
+		return n.Envelope.Output()
+	}
+	return 0
 }
 
 func (t *Triangle) Volume() uint8 {
@@ -423,6 +492,12 @@ var (
 		0x4, 0x5, 0x6, 0x7,
 		0x8, 0x9, 0xA, 0xB,
 		0xC, 0xD, 0xE, 0xF,
+	}
+	NoiseLookup = [...]uint16{
+		0x004, 0x008, 0x010, 0x020,
+		0x040, 0x060, 0x080, 0x0a0,
+		0x0ca, 0x0fe, 0x17c, 0x1fc,
+		0x2fa, 0x3f8, 0x7f2, 0xfe4,
 	}
 )
 
