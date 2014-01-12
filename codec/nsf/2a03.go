@@ -312,6 +312,7 @@ func (a *Apu) FrameStep() {
 	}
 	if a.FT <= 3 {
 		a.S1.Envelope.Clock()
+		a.S2.Envelope.Clock()
 		a.Triangle.Linear.Clock()
 	}
 	if a.FT == 1 || a.FT == 3 {
