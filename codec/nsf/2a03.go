@@ -30,7 +30,7 @@ type Sweep struct {
 	Enable    bool
 	Divider   byte
 	Reset     bool
-	NegOffset bool
+	NegOffset int
 }
 
 type Envelope struct {
@@ -53,7 +53,7 @@ type Length struct {
 }
 
 func (a *Apu) Init() {
-	a.S2.Sweep.NegOffset = true
+	a.S1.Sweep.NegOffset = -1
 	for i := uint16(0x4000); i <= 0x400f; i++ {
 		a.Write(i, 0)
 	}
@@ -291,14 +291,15 @@ func (e *Envelope) Output() byte {
 }
 
 func (s *Square) SweepResult() uint16 {
-	r := s.Timer.Tick >> s.Sweep.Shift
+	r := int(s.Timer.Tick >> s.Sweep.Shift)
 	if s.Sweep.Negate {
-		r = ^r
-		if s.Sweep.NegOffset {
-			r++
-		}
+		r =  - r
 	}
-	return s.Timer.Tick + r
+	r += int(s.Timer.Tick)
+	if r > 0x7ff {
+		r = 0x800
+	}
+	return uint16(r)
 }
 
 func (d *Duty) Enabled() bool {
