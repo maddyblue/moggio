@@ -211,10 +211,6 @@ func (e *Envelope) Clock() {
 	}
 }
 
-// 1.79 MHz/(N+1)
-// square: -> duty cycle generator
-// triangle: -> triangle step generator
-// noise: -> random number generator
 func (t *Timer) Clock() bool {
 	if t.Tick == 0 {
 		t.Tick = t.Length
