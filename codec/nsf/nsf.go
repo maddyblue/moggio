@@ -118,22 +118,11 @@ func (n *NSF) Init(song byte) {
 	n.Ram = new(Ram)
 	n.Cpu = cpu6502.New(n.Ram)
 	copy(n.Ram.M[n.LoadAddr:], n.Data)
-	n.Ram.A.S1.Sweep.NegOffset = 1
-	n.Ram.A.FC = 4
-	for i := uint16(0x4000); i <= 0x400f; i++ {
-		n.Ram.Write(i, 0)
-	}
-	n.Ram.Write(0x4010, 0x10)
-	n.Ram.Write(0x4011, 0)
-	n.Ram.Write(0x4012, 0)
-	n.Ram.Write(0x4013, 0)
-	n.Ram.Write(0x4015, 0xf)
+	n.Ram.A.Init()
 	n.Cpu.A = song - 1
 	n.Cpu.PC = n.InitAddr
 	n.Cpu.T = nil
-	println("RUN INIT")
 	n.Cpu.Run()
-	println("INIT DONE")
 	n.Cpu.T = n
 }
 
@@ -179,7 +168,7 @@ type Ram struct {
 }
 
 func (r *Ram) Read(v uint16) byte {
-	if v&0xf000 == 0x4000 {
+	if v == 0x4015 {
 		return r.A.Read(v)
 	} else {
 		return r.M[v]
@@ -187,12 +176,8 @@ func (r *Ram) Read(v uint16) byte {
 }
 
 func (r *Ram) Write(v uint16, b byte) {
-	if v == 0x4017 {
-		r.M[v] = b
+	r.M[v] = b
+	if v&0xf000 == 0x4000 {
 		r.A.Write(v, b)
-	} else if v&0xf000 == 0x4000 {
-		r.A.Write(v, b)
-	} else {
-		r.M[v] = b
 	}
 }

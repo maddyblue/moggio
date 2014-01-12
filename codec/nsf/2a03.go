@@ -5,9 +5,9 @@ import "fmt"
 type Apu struct {
 	S1, S2 Square
 
-	FC        byte
-	FT        byte
-	IrqEnable bool
+	FC         byte
+	FT         byte
+	IrqDisable bool
 }
 
 type Square struct {
@@ -27,20 +27,21 @@ type Duty struct {
 
 type Sweep struct {
 	Shift     byte
-	Decrease  bool
-	Rate      byte
+	Negate    bool
+	Period    byte
 	Enable    bool
-	Counter   byte
-	Value     uint16
-	NegOffset uint16
+	Divider   byte
+	Reset     bool
+	NegOffset bool
 }
 
 type Envelope struct {
-	DecayRate    byte
-	DecayCounter byte
-	DecayDisable bool
-	Loop         bool
-	Counter      byte
+	Volume   byte
+	Divider  byte
+	Counter  byte
+	Loop     bool
+	Constant bool
+	Start    bool
 }
 
 type Timer struct {
@@ -49,12 +50,25 @@ type Timer struct {
 }
 
 type Length struct {
-	Disable bool
+	Halt    bool
 	Counter byte
 }
 
+func (a *Apu) Init() {
+	a.S2.Sweep.NegOffset = true
+	for i := uint16(0x4000); i <= 0x400f; i++ {
+		a.Write(i, 0)
+	}
+	a.Write(0x4010, 0x10)
+	a.Write(0x4011, 0)
+	a.Write(0x4012, 0)
+	a.Write(0x4013, 0)
+	a.Write(0x4015, 0xf)
+	a.Write(0x4017, 0)
+}
+
 func (a *Apu) Write(v uint16, b byte) {
-	fmt.Printf("WRITE %x %08b\n", v, b)
+	//fmt.Printf("WRITE %x %08b\n", v, b)
 	switch v & 0xff {
 	case 0x00:
 		a.S1.Control1(b)
@@ -76,19 +90,21 @@ func (a *Apu) Write(v uint16, b byte) {
 		a.S1.Disable(b&0x1 == 0)
 		a.S2.Disable(b&0x2 == 0)
 	case 0x17:
+		a.FT = 0
 		if b&0x80 != 0 {
 			a.FC = 5
+			a.FrameStep()
 		} else {
 			a.FC = 4
 		}
-		a.IrqEnable = b&0x40 != 0
+		a.IrqDisable = b&0x40 != 0
 	}
 }
 
 func (s *Square) Control1(b byte) {
 	s.Envelope.Control(b)
 	s.Duty.Control(b)
-	s.Length.Disable = b&0x20 != 0
+	s.Length.Halt = b&0x20 != 0
 }
 
 func (s *Square) Control2(b byte) {
@@ -105,7 +121,7 @@ func (s *Square) Control4(b byte) {
 	s.Timer.Length |= uint16(b&0x7) << 8
 	s.Length.Set(b >> 3)
 
-	s.Envelope.Counter = 15
+	s.Envelope.Start = true
 	s.Duty.Counter = 0
 }
 
@@ -115,26 +131,26 @@ func (d *Duty) Control(b byte) {
 
 func (s *Sweep) Control(b byte) {
 	s.Shift = b & 0x7
-	s.Decrease = b&0x8 != 0
-	s.Rate = (b >> 4) & 0x7
+	s.Negate = b&0x8 != 0
+	s.Period = (b >> 4) & 0x7
 	s.Enable = b&0x80 != 0
+	s.Reset = true
 }
 
 func (e *Envelope) Control(b byte) {
-	e.DecayRate = b & 0xf
-	e.DecayDisable = b&0x10 != 0
+	e.Volume = b & 0xf
+	e.Constant = b&0x10 != 0
 	e.Loop = b&0x20 != 0
-
-	fmt.Printf("ENV CONTROL %08b, %v, %v, %v\n", b, e.DecayRate, e.DecayDisable, e.Loop)
-	e.Counter = 15
 }
 
 func (l *Length) Set(b byte) {
-	l.Counter = LenLookup[b]
+	if !l.Halt {
+		l.Counter = LenLookup[b]
+	}
 }
 
 func (l *Length) Enabled() bool {
-	return l.Counter != 0 && !l.Disable
+	return l.Counter != 0
 }
 
 func (s *Square) Disable(b bool) {
@@ -167,36 +183,36 @@ func (d *Duty) Clock() {
 	//println("DUTY", d.Counter)
 }
 
-func (s *Sweep) Clock() {
-	if s.Counter == 0 {
-		s.Counter = s.Rate
+func (s *Sweep) Clock() (r bool) {
+	if s.Divider == 0 {
+		s.Divider = s.Period
+		r = true
 	} else {
-		s.Counter--
-		// todo: only update if chan's len counter != 0
-		if s.Shift > 0 && s.Enable && s.Value >= 8 {
-			d := s.Value >> s.Shift
-			if s.Decrease {
-				d = s.NegOffset - d
-			}
-			if s.Value+d < 0x800 {
-				s.Value += d
-			}
-		}
+		s.Divider--
 	}
+	if s.Reset {
+		s.Divider = 0
+		s.Reset = false
+	}
+	return
 }
 
 func (e *Envelope) Clock() {
-	if e.DecayCounter == 0 {
-		e.DecayCounter = e.DecayRate + 1
-		if e.Counter > 0 {
-			e.Counter--
-		} else if e.Loop {
-			e.Counter = 15
-		}
+	if e.Start {
+		e.Start = false
+		e.Counter = 15
 	} else {
-		e.DecayCounter--
+		if e.Divider == 0 {
+			e.Divider = e.Volume
+			if e.Counter != 0 {
+				e.Counter--
+			} else if e.Loop {
+				e.Counter = 15
+			}
+		} else {
+			e.Divider--
+		}
 	}
-	//println("ENVL", e.Counter, e.DecayCounter)
 }
 
 // 1.79 MHz/(N+1)
@@ -237,17 +253,28 @@ func (a *Apu) FrameStep() {
 		a.S1.Envelope.Clock()
 	}
 	if a.FT == 1 || a.FT == 3 {
-		a.S1.Length.Clock()
-		a.S1.Sweep.Clock()
+		a.S1.FrameStep()
+		a.S2.FrameStep()
 	}
-	println("FRAM", a.FT, a.FC)
+	if a.FC == 4 && a.FT == 3 && !a.IrqDisable {
+		// todo: assert cpu irq line
+	}
+}
+
+func (s *Square) FrameStep() {
+	s.Length.Clock()
+	if s.Sweep.Clock() && s.Sweep.Enable && s.Sweep.Shift > 0 {
+		r := s.SweepResult()
+		if r <= 0x7ff {
+			s.Timer.Tick = r
+		}
+	}
 }
 
 func (l *Length) Clock() {
-	if !l.Disable && l.Counter > 0 {
+	if !l.Halt && l.Counter > 0 {
 		l.Counter--
 	}
-	//println("LENG", l.Counter)
 }
 
 func (a *Apu) Volume() float32 {
@@ -256,17 +283,28 @@ func (a *Apu) Volume() float32 {
 }
 
 func (s *Square) Volume() uint8 {
-	if s.Enable && s.Duty.Enabled() && s.Length.Enabled() && s.Timer.Tick >= 8 {
-		return s.Envelope.Volume()
+	if s.Enable && s.Duty.Enabled() && s.Length.Enabled() && s.Timer.Tick >= 8 && s.SweepResult() <= 0x7ff {
+		return s.Envelope.Output()
 	}
 	return 0
 }
 
-func (e *Envelope) Volume() byte {
-	if e.DecayDisable {
-		return e.DecayRate
+func (e *Envelope) Output() byte {
+	if e.Constant {
+		return e.Volume
 	}
 	return e.Counter
+}
+
+func (s *Square) SweepResult() uint16 {
+	r := s.Timer.Tick >> s.Sweep.Shift
+	if s.Sweep.Negate {
+		r = ^r
+		if s.Sweep.NegOffset {
+			r++
+		}
+	}
+	return s.Timer.Tick + r
 }
 
 func (d *Duty) Enabled() bool {
@@ -282,14 +320,14 @@ var (
 		{1, 0, 0, 1, 1, 1, 1, 1},
 	}
 	LenLookup = []byte{
-		0x05, 0x0a, 0x14, 0x28,
-		0x50, 0x1e, 0x07, 0x0d,
-		0x06, 0x0c, 0x18, 0x30,
-		0x60, 0x24, 0x08, 0x10,
-		0x7f, 0x01, 0x02, 0x03,
-		0x04, 0x05, 0x06, 0x07,
-		0x08, 0x09, 0x0a, 0x0b,
-		0x0c, 0x0d, 0x0e, 0x0f,
+		0x0a, 0xfe, 0x14, 0x02,
+		0x28, 0x04, 0x50, 0x06,
+		0xa0, 0x08, 0x3c, 0x0a,
+		0x0e, 0x0c, 0x1a, 0x0e,
+		0x0c, 0x10, 0x18, 0x12,
+		0x30, 0x14, 0x60, 0x16,
+		0xc0, 0x18, 0x48, 0x1a,
+		0x10, 0x1c, 0x20, 0x1e,
 	}
 )
 
