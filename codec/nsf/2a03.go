@@ -9,6 +9,7 @@ type Apu struct {
 	FC         byte
 	FT         byte
 	IrqDisable bool
+	Interrupt  bool
 }
 
 type Noise struct {
@@ -139,6 +140,9 @@ func (a *Apu) Write(v uint16, b byte) {
 			a.FC = 4
 		}
 		a.IrqDisable = b&0x40 != 0
+		if a.IrqDisable && a.Interrupt {
+			a.Interrupt = false
+		}
 	}
 }
 
@@ -263,6 +267,10 @@ func (a *Apu) Read(v uint16) byte {
 		if a.Noise.Length.Counter > 0 {
 			b |= 0x8
 		}
+		if a.Interrupt {
+			b |= 0x40
+			a.Interrupt = false
+		}
 	}
 	return b
 }
@@ -382,8 +390,8 @@ func (a *Apu) FrameStep() {
 		a.Triangle.Length.Clock()
 		a.Noise.Length.Clock()
 	}
-	if a.FC == 4 && a.FT == 3 && !a.IrqDisable {
-		// todo: assert cpu irq line
+	if a.FC == 4 && a.FT == 3 {
+		a.Interrupt = true
 	}
 }
 
