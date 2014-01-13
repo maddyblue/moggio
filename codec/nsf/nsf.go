@@ -136,7 +136,7 @@ func (n *NSF) Play(d time.Duration) []float32 {
 		n.playTicks = 0
 		n.Cpu.PC = n.PlayAddr
 		n.Cpu.Halt = false
-		for !n.Cpu.Halt {
+		for !n.Cpu.Halt && n.totalTicks < ticks {
 			n.Cpu.Step()
 		}
 		for i := ticksPerPlay - n.playTicks; i > 0 && n.totalTicks < ticks; i-- {
