@@ -138,6 +138,9 @@ func (n *NSF) Play(d time.Duration) []float32 {
 		n.Cpu.Halt = false
 		for !n.Cpu.Halt && n.totalTicks < ticks {
 			n.Cpu.Step()
+			if !n.Cpu.I() {
+				panic("INTERRUPT")
+			}
 		}
 		for i := ticksPerPlay - n.playTicks; i > 0 && n.totalTicks < ticks; i-- {
 			n.Tick()
