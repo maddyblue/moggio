@@ -158,7 +158,7 @@ func New(m Memory) *Cpu {
 	c := Cpu{
 		Register: Register{
 			S:  0xff,
-			P:  0x30,
+			P:  P_B | P_X | P_I,
 			PC: 0x0600,
 		},
 		M: m,
@@ -321,7 +321,7 @@ const (
 	P_I
 	P_D
 	P_B
-	_
+	P_X // unused
 	P_V
 	P_N
 )
