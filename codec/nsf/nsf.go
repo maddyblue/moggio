@@ -11,8 +11,8 @@ import (
 
 const (
 	// 1.79 MHz
-	cpuClock   = 236250000 / 11 / 12
-	SampleRate = 44100
+	cpuClock          = 236250000 / 11 / 12
+	DefaultSampleRate = 44100
 )
 
 var (
@@ -91,6 +91,7 @@ type NSF struct {
 	Extra      byte
 	Data       []byte
 
+	SampleRate  int64
 	totalTicks  int64
 	frameTicks  int64
 	sampleTicks int64
@@ -109,7 +110,7 @@ func (n *NSF) Tick() {
 		n.Ram.A.FrameStep()
 	}
 	n.sampleTicks++
-	if n.sampleTicks >= cpuClock/SampleRate {
+	if n.sampleTicks >= cpuClock/n.SampleRate {
 		n.sampleTicks = 0
 		n.append(n.Ram.A.Volume())
 	}
@@ -131,6 +132,9 @@ func (n *NSF) append(v float32) {
 }
 
 func (n *NSF) Init(song byte) {
+	if n.SampleRate == 0 {
+		n.SampleRate = DefaultSampleRate
+	}
 	n.Ram = new(Ram)
 	n.Cpu = cpu6502.New(n.Ram)
 	copy(n.Ram.M[n.LoadAddr:], n.Data)

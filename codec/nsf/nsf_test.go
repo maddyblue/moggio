@@ -8,7 +8,7 @@ import (
 	"github.com/mjibson/pulsego"
 )
 
-func TestNSF(t *testing.T) {
+func _TestPulseGo(t *testing.T) {
 	f, err := os.Open("mm3.nsf")
 	if err != nil {
 		t.Fatal(err)
@@ -20,6 +20,7 @@ func TestNSF(t *testing.T) {
 	if n.LoadAddr != 0x8000 || n.InitAddr != 0x8003 || n.PlayAddr != 0x8000 {
 		t.Error("bad addresses")
 	}
+	n.Init(1)
 
 	pa := pulsego.NewPulseMainLoop()
 	defer pa.Dispose()
@@ -31,14 +32,13 @@ func TestNSF(t *testing.T) {
 	}
 	defer ctx.Dispose()
 	st := ctx.NewStream("default", &pulsego.PulseSampleSpec{
-		Format: pulsego.SAMPLE_FLOAT32LE, Rate: SampleRate, Channels: 1})
+		Format: pulsego.SAMPLE_FLOAT32LE, Rate: int(n.SampleRate), Channels: 1})
 	if st == nil {
 		t.Fatal("Failed to create a new stream")
 	}
 	defer st.Dispose()
 	st.ConnectToSink()
 
-	n.Init(1)
 	d := time.Second / 5
 	for {
 		wait := time.After(d)
