@@ -96,6 +96,8 @@ type NSF struct {
 	sampleTicks int64
 	playTicks   int64
 	samples     []float32
+	prevs       [4]float32
+	pi          int // prevs index
 }
 
 func (n *NSF) Tick() {
@@ -109,9 +111,23 @@ func (n *NSF) Tick() {
 	n.sampleTicks++
 	if n.sampleTicks >= cpuClock/SampleRate {
 		n.sampleTicks = 0
-		n.samples = append(n.samples, n.Ram.A.Volume())
+		n.append(n.Ram.A.Volume())
 	}
 	n.playTicks++
+}
+
+func (n *NSF) append(v float32) {
+	n.prevs[n.pi] = v
+	n.pi++
+	if n.pi >= len(n.prevs) {
+		n.pi = 0
+	}
+	var sum float32
+	for _, s := range n.prevs {
+		sum += s
+	}
+	sum /= float32(len(n.prevs))
+	n.samples = append(n.samples, sum)
 }
 
 func (n *NSF) Init(song byte) {
