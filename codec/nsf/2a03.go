@@ -390,7 +390,7 @@ func (a *Apu) FrameStep() {
 		a.Triangle.Length.Clock()
 		a.Noise.Length.Clock()
 	}
-	if a.FC == 4 && a.FT == 3 {
+	if a.FC == 4 && a.FT == 3 && !a.IrqDisable {
 		a.Interrupt = true
 	}
 }
