@@ -146,23 +146,21 @@ func (n *NSF) Init(song byte) {
 	n.Cpu.T = n
 }
 
-func (n *NSF) Play(d time.Duration) []float32 {
+func (n *NSF) Play(samples int) []float32 {
 	playDur := time.Duration(n.SpeedNTSC) * time.Nanosecond * 1000
 	ticksPerPlay := int64(playDur / (time.Second / cpuClock))
-	ticks := int64(d / (time.Second / cpuClock))
-	n.samples = make([]float32, 0)
-	n.totalTicks = 0
-	for n.totalTicks < ticks {
+	n.samples = make([]float32, 0, samples)
+	for len(n.samples) < samples {
 		n.playTicks = 0
 		n.Cpu.PC = n.PlayAddr
 		n.Cpu.Halt = false
-		for !n.Cpu.Halt && n.totalTicks < ticks {
+		for !n.Cpu.Halt && len(n.samples) < samples {
 			n.Cpu.Step()
 			if !n.Cpu.I() {
 				panic("INTERRUPT")
 			}
 		}
-		for i := ticksPerPlay - n.playTicks; i > 0 && n.totalTicks < ticks; i-- {
+		for i := ticksPerPlay - n.playTicks; i > 0 && len(n.samples) < samples; i-- {
 			n.Tick()
 		}
 	}
