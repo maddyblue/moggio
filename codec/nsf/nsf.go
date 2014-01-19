@@ -11,12 +11,14 @@ import (
 
 const (
 	// 1.79 MHz
-	cpuClock          = 236250000 / 11 / 12
-	DefaultSampleRate = 44100
+	cpuClock = 236250000 / 11 / 12
 )
 
 var (
-	ErrUnrecognized = errors.New("nsf: unrecognized format")
+	// DefaultSampleRate is the default sample rate of a track after calling
+	// Init().
+	DefaultSampleRate = 44100
+	ErrUnrecognized   = errors.New("nsf: unrecognized format")
 )
 
 const (
@@ -91,6 +93,8 @@ type NSF struct {
 	Extra      byte
 	Data       []byte
 
+	// SampleRate is the sample rate at which samples will be generated. If not
+	// set before Init(), it is set to DefaultSampleRate.
 	SampleRate  int64
 	totalTicks  int64
 	frameTicks  int64
@@ -133,7 +137,7 @@ func (n *NSF) append(v float32) {
 
 func (n *NSF) Init(song byte) {
 	if n.SampleRate == 0 {
-		n.SampleRate = DefaultSampleRate
+		n.SampleRate = int64(DefaultSampleRate)
 	}
 	n.Ram = new(Ram)
 	n.Cpu = cpu6502.New(n.Ram)
