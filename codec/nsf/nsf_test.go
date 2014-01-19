@@ -3,6 +3,7 @@ package nsf
 import (
 	"os"
 	"testing"
+	"time"
 
 	"github.com/mjibson/mog/output"
 )
@@ -24,7 +25,8 @@ func TestNsf(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for {
-		o.Push(n.Play(1024))
+	const div = 10
+	for _ = range time.Tick(time.Second / div) {
+		o.Push(n.Play(int(n.SampleRate / div)))
 	}
 }
