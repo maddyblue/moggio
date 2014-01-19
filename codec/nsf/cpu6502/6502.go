@@ -157,9 +157,8 @@ func (l Log) String() string {
 func New(m Memory) *Cpu {
 	c := Cpu{
 		Register: Register{
-			S:  0xff,
-			P:  P_B | P_X | P_I,
-			PC: 0x0600,
+			S: 0xff,
+			P: P_B | P_X | P_I,
 		},
 		M: m,
 	}
