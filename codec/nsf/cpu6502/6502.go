@@ -816,11 +816,11 @@ func EOR(c *Cpu, b byte, v uint16, m Mode) {
 }
 
 func PHP(c *Cpu, b byte, v uint16, m Mode) {
-	c.stackPush(c.P | 0x30)
+	c.stackPush(c.P | P_X)
 }
 
 func PLP(c *Cpu, b byte, v uint16, m Mode) {
-	c.P = c.stackPop() | 0x30
+	c.P = c.stackPop() | P_X | P_B
 }
 
 func RTI(c *Cpu, b byte, v uint16, m Mode) {
