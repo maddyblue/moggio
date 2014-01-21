@@ -247,7 +247,11 @@ func (c *Cpu) Step() {
 		t = uint16(c.M.Read(c.PC))
 		c.PC++
 		t |= uint16(c.M.Read(c.PC)) << 8
-		v = uint16(c.M.Read(t)) + uint16(c.M.Read(t+1))<<8
+		t1 := t + 1
+		if t&0xff == 0xff {
+			t1 = t & 0xff00
+		}
+		v = uint16(c.M.Read(t)) + uint16(c.M.Read(t1))<<8
 		c.PC++
 	case MODE_INDX:
 		t = uint16(c.M.Read(c.PC))
