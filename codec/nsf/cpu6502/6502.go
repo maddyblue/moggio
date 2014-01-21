@@ -117,6 +117,8 @@ type Cpu struct {
 	T    Ticker
 	Halt bool
 
+	DisableDecimal bool
+
 	// If non nil, will record registers on each step.
 	L     []Log
 	LI    int // Log index
@@ -416,7 +418,7 @@ func ADC(c *Cpu, b byte, v uint16, m Mode) {
 		c.SEV()
 	}
 	var a uint16
-	if c.D() {
+	if c.D() && !c.DisableDecimal {
 		a = uint16(c.A&0xf) + uint16(b&0xf)
 		if c.C() {
 			a++
@@ -465,7 +467,7 @@ func SBC(c *Cpu, b byte, v uint16, m Mode) {
 		c.CLV()
 	}
 	var a uint16
-	if c.D() {
+	if c.D() && !c.DisableDecimal {
 		var w uint16
 		a = 0xf + uint16(c.A&0xf) - uint16(b&0xf)
 		if c.C() {
