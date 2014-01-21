@@ -254,12 +254,16 @@ func (c *Cpu) Step() {
 		c.PC++
 		v = t + uint16(c.X)
 		v &= 0xff
-		v = uint16(c.M.Read(v)) + uint16(c.M.Read(v+1))<<8
+		v1 := v + 1
+		v1 &= 0xff
+		v = uint16(c.M.Read(v)) + uint16(c.M.Read(v1))<<8
 		b = c.M.Read(v)
 	case MODE_INDY:
 		t = uint16(c.M.Read(c.PC))
 		c.PC++
-		v = uint16(c.M.Read(t)) + uint16(c.M.Read(t+1))<<8 + uint16(c.Y)
+		t1 := t + 1
+		t1 &= 0xff
+		v = uint16(c.M.Read(t)) + uint16(c.M.Read(t1))<<8 + uint16(c.Y)
 		b = c.M.Read(v)
 	case MODE_SNGL:
 		// nothing
