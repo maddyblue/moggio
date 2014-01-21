@@ -354,7 +354,7 @@ func init() {
 	populate := func(i Instruction, m Mode, v byte) {
 		if v != null {
 			if Optable[v] != nil {
-				panic("duplicate instruction")
+				panic(fmt.Sprintf("duplicate instruction %02x", v))
 			} else if i.TIM[m] == 0 {
 				panic("no timing information")
 			}
