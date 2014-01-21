@@ -193,9 +193,12 @@ type Ram struct {
 }
 
 func (r *Ram) Read(v uint16) byte {
-	if v == 0x4015 {
+	switch v {
+	//case 0x2002:
+	//return 0x80
+	case 0x4015:
 		return r.A.Read(v)
-	} else {
+	default:
 		return r.M[v]
 	}
 }
