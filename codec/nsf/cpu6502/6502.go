@@ -266,7 +266,6 @@ func (c *Cpu) Step() {
 	default:
 		panic("6502: bad address mode")
 	}
-	_ = pc
 	o.F(c, b, v, o.Mode)
 	c.Tick(o.T)
 	if c.L != nil || c.Debug {
