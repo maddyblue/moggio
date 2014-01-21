@@ -848,7 +848,7 @@ func PLP(c *Cpu, b byte, v uint16, m Mode) {
 }
 
 func RTI(c *Cpu, b byte, v uint16, m Mode) {
-	c.P = c.stackPop()
+	c.P = c.stackPop() | P_X
 	c.PC = uint16(c.stackPop()) + uint16(c.stackPop())<<8
 }
 
