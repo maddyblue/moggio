@@ -96,7 +96,10 @@ const (
 	MODE_INDY
 	MODE_SNGL
 	MODE_BRA
-	IRQ = 0xfffe
+
+	IRQ   = 0xfffe
+	RESET = 0xfffc
+	NMI   = 0xfffa
 )
 
 type Memory interface {
@@ -169,6 +172,10 @@ func (c *Cpu) Run() {
 	for !c.Halt {
 		c.Step()
 	}
+}
+
+func (c *Cpu) Reset() {
+	c.PC = uint16(c.M.Read(RESET+1))<<8 | uint16(c.M.Read(RESET))
 }
 
 func (c *Cpu) Tick(i int) {
@@ -371,6 +378,20 @@ func init() {
 		Mode: MODE_BRA,
 		T:    _K[MODE_BRA],
 	}
+}
+
+func (c *Cpu) Interrupt() {
+	a := uint16(c.M.Read(NMI)) + uint16(c.M.Read(NMI+1))<<8
+	if a == 0 {
+		panic("BAD NMI")
+		c.Halt = true
+		return
+	}
+	c.stackPush(byte(c.PC >> 8))
+	c.stackPush(byte(c.PC & 0xff))
+	c.stackPush(c.P | P_X | P_B)
+	c.P |= P_I
+	c.Tick(Optable[0].T)
 }
 
 func BRK(c *Cpu, b byte, v uint16, m Mode) {
