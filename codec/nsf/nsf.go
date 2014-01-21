@@ -105,6 +105,17 @@ type NSF struct {
 	pi          int // prevs index
 }
 
+func New() *NSF {
+	n := NSF{
+		Ram: new(Ram),
+	}
+	n.Cpu = cpu6502.New(n.Ram)
+	n.Cpu.DisableDecimal = true
+	n.Cpu.P = 0x24
+	n.Cpu.S = 0xfd
+	return &n
+}
+
 func (n *NSF) Tick() {
 	n.Ram.A.Step()
 	n.totalTicks++
@@ -139,8 +150,6 @@ func (n *NSF) Init(song byte) {
 	if n.SampleRate == 0 {
 		n.SampleRate = int64(DefaultSampleRate)
 	}
-	n.Ram = new(Ram)
-	n.Cpu = cpu6502.New(n.Ram)
 	copy(n.Ram.M[n.LoadAddr:], n.Data)
 	n.Ram.A.Init()
 	n.Cpu.A = song - 1
