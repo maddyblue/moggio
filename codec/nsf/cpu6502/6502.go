@@ -837,7 +837,7 @@ func EOR(c *Cpu, b byte, v uint16, m Mode) {
 }
 
 func PHP(c *Cpu, b byte, v uint16, m Mode) {
-	c.stackPush(c.P | P_X)
+	c.stackPush(c.P | P_X | P_B)
 }
 
 func PLP(c *Cpu, b byte, v uint16, m Mode) {
