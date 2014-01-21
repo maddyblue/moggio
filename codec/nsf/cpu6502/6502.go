@@ -198,9 +198,6 @@ func (c *Cpu) Step() {
 	inst := c.M.Read(c.PC)
 	c.PC++
 	o := Optable[inst]
-	if o == nil {
-		return
-	}
 	var b byte
 	var v, t uint16
 	switch o.Mode {
@@ -386,6 +383,79 @@ func init() {
 		F:    BRK,
 		Mode: MODE_BRA,
 		T:    _K[MODE_BRA],
+	}
+	// populate empty slots with NOPs
+	oIM := &Op{
+		F:    NOP,
+		Mode: MODE_IMM,
+		T:    2,
+	}
+	oZP := &Op{
+		F:    NOP,
+		Mode: MODE_ZP,
+		T:    2,
+	}
+	oAB := &Op{
+		F:    NOP,
+		Mode: MODE_ABS,
+		T:    3,
+	}
+	oSN := &Op{
+		F:    NOP,
+		Mode: MODE_SNGL,
+		T:    1,
+	}
+	oIX := &Op{
+		F:    NOP,
+		Mode: MODE_INDX,
+		T:    3,
+	}
+	oIY := &Op{
+		F:    NOP,
+		Mode: MODE_INDY,
+		T:    3,
+	}
+	oZX := &Op{
+		F:    NOP,
+		Mode: MODE_ZPX,
+		T:    3,
+	}
+	oAX := &Op{
+		F:    NOP,
+		Mode: MODE_ABSX,
+		T:    3,
+	}
+	oAY := &Op{
+		F:    NOP,
+		Mode: MODE_ABSY,
+		T:    3,
+	}
+	for i, o := range Optable {
+		if o != nil {
+			continue
+		}
+		switch i & 0x1F {
+		case 0x0, 0x2, 0x9, 0xb:
+			Optable[i] = oIM
+		case 0x3:
+			Optable[i] = oIX
+		case 0x4, 0x7:
+			Optable[i] = oZP
+		case 0xc, 0xf:
+			Optable[i] = oAB
+		case 0x12, 0x1a:
+			Optable[i] = oSN
+		case 0x13:
+			Optable[i] = oIY
+		case 0x14, 0x17:
+			Optable[i] = oZX
+		case 0x1b, 0x1e:
+			Optable[i] = oAY
+		case 0x1c, 0x1f:
+			Optable[i] = oAX
+		default:
+			panic("6502: missing NOP")
+		}
 	}
 }
 
@@ -981,6 +1051,8 @@ var Opcodes = []Instruction{
 	{STY, null, 0x84, 0x94, null, 0x8c, null, null, null, null, null, null, null, _3},
 	{TAX, null, null, null, null, null, null, null, null, null, null, 0xaa, null, _2},
 	{TAY, null, null, null, null, null, null, null, null, null, null, 0xa8, null, _2},
+	//{TRB, null, 0x14, null, null, 0x1c, null, null, null, null, null, null, null, _2},
+	//{TSB, null, 0x04, null, null, 0x0c, null, null, null, null, null, null, null, _2},
 	{TSX, null, null, null, null, null, null, null, null, null, null, 0xba, null, _2},
 	{TXA, null, null, null, null, null, null, null, null, null, null, 0x8a, null, _2},
 	{TXS, null, null, null, null, null, null, null, null, null, null, 0x9a, null, _2},
