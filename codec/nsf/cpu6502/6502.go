@@ -71,7 +71,7 @@ func (m Mode) Format() string {
 	case MODE_ABSY:
 		return "$%04[3]X,Y"
 	case MODE_IND:
-		return "($%04[2]X)"
+		return "($%04[3]X)"
 	case MODE_INDX:
 		return "($%02[3]X,X)"
 	case MODE_INDY:
@@ -244,10 +244,10 @@ func (c *Cpu) Step() {
 		v = t + uint16(c.Y)
 		b = c.M.Read(v)
 	case MODE_IND:
-		v = uint16(c.M.Read(c.PC))
+		t = uint16(c.M.Read(c.PC))
 		c.PC++
-		v |= uint16(c.M.Read(c.PC)) << 8
-		v = uint16(c.M.Read(v)) + uint16(c.M.Read(v+1))<<8
+		t |= uint16(c.M.Read(c.PC)) << 8
+		v = uint16(c.M.Read(t)) + uint16(c.M.Read(t+1))<<8
 		c.PC++
 	case MODE_INDX:
 		t = uint16(c.M.Read(c.PC))
