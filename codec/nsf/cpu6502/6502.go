@@ -969,6 +969,9 @@ var (
 		MODE_ZPX:  6,
 		MODE_ABS:  6,
 		MODE_ABSX: 7,
+		MODE_ABSY: 7,
+		MODE_INDX: 8,
+		MODE_INDY: 8,
 	}
 	_3 = timing{
 		MODE_SNGL: 3,
@@ -1057,4 +1060,57 @@ var Opcodes = []Instruction{
 	{TXA, null, null, null, null, null, null, null, null, null, null, 0x8a, null, _2},
 	{TXS, null, null, null, null, null, null, null, null, null, null, 0x9a, null, _2},
 	{TYA, null, null, null, null, null, null, null, null, null, null, 0x98, null, _2},
+
+	// Unofficial opcodes.
+	/* F,  Imm,   ZP,  ZPX,  ZPY,  ABS, ABSX, ABSY,  IND, INDX, INDY, SNGL,  BRA, TIM */
+	{LAX, 0xab, 0xa7, null, 0xb7, 0xaf, null, 0xbf, null, 0xa3, 0xb3, null, null, _1},
+	{SAX, null, 0x87, null, 0x97, 0x8f, null, null, null, 0x83, null, null, null, _3},
+	{SBC, 0xeb, null, null, null, null, null, null, null, null, null, null, null, _1},
+	{DCP, null, 0xc7, 0xd7, null, 0xcf, 0xdf, 0xdb, null, 0xc3, 0xd3, null, null, _2},
+	{ISC, null, 0xe7, 0xf7, null, 0xef, 0xff, 0xfb, null, 0xe3, 0xf3, null, null, _2},
+	{SLO, null, 0x07, 0x17, null, 0x0f, 0x1f, 0x1b, null, 0x03, 0x13, null, null, _2},
+	{RLA, null, 0x27, 0x37, null, 0x2f, 0x3f, 0x3b, null, 0x23, 0x33, null, null, _2},
+	{SRE, null, 0x47, 0x57, null, 0x4f, 0x5f, 0x5b, null, 0x43, 0x53, null, null, _2},
+	{RRA, null, 0x67, 0x77, null, 0x6f, 0x7f, 0x7b, null, 0x63, 0x73, null, null, _2},
+}
+
+// Unofficial instructions.
+
+func LAX(c *Cpu, b byte, v uint16, m Mode) {
+	LDX(c, b, v, m)
+	TXA(c, b, v, m)
+}
+
+func SAX(c *Cpu, b byte, v uint16, m Mode) {
+	c.M.Write(v, c.X&c.A)
+}
+
+func DCP(c *Cpu, b byte, v uint16, m Mode) {
+	DEC(c, b, v, m)
+	CMP(c, c.M.Read(v), v, m)
+}
+
+func ISC(c *Cpu, b byte, v uint16, m Mode) {
+	INC(c, b, v, m)
+	SBC(c, c.M.Read(v), v, m)
+}
+
+func SLO(c *Cpu, b byte, v uint16, m Mode) {
+	ASL(c, b, v, m)
+	ORA(c, c.M.Read(v), v, m)
+}
+
+func RLA(c *Cpu, b byte, v uint16, m Mode) {
+	ROL(c, b, v, m)
+	AND(c, c.M.Read(v), v, m)
+}
+
+func SRE(c *Cpu, b byte, v uint16, m Mode) {
+	LSR(c, b, v, m)
+	EOR(c, c.M.Read(v), v, m)
+}
+
+func RRA(c *Cpu, b byte, v uint16, m Mode) {
+	ROR(c, b, v, m)
+	ADC(c, c.M.Read(v), v, m)
 }
