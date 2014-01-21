@@ -648,32 +648,32 @@ func TXS(c *Cpu, b byte, v uint16, m Mode) {
 }
 
 func INX(c *Cpu, b byte, v uint16, m Mode) {
-	c.X = (c.X + 1) & 0xff
+	c.X++
 	c.setNV(c.X)
 }
 
 func INY(c *Cpu, b byte, v uint16, m Mode) {
-	c.Y = (c.Y + 1) & 0xff
+	c.Y++
 	c.setNV(c.Y)
 }
 
 func INC(c *Cpu, b byte, v uint16, m Mode) {
-	c.M.Write(v, (c.M.Read(v)+1)&0xff)
+	c.M.Write(v, b+1)
 	c.setNV(c.M.Read(v))
 }
 
 func DEX(c *Cpu, b byte, v uint16, m Mode) {
-	c.X = (c.X - 1) & 0xff
+	c.X--
 	c.setNV(c.X)
 }
 
 func DEY(c *Cpu, b byte, v uint16, m Mode) {
-	c.Y = (c.Y - 1) & 0xff
+	c.Y--
 	c.setNV(c.Y)
 }
 
 func DEC(c *Cpu, b byte, v uint16, m Mode) {
-	c.M.Write(v, (c.M.Read(v)-1)&0xff)
+	c.M.Write(v, b-1)
 	c.setNV(c.M.Read(v))
 }
 
