@@ -29,7 +29,7 @@ func loadNES(fname string) *NSF {
 		panic("unknown mapper")
 	}
 Loop:
-	for a := 0; true; {
+	for a := 0x4000; true; {
 		for i := 0; i < int(prg); i++ {
 			a += 0x4000
 			if a > 0xffff {
