@@ -126,7 +126,7 @@ func (n *NSF) Tick() {
 		n.Ram.A.FrameStep()
 	}
 	n.sampleTicks++
-	if n.sampleTicks >= cpuClock/n.SampleRate {
+	if n.SampleRate > 0 && n.sampleTicks >= cpuClock/n.SampleRate {
 		n.sampleTicks = 0
 		n.append(n.Ram.A.Volume())
 	}
