@@ -460,16 +460,7 @@ func init() {
 }
 
 func (c *Cpu) Interrupt() {
-	a := uint16(c.M.Read(NMI)) + uint16(c.M.Read(NMI+1))<<8
-	if a == 0 {
-		panic("BAD NMI")
-		c.Halt = true
-		return
-	}
-	c.stackPush(byte(c.PC >> 8))
-	c.stackPush(byte(c.PC & 0xff))
-	c.stackPush(c.P | P_X | P_B)
-	c.P |= P_I
+	BRK(c, 0, 0, 0)
 	c.Tick(Optable[0].T)
 }
 
