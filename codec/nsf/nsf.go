@@ -41,7 +41,7 @@ const (
 )
 
 func ReadNSF(r io.Reader) (n *NSF, err error) {
-	n = &NSF{}
+	n = New()
 	n.b, err = ioutil.ReadAll(r)
 	if err != nil {
 		return
