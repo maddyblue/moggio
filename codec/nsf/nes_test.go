@@ -14,7 +14,7 @@ import (
 func loadNES(fname string) *NSF {
 	var err error
 	n := New()
-	n.b, err = ioutil.ReadFile("roms/nestest/nestest.nes")
+	n.b, err = ioutil.ReadFile(fname)
 	if err != nil {
 		panic(err)
 	}
