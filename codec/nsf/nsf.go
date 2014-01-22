@@ -203,8 +203,6 @@ type Ram struct {
 
 func (r *Ram) Read(v uint16) byte {
 	switch v {
-	//case 0x2002:
-	//return 0x80
 	case 0x4015:
 		return r.A.Read(v)
 	default:
