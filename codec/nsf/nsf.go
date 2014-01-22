@@ -110,6 +110,7 @@ func New() *NSF {
 		Ram: new(Ram),
 	}
 	n.Cpu = cpu6502.New(n.Ram)
+	n.Cpu.T = &n
 	n.Cpu.DisableDecimal = true
 	n.Cpu.P = 0x24
 	n.Cpu.S = 0xfd
