@@ -295,7 +295,7 @@ func (c *Cpu) Step() {
 	}
 }
 
-func (c *Cpu) setNV(v byte) {
+func (c *Cpu) setNZ(v byte) {
 	if v != 0 {
 		c.P &= ^P_Z
 	} else {
@@ -520,7 +520,7 @@ func ADC(c *Cpu, b byte, v uint16, m Mode) {
 		}
 	}
 	c.A = byte(a & 0xff)
-	c.setNV(c.A)
+	c.setNZ(c.A)
 }
 
 func SBC(c *Cpu, b byte, v uint16, m Mode) {
@@ -574,22 +574,22 @@ func SBC(c *Cpu, b byte, v uint16, m Mode) {
 		}
 	}
 	c.A = byte(a & 0xff)
-	c.setNV(c.A)
+	c.setNZ(c.A)
 }
 
 func LDA(c *Cpu, b byte, v uint16, m Mode) {
 	c.A = b
-	c.setNV(c.A)
+	c.setNZ(c.A)
 }
 
 func LDX(c *Cpu, b byte, v uint16, m Mode) {
 	c.X = b
-	c.setNV(c.X)
+	c.setNZ(c.X)
 }
 
 func LDY(c *Cpu, b byte, v uint16, m Mode) {
 	c.Y = b
-	c.setNV(c.Y)
+	c.setNZ(c.Y)
 }
 
 func STA(c *Cpu, b byte, v uint16, m Mode) {
@@ -606,27 +606,27 @@ func STY(c *Cpu, b byte, v uint16, m Mode) {
 
 func TAX(c *Cpu, b byte, v uint16, m Mode) {
 	c.X = c.A
-	c.setNV(c.X)
+	c.setNZ(c.X)
 }
 
 func TAY(c *Cpu, b byte, v uint16, m Mode) {
 	c.Y = c.A
-	c.setNV(c.Y)
+	c.setNZ(c.Y)
 }
 
 func TYA(c *Cpu, b byte, v uint16, m Mode) {
 	c.A = c.Y
-	c.setNV(c.A)
+	c.setNZ(c.A)
 }
 
 func TXA(c *Cpu, b byte, v uint16, m Mode) {
 	c.A = c.X
-	c.setNV(c.A)
+	c.setNZ(c.A)
 }
 
 func TSX(c *Cpu, b byte, v uint16, m Mode) {
 	c.X = c.S
-	c.setNV(c.X)
+	c.setNZ(c.X)
 }
 
 func TXS(c *Cpu, b byte, v uint16, m Mode) {
@@ -635,32 +635,32 @@ func TXS(c *Cpu, b byte, v uint16, m Mode) {
 
 func INX(c *Cpu, b byte, v uint16, m Mode) {
 	c.X++
-	c.setNV(c.X)
+	c.setNZ(c.X)
 }
 
 func INY(c *Cpu, b byte, v uint16, m Mode) {
 	c.Y++
-	c.setNV(c.Y)
+	c.setNZ(c.Y)
 }
 
 func INC(c *Cpu, b byte, v uint16, m Mode) {
 	c.M.Write(v, b+1)
-	c.setNV(c.M.Read(v))
+	c.setNZ(c.M.Read(v))
 }
 
 func DEX(c *Cpu, b byte, v uint16, m Mode) {
 	c.X--
-	c.setNV(c.X)
+	c.setNZ(c.X)
 }
 
 func DEY(c *Cpu, b byte, v uint16, m Mode) {
 	c.Y--
-	c.setNV(c.Y)
+	c.setNZ(c.Y)
 }
 
 func DEC(c *Cpu, b byte, v uint16, m Mode) {
 	c.M.Write(v, b-1)
-	c.setNV(c.M.Read(v))
+	c.setNZ(c.M.Read(v))
 }
 
 func CMP(c *Cpu, b byte, v uint16, m Mode) { c.compare(c.A, b) }
@@ -673,7 +673,7 @@ func (c *Cpu) compare(r, v byte) {
 	} else {
 		c.CLC()
 	}
-	c.setNV(r - v)
+	c.setNZ(r - v)
 }
 
 func BCC(c *Cpu, b byte, v uint16, m Mode) {
@@ -743,7 +743,7 @@ func PHA(c *Cpu, b byte, v uint16, m Mode) {
 
 func PLA(c *Cpu, b byte, v uint16, m Mode) {
 	c.A = c.stackPop()
-	c.setNV(c.A)
+	c.setNZ(c.A)
 }
 
 func (c *Cpu) stackPush(b byte) {
@@ -770,23 +770,23 @@ func RTS(c *Cpu, b byte, v uint16, m Mode) {
 
 func AND(c *Cpu, b byte, v uint16, m Mode) {
 	c.A &= b
-	c.setNV(c.A)
+	c.setNZ(c.A)
 }
 
 func ORA(c *Cpu, b byte, v uint16, m Mode) {
 	c.A |= b
-	c.setNV(c.A)
+	c.setNZ(c.A)
 }
 
 func ASL(c *Cpu, b byte, v uint16, m Mode) {
 	if m == MODE_SNGL {
 		c.setCarryBit(c.A, 7)
 		c.A <<= 1
-		c.setNV(c.A)
+		c.setNZ(c.A)
 	} else {
 		c.setCarryBit(c.M.Read(v), 7)
 		c.M.Write(v, c.M.Read(v)<<1)
-		c.setNV(c.M.Read(v))
+		c.setNZ(c.M.Read(v))
 	}
 }
 
@@ -799,12 +799,12 @@ func ROL(c *Cpu, b byte, v uint16, m Mode) {
 		c.setCarryBit(c.A, 7)
 		c.A <<= 1
 		c.A |= s
-		c.setNV(c.A)
+		c.setNZ(c.A)
 	} else {
 		c.setCarryBit(c.M.Read(v), 7)
 		c.M.Write(v, c.M.Read(v)<<1)
 		c.M.Write(v, c.M.Read(v)|s)
-		c.setNV(c.M.Read(v))
+		c.setNZ(c.M.Read(v))
 	}
 }
 
@@ -812,11 +812,11 @@ func LSR(c *Cpu, b byte, v uint16, m Mode) {
 	if m == MODE_SNGL {
 		c.setCarryBit(c.A, 0)
 		c.A >>= 1
-		c.setNV(c.A)
+		c.setNZ(c.A)
 	} else {
 		c.setCarryBit(c.M.Read(v), 0)
 		c.M.Write(v, c.M.Read(v)>>1)
-		c.setNV(c.M.Read(v))
+		c.setNZ(c.M.Read(v))
 	}
 }
 
@@ -829,12 +829,12 @@ func ROR(c *Cpu, b byte, v uint16, m Mode) {
 		c.setCarryBit(c.A, 0)
 		c.A >>= 1
 		c.A |= s
-		c.setNV(c.A)
+		c.setNZ(c.A)
 	} else {
 		c.setCarryBit(c.M.Read(v), 0)
 		c.M.Write(v, c.M.Read(v)>>1)
 		c.M.Write(v, c.M.Read(v)|s)
-		c.setNV(c.M.Read(v))
+		c.setNZ(c.M.Read(v))
 	}
 }
 
@@ -894,7 +894,7 @@ func (c *Cpu) setCarryBit(b byte, i uint) {
 
 func EOR(c *Cpu, b byte, v uint16, m Mode) {
 	c.A ^= b
-	c.setNV(c.A)
+	c.setNZ(c.A)
 }
 
 func PHP(c *Cpu, b byte, v uint16, m Mode) {
