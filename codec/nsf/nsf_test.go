@@ -3,7 +3,6 @@ package nsf
 import (
 	"os"
 	"testing"
-	"time"
 
 	"github.com/mjibson/mog/output"
 )
@@ -21,12 +20,13 @@ func TestNsf(t *testing.T) {
 		t.Fatal("bad addresses")
 	}
 	n.Init(1)
-	o, err := output.NewPulse(int(n.SampleRate), 1)
+	o, err := output.NewPort(int(n.SampleRate), 1)
 	if err != nil {
 		t.Fatal(err)
 	}
 	const div = 10
-	for _ = range time.Tick(time.Second / div) {
-		o.Push(n.Play(int(n.SampleRate / div)))
+	ns := int(n.SampleRate / div)
+	for {
+		o.Push(n.Play(ns))
 	}
 }
