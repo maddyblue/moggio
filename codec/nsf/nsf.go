@@ -163,7 +163,6 @@ func (n *NSF) Init(song byte) {
 func (n *NSF) Step() {
 	n.Cpu.Step()
 	if !n.Cpu.I() && n.Ram.A.Interrupt {
-		println("INTERRUPT")
 		n.Cpu.Interrupt()
 	}
 }
