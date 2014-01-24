@@ -175,8 +175,7 @@ func (n *NSF) Play(samples int) []float32 {
 	for len(n.samples) < samples {
 		n.playTicks = 0
 		n.Cpu.PC = n.PlayAddr
-		n.Cpu.Halt = false
-		for !n.Cpu.Halt && len(n.samples) < samples {
+		for n.Cpu.PC != 0 && len(n.samples) < samples {
 			n.Step()
 		}
 		for i := ticksPerPlay - n.playTicks; i > 0 && len(n.samples) < samples; i-- {

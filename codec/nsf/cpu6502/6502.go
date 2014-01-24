@@ -113,9 +113,8 @@ type Ticker interface {
 
 type Cpu struct {
 	Register
-	M    Memory
-	T    Ticker
-	Halt bool
+	M Memory
+	T Ticker
 
 	DisableDecimal bool
 
@@ -171,7 +170,7 @@ func New(m Memory) *Cpu {
 }
 
 func (c *Cpu) Run() {
-	for !c.Halt {
+	for c.PC != 0 {
 		c.Step()
 	}
 }
@@ -466,10 +465,6 @@ func (c *Cpu) Interrupt() {
 
 func BRK(c *Cpu, b byte, v uint16, m Mode) {
 	a := uint16(c.M.Read(IRQ)) + uint16(c.M.Read(IRQ+1))<<8
-	if a == 0 {
-		c.Halt = true
-		return
-	}
 	c.stackPush(byte(c.PC >> 8))
 	c.stackPush(byte(c.PC & 0xff))
 	c.stackPush(c.P | P_B)
@@ -770,11 +765,7 @@ func JSR(c *Cpu, b byte, v uint16, m Mode) {
 
 func RTS(c *Cpu, b byte, v uint16, m Mode) {
 	c.PC = (uint16(c.stackPop()) | uint16(c.stackPop())<<8)
-	if c.PC == 0 {
-		c.Halt = true
-	} else {
-		c.PC++
-	}
+	c.PC++
 }
 
 func AND(c *Cpu, b byte, v uint16, m Mode) {
