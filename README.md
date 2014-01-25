@@ -16,5 +16,3 @@ An MPD-compatible audio player written in Go.
 1. Support for archive files (.zip, .rar, .nsf, etc.).
 1. Pure Go except for sound driver interfaces.
 1. Runs on Windows, Linux, Mac OSX.
-
-![Analytics](https://ga-beacon.appspot.com/UA-46765694-1/mog?pixel)
