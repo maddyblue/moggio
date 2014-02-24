@@ -12,7 +12,6 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/mjibson/mog/codec"
-	_ "github.com/mjibson/mog/codec/nsf"
 )
 
 const (

@@ -6,6 +6,8 @@ import (
 	"net/url"
 	"testing"
 	"time"
+
+	_ "github.com/mjibson/mog/codec/nsf"
 )
 
 func TestServer(t *testing.T) {
