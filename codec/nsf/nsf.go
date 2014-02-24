@@ -2,10 +2,12 @@ package nsf
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"time"
 
+	"github.com/mjibson/mog/codec"
 	"github.com/mjibson/mog/codec/nsf/cpu6502"
 )
 
@@ -17,9 +19,13 @@ const (
 var (
 	// DefaultSampleRate is the default sample rate of a track after calling
 	// Init().
-	DefaultSampleRate = 44100
-	ErrUnrecognized   = errors.New("nsf: unrecognized format")
+	DefaultSampleRate int64 = 44100
+	ErrUnrecognized         = errors.New("nsf: unrecognized format")
 )
+
+func init() {
+	codec.RegisterCodec("NSF", "NESM\u001a", ReadNSFSongs)
+}
 
 const (
 	NSF_HEADER_LEN = 0x80
@@ -39,6 +45,45 @@ const (
 	NSF_EXTRA      = 0x7b
 	NSF_ZERO       = 0x7c
 )
+
+func ReadNSFSongs(r io.Reader) ([]codec.Song, error) {
+	n, err := ReadNSF(r)
+	if err != nil {
+		return nil, err
+	}
+	songs := make([]codec.Song, n.Songs)
+	for i := range songs {
+		songs[i] = &NSFSong{n, i + 1}
+	}
+	return songs, nil
+}
+
+type NSFSong struct {
+	*NSF
+	Index int
+}
+
+func (n *NSFSong) Play(samples int) []float32 {
+	if n.playing == 0 {
+		n.Init(n.Index)
+	}
+	return n.Play(samples)
+}
+
+func (n *NSFSong) Close() {
+	// todo: implement
+}
+
+func (n *NSFSong) Info() codec.SongInfo {
+	return codec.SongInfo{
+		Time:       time.Minute * 2,
+		Artist:     n.Artist,
+		Album:      n.Song,
+		Track:      n.Index,
+		Title:      fmt.Sprintf("%s:%d", n.Song, n.Index),
+		SampleRate: int(n.SampleRate),
+	}
+}
 
 func ReadNSF(r io.Reader) (n *NSF, err error) {
 	n = New()
@@ -65,6 +110,10 @@ func ReadNSF(r io.Reader) (n *NSF, err error) {
 	n.PALNTSC = n.b[NSF_PAL_NTSC]
 	n.Extra = n.b[NSF_EXTRA]
 	n.Data = n.b[NSF_HEADER_LEN:]
+	if n.SampleRate == 0 {
+		n.SampleRate = DefaultSampleRate
+	}
+	copy(n.Ram.M[n.LoadAddr:], n.Data)
 	return
 }
 
@@ -103,6 +152,7 @@ type NSF struct {
 	samples     []float32
 	prevs       [4]float32
 	pi          int // prevs index
+	playing     int // 1-based index of currently-playing song
 }
 
 func New() *NSF {
@@ -147,13 +197,9 @@ func (n *NSF) append(v float32) {
 	n.samples = append(n.samples, sum)
 }
 
-func (n *NSF) Init(song byte) {
-	if n.SampleRate == 0 {
-		n.SampleRate = int64(DefaultSampleRate)
-	}
-	copy(n.Ram.M[n.LoadAddr:], n.Data)
+func (n *NSF) Init(song int) {
 	n.Ram.A.Init()
-	n.Cpu.A = song - 1
+	n.Cpu.A = byte(song - 1)
 	n.Cpu.PC = n.InitAddr
 	n.Cpu.T = nil
 	n.Cpu.Run()
@@ -219,4 +265,8 @@ func (r *Ram) Write(v uint16, b byte) {
 	if v&0xf000 == 0x4000 {
 		r.A.Write(v, b)
 	}
+}
+
+func (n *NSF) Seek(t time.Time) {
+	// todo: implement
 }
