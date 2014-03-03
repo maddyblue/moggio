@@ -3,7 +3,6 @@ package mog
 import (
 	"encoding/json"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -55,8 +54,9 @@ func TestServer(t *testing.T) {
 	}
 	v := make(url.Values)
 	for i, _ := range songs {
-		v.Add("add", strconv.Itoa(i))
-		break
+		if i < 10 {
+			v.Add("add", strconv.Itoa(i))
+		}
 	}
 	if len(v) == 0 {
 		t.Fatal("expected songs")
@@ -67,14 +67,12 @@ func TestServer(t *testing.T) {
 	if err := json.Unmarshal(b, &pc); err != nil {
 		t.Fatal(err)
 	}
-	log.Println("pc", pc)
 	resp = fetch("/playlist/get", nil)
 	b, _ = ioutil.ReadAll(resp.Body)
 	var pl Playlist
 	if err := json.Unmarshal(b, &pl); err != nil {
 		t.Fatal(err)
 	}
-	for i, v := range pl {
-		log.Println("playlist", i, v)
-	}
+	resp = fetch("/play", nil)
+	select {}
 }

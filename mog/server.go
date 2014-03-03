@@ -12,7 +12,9 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+
 	"github.com/mjibson/mog/codec"
+	"github.com/mjibson/mog/output"
 )
 
 const (
@@ -63,6 +65,7 @@ func (s *Song) MarshalJSON() ([]byte, error) {
 	})
 }
 
+// Playlist holds a slice of song ids.
 type Playlist []int
 
 type Server struct {
@@ -73,13 +76,18 @@ type Server struct {
 	State      State
 	Playlist   Playlist
 	PlaylistID int
-	Song       *Song
-	Volume     int
-	NextSong   int
-	Elapsed    time.Duration
-	Error      string
+	// Index of current song in the playlist.
+	PlaylistIndex int
+	Song          *Song
+	Info          codec.SongInfo
+	Volume        int
+	Elapsed       time.Duration
+	Error         string
+	Repeat        bool
+	Random        bool
 
 	songID int
+	ch     chan command
 }
 
 // ListenAndServe listens on the TCP network address srv.Addr and then calls
@@ -97,7 +105,9 @@ func (srv *Server) ListenAndServe() error {
 	if !fi.IsDir() {
 		return fmt.Errorf("mog: not a directory: %s", srv.Root)
 	}
+	srv.ch = make(chan command)
 	srv.Update()
+	go srv.audio()
 
 	addr := srv.Addr
 	if addr == "" {
@@ -108,11 +118,105 @@ func (srv *Server) ListenAndServe() error {
 	r.HandleFunc("/list", srv.List)
 	r.HandleFunc("/playlist/change", srv.PlaylistChange)
 	r.HandleFunc("/playlist/get", srv.PlaylistGet)
+	r.HandleFunc("/play", srv.Play)
 	http.Handle("/", r)
 
 	log.Println("mog: listening on", addr)
 	log.Println("mog: Music root:", srv.Root)
 	return http.ListenAndServe(addr, nil)
+}
+
+func (srv *Server) audio() {
+	var o output.Output
+	var t chan interface{}
+	var err error
+	var present bool
+	var dur time.Duration
+	stop := func() {
+		log.Println("stop")
+		t = nil
+		srv.Song = nil
+	}
+	tick := func() {
+		if srv.Elapsed > srv.Info.Time {
+			stop()
+		}
+		if srv.Song == nil {
+			if len(srv.Playlist) == 0 {
+				log.Println("empty playlist")
+				stop()
+				return
+			} else if srv.PlaylistIndex >= len(srv.Playlist) {
+				if srv.Repeat {
+					srv.PlaylistIndex = 0
+				} else {
+					log.Println("end of playlist")
+					stop()
+					return
+				}
+			}
+			srv.Song, present = srv.Songs[srv.Playlist[srv.PlaylistIndex]]
+			srv.PlaylistIndex++
+			if !present {
+				return
+			}
+			info := srv.Song.Info()
+			if info.SampleRate != srv.Info.SampleRate || info.Channels != srv.Info.Channels {
+				if o != nil {
+					println(4)
+					o.Dispose()
+				}
+				o, err = output.NewPort(info.SampleRate, info.Channels)
+				if err != nil {
+					log.Println(fmt.Errorf("mog: could not open audio (%v, %v): %v", info.SampleRate, info.Channels, err))
+				}
+			}
+			srv.Info = info
+			srv.Elapsed = 0
+			dur = time.Second / (time.Duration(srv.Info.SampleRate))
+			t = make(chan interface{})
+			close(t)
+		}
+		const expected = 4096
+		next := srv.Song.Play(expected)
+		srv.Elapsed += time.Duration(len(next)) * dur
+		if len(next) > 0 {
+			o.Push(next)
+		}
+		if len(next) < expected {
+			stop()
+		}
+	}
+	play := func() {
+		log.Println("play")
+		tick()
+	}
+	for {
+		select {
+		case <-t:
+			tick()
+		case cmd := <-srv.ch:
+			switch cmd {
+			case cmdPlay:
+				play()
+			case cmdStop:
+				stop()
+			default:
+				log.Fatal("unknown command")
+			}
+		}
+	}
+}
+
+type command int
+
+const (
+	cmdPlay command = iota
+	cmdStop
+)
+
+func (srv *Server) Play(w http.ResponseWriter, r *http.Request) {
+	srv.ch <- cmdPlay
 }
 
 func (srv *Server) PlaylistGet(w http.ResponseWriter, r *http.Request) {
