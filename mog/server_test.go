@@ -49,7 +49,6 @@ func TestServer(t *testing.T) {
 
 	resp := fetch("/list", nil)
 	b, _ := ioutil.ReadAll(resp.Body)
-	t.Log(string(b))
 	songs := make(Songs)
 	if err := json.Unmarshal(b, &songs); err != nil {
 		t.Fatal(err)
@@ -64,7 +63,6 @@ func TestServer(t *testing.T) {
 	}
 	resp = fetch("/playlist/change", v)
 	b, _ = ioutil.ReadAll(resp.Body)
-	t.Log(string(b))
 	var pc PlaylistChange
 	if err := json.Unmarshal(b, &pc); err != nil {
 		t.Fatal(err)
@@ -72,7 +70,6 @@ func TestServer(t *testing.T) {
 	log.Println("pc", pc)
 	resp = fetch("/playlist/get", nil)
 	b, _ = ioutil.ReadAll(resp.Body)
-	t.Log(string(b))
 	var pl Playlist
 	if err := json.Unmarshal(b, &pl); err != nil {
 		t.Fatal(err)
