@@ -64,8 +64,9 @@ type NSFSong struct {
 }
 
 func (n *NSFSong) Play(samples int) []float32 {
-	if n.playing == 0 {
+	if n.playing != n.Index {
 		n.Init(n.Index)
+		n.playing = n.Index
 	}
 	return n.NSF.Play(samples)
 }
