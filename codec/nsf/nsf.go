@@ -82,6 +82,7 @@ func (n *NSFSong) Info() codec.SongInfo {
 		Track:      n.Index,
 		Title:      fmt.Sprintf("%s:%d", n.Song, n.Index),
 		SampleRate: int(n.SampleRate),
+		Channels:   1,
 	}
 }
 
