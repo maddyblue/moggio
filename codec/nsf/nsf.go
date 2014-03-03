@@ -67,7 +67,7 @@ func (n *NSFSong) Play(samples int) []float32 {
 	if n.playing == 0 {
 		n.Init(n.Index)
 	}
-	return n.Play(samples)
+	return n.NSF.Play(samples)
 }
 
 func (n *NSFSong) Close() {
