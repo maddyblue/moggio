@@ -2,26 +2,32 @@ package gmusic
 
 import (
 	"io/ioutil"
-	"log"
 	"testing"
 )
 
 func TestGMusic(t *testing.T) {
+	var err error
+	var gm *GMusic
 	pw, err := ioutil.ReadFile("pw")
 	if err != nil {
 		t.Fatal(err)
 	}
 	un := "matt.jibson"
-	gm, err := Login(un, string(pw))
+	gm, err = Login(un, string(pw))
 	if err != nil {
 		t.Fatal(err)
 	}
-	playlists, err := gm.ListPlaylists()
+	_, err = gm.ListPlaylists()
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, p := range playlists {
-		log.Println(p.Name)
+	_, err = gm.ListPlaylistEntries()
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = gm.ListTracks()
+	if err != nil {
+		t.Fatal(err)
 	}
 }
 

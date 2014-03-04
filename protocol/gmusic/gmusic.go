@@ -17,6 +17,10 @@ const (
 )
 
 type GMusic struct {
+	Playlists       []*Playlist
+	PlaylistEntries []*PlaylistEntry
+	Tracks          []*Track
+
 	auth string
 }
 
@@ -81,6 +85,7 @@ func (g *GMusic) ListPlaylists() ([]*Playlist, error) {
 	if err := json.Unmarshal(body, &data); err != nil {
 		return nil, err
 	}
+	g.Playlists = data.Data.Items
 	return data.Data.Items, nil
 }
 
@@ -104,4 +109,92 @@ type Playlist struct {
 	RecentTimestamp       string `json:"recentTimestamp"`
 	ShareToken            string `json:"shareToken"`
 	Type                  string `json:"type"`
+}
+
+func (g *GMusic) ListPlaylistEntries() ([]*PlaylistEntry, error) {
+	r, err := g.Request("POST", "plentryfeed")
+	if err != nil {
+		return nil, err
+	}
+	body, _ := ioutil.ReadAll(r.Body)
+	var data ListPlaylistEntries
+	if err := json.Unmarshal(body, &data); err != nil {
+		return nil, err
+	}
+	g.PlaylistEntries = data.Data.Items
+	return data.Data.Items, nil
+}
+
+type ListPlaylistEntries struct {
+	Data struct {
+		Items []*PlaylistEntry `json:"items"`
+	} `json:"data"`
+	Kind          string `json:"kind"`
+	NextPageToken string `json:"nextPageToken"`
+}
+
+type PlaylistEntry struct {
+	AbsolutePosition      string `json:"absolutePosition"`
+	ClientId              string `json:"clientId"`
+	CreationTimestamp     string `json:"creationTimestamp"`
+	Deleted               bool   `json:"deleted"`
+	ID                    string `json:"id"`
+	Kind                  string `json:"kind"`
+	LastModifiedTimestamp string `json:"lastModifiedTimestamp"`
+	PlaylistId            string `json:"playlistId"`
+	Source                string `json:"source"`
+	TrackId               string `json:"trackId"`
+}
+
+func (g *GMusic) ListTracks() ([]*Track, error) {
+	r, err := g.Request("POST", "trackfeed")
+	if err != nil {
+		return nil, err
+	}
+	body, _ := ioutil.ReadAll(r.Body)
+	var data ListTracks
+	if err := json.Unmarshal(body, &data); err != nil {
+		return nil, err
+	}
+	g.Tracks = data.Data.Items
+	return data.Data.Items, nil
+}
+
+type ListTracks struct {
+	Data struct {
+		Items []*Track `json:"items"`
+	} `json:"data"`
+	Kind          string `json:"kind"`
+	NextPageToken string `json:"nextPageToken"`
+}
+
+type Track struct {
+	Album       string `json:"album"`
+	AlbumArtRef []struct {
+		URL string `json:"url"`
+	} `json:"albumArtRef"`
+	AlbumArtist  string `json:"albumArtist"`
+	AlbumId      string `json:"albumId"`
+	Artist       string `json:"artist"`
+	ArtistArtRef []struct {
+		URL string `json:"url"`
+	} `json:"artistArtRef"`
+	ArtistId              []string `json:"artistId"`
+	ClientId              string   `json:"clientId"`
+	CreationTimestamp     string   `json:"creationTimestamp"`
+	Deleted               bool     `json:"deleted"`
+	DiscNumber            float64  `json:"discNumber"`
+	DurationMillis        string   `json:"durationMillis"`
+	EstimatedSize         string   `json:"estimatedSize"`
+	ID                    string   `json:"id"`
+	Kind                  string   `json:"kind"`
+	LastModifiedTimestamp string   `json:"lastModifiedTimestamp"`
+	Nid                   string   `json:"nid"`
+	PlayCount             float64  `json:"playCount"`
+	RecentTimestamp       string   `json:"recentTimestamp"`
+	StoreId               string   `json:"storeId"`
+	Title                 string   `json:"title"`
+	TrackNumber           float64  `json:"trackNumber"`
+	TrackType             string   `json:"trackType"`
+	Year                  float64  `json:"year"`
 }
