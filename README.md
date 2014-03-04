@@ -1,10 +1,10 @@
 # mog
 
-An MPD-compatible audio player written in Go.
+A modern audio player written in Go.
 
 # goals
 
-1. Useful compatibility with the MPD protocol. Perhaps the full protocol isn't supported, but most MPD clients will work with mog.
+1. JSON API. MPD may be supported at some later date, but is not a goal.
 1. Support for the following formats:
    * wav
    * ogg
