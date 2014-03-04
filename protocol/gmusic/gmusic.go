@@ -1,12 +1,16 @@
 package gmusic
 
 import (
+	"crypto/hmac"
+	"crypto/sha1"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 )
 
 const (
@@ -17,6 +21,8 @@ const (
 )
 
 type GMusic struct {
+	DeviceID string
+
 	Playlists       []*Playlist
 	PlaylistEntries []*PlaylistEntry
 	Tracks          []*Track
@@ -197,4 +203,50 @@ type Track struct {
 	TrackNumber           float64  `json:"trackNumber"`
 	TrackType             string   `json:"trackType"`
 	Year                  float64  `json:"year"`
+}
+
+func (g *GMusic) GetStream(songID string) (*http.Response, error) {
+	sig, salt := GetSignature(songID)
+	v := url.Values{}
+	v.Add("opt", "hi")
+	v.Add("net", "wifi")
+	v.Add("pt", "e")
+	v.Add("slt", salt)
+	v.Add("sig", sig)
+	if strings.HasPrefix(songID, "T") {
+		v.Add("mjck", songID)
+	} else {
+		v.Add("songid", songID)
+	}
+	u := url.URL{
+		Scheme:   "https",
+		Host:     "android.clients.google.com",
+		Path:     "/music/mplay",
+		RawQuery: v.Encode(),
+	}
+	req, err := http.NewRequest("GET", u.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Add("Authorization", fmt.Sprintf("GoogleLogin auth=%s", g.auth))
+	req.Header.Add("X-Device-ID", g.DeviceID)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("gmusic: %s", resp.Status)
+	}
+	return resp, nil
+}
+
+func GetSignature(songID string) (sig, salt string) {
+	const key = "34ee7983-5ee6-4147-aa86-443ea062abf774493d6a-2a15-43fe-aace-e78566927585\n"
+	salt = fmt.Sprint(time.Now().UnixNano() / 1e6)
+	mac := hmac.New(sha1.New, []byte(key))
+	mac.Write([]byte(songID))
+	mac.Write([]byte(salt))
+	sig = base64.URLEncoding.EncodeToString(mac.Sum(nil))
+	sig = sig[:len(sig)-1]
+	return
 }
