@@ -111,6 +111,17 @@ const (
 	MPEG2         = 2
 )
 
+func (v Version) String() string {
+	switch v {
+	case MPEG1:
+		return "MPEG1"
+	case MPEG2:
+		return "MPEG2"
+	default:
+		return "unknown"
+	}
+}
+
 type Layer byte
 
 const (
@@ -118,6 +129,19 @@ const (
 	LayerII        = 2
 	LayerIII       = 1
 )
+
+func (l Layer) String() string {
+	switch l {
+	case LayerI:
+		return "layer I"
+	case LayerII:
+		return "layer II"
+	case LayerIII:
+		return "layer III"
+	default:
+		return "unknown"
+	}
+}
 
 type Bitrate byte
 
