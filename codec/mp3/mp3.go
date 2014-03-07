@@ -91,6 +91,60 @@ type Frame struct {
 	Emphasis
 }
 
+func (f *Frame) BitrateIndex() int {
+	switch {
+	case f.Version == MPEG1 && f.Layer == LayerI:
+		return int(f.Bitrate) * 32
+	case f.Version == MPEG1 && f.Layer == LayerIII:
+		switch f.Bitrate {
+		case 1:
+			return 32
+		case 2:
+			return 40
+		case 3:
+			return 48
+		case 4:
+			return 56
+		case 5:
+			return 64
+		case 6:
+			return 80
+		case 7:
+			return 96
+		case 8:
+			return 112
+		case 9:
+			return 128
+		case 10:
+			return 160
+		case 11:
+			return 192
+		case 12:
+			return 224
+		case 13:
+			return 256
+		case 14:
+			return 320
+		}
+	}
+	return 0
+}
+
+func (f *Frame) SamplingIndex() int {
+	switch f.Version {
+	case MPEG1:
+		switch f.Sampling {
+		case 0:
+			return 44100
+		case 1:
+			return 48000
+		case 2:
+			return 32000
+		}
+	}
+	return 0
+}
+
 func (f *Frame) Valid() bool {
 	if f.Version < MPEG2 || f.Version > MPEG1 {
 		return false
