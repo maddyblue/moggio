@@ -12,9 +12,27 @@ type MP3 struct {
 }
 
 func New(r io.Reader) (*MP3, error) {
-	return &MP3{
+	m := &MP3{
 		r: bufio.NewReader(r),
-	}, nil
+	}
+	b, err := m.r.Peek(10)
+	if err != nil {
+		return nil, err
+	}
+	if b[0] == 'I' && b[1] == 'D' && b[2] == '3' && b[3] < 0xff && b[4] < 0xff && b[6] < 0x80 && b[7] < 0x80 && b[8] < 0x80 && b[9] < 0x80 {
+		var sz uint32
+		sz = uint32(b[9] & 0x7f)
+		sz += uint32(b[8]&0x7f) << 7
+		sz += uint32(b[7]&0x7f) << 14
+		sz += uint32(b[6]&0x7f) << 21
+		sz += uint32(len(b))
+		for ; sz > 0; sz-- {
+			if _, err := m.r.ReadByte(); err != nil {
+				return nil, err
+			}
+		}
+	}
+	return m, nil
 }
 
 func (m *MP3) Scan() bool {
