@@ -49,14 +49,14 @@ func (m *MP3) Scan() bool {
 				break
 			}
 			f = Frame{
-				Version:  Version(b[1] & 0x18 >> 3),
-				Layer:    Layer(b[1] & 0x6 >> 1),
-				CRC:      b[1]&0x1 != 0,
-				Bitrate:  Bitrate(b[2] & 0xf0 >> 4),
-				Sampling: Sampling(b[2] & 0xc >> 2),
-				Padding:  b[2]&0x2 != 0,
-				Mode:     Mode(b[3] & 0xc >> 4),
-				Emphasis: Emphasis(b[3] & 0x3),
+				Version:   Version(b[1] & 0x18 >> 3),
+				Layer:     Layer(b[1] & 0x6 >> 1),
+				Protected: b[1]&0x1 == 0,
+				Bitrate:   Bitrate(b[2] & 0xf0 >> 4),
+				Sampling:  Sampling(b[2] & 0xc >> 2),
+				Padding:   b[2]&0x2 != 0,
+				Mode:      Mode(b[3] & 0xc >> 4),
+				Emphasis:  Emphasis(b[3] & 0x3),
 			}
 			if !f.Valid() {
 				break
@@ -83,7 +83,7 @@ func (m *MP3) Frame() *Frame {
 type Frame struct {
 	Version
 	Layer
-	CRC bool
+	Protected bool
 	Bitrate
 	Sampling
 	Padding bool
