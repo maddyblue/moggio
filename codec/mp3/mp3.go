@@ -2,6 +2,7 @@ package mp3
 
 import (
 	"bufio"
+	"fmt"
 	"io"
 )
 
@@ -61,8 +62,15 @@ func (m *MP3) Scan() bool {
 			if !f.Valid() {
 				break
 			}
+			f.Data = make([]byte, f.Length())
 			m.frame = &f
-			m.r.Read(b)
+			if n, err := m.r.Read(f.Data); err != nil {
+				m.err = err
+				return false
+			} else if n < len(f.Data) {
+				m.err = fmt.Errorf("mp3: short read")
+				return false
+			}
 			return true
 		}
 		m.r.ReadByte()
@@ -89,6 +97,7 @@ type Frame struct {
 	Padding bool
 	Mode
 	Emphasis
+	Data []byte
 }
 
 // Length returns the frame length in bytes.
