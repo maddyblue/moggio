@@ -36,47 +36,36 @@ func New(r io.Reader) (*MP3, error) {
 }
 
 func (m *MP3) Scan() bool {
-	pos := 0
 	var f Frame
 	for {
-		b, err := m.r.ReadByte()
+		b, err := m.r.Peek(4)
 		if err != nil {
 			m.err = err
 			return false
 		}
-		switch pos {
-		case 0:
-			if b == 0xff {
-				pos++
-			}
-		case 1:
-			if b&0xe0 == 0 {
-				pos = 0
+		switch b[0] {
+		case 0xff:
+			if b[1]&0xe0 != 0xe0 {
 				break
 			}
-			pos++
 			f = Frame{
-				Version: Version(b & 0x18 >> 3),
-				Layer:   Layer(b & 0x6 >> 1),
-				CRC:     b&0x1 != 0,
+				Version:  Version(b[1] & 0x18 >> 3),
+				Layer:    Layer(b[1] & 0x6 >> 1),
+				CRC:      b[1]&0x1 != 0,
+				Bitrate:  Bitrate(b[2] & 0xf0 >> 4),
+				Sampling: Sampling(b[2] & 0xc >> 2),
+				Padding:  b[2]&0x2 != 0,
+				Mode:     Mode(b[3] & 0xc >> 4),
+				Emphasis: Emphasis(b[3] & 0x3),
 			}
-		case 2:
-			pos++
-			f.Bitrate = Bitrate(b & 0xf0 >> 4)
-			f.Sampling = Sampling(b & 0xc >> 2)
-			f.Padding = b&0x2 != 0
-		case 3:
-			f.Mode = Mode(b & 0xc >> 4)
-			f.Emphasis = Emphasis(b & 0x3)
 			if !f.Valid() {
-				pos = 0
 				break
 			}
 			m.frame = &f
+			m.r.Read(b)
 			return true
-		default:
-			pos = 0
 		}
+		m.r.ReadByte()
 	}
 }
 
