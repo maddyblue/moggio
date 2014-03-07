@@ -91,6 +91,22 @@ type Frame struct {
 	Emphasis
 }
 
+// Length returns the frame length in bytes.
+func (f *Frame) Length() int {
+	padding := 0
+	if f.Padding {
+		padding = 1
+	}
+	switch f.Layer {
+	case LayerI:
+		return (12*f.BitrateIndex()*1000/f.SamplingIndex() + padding) * 4
+	case LayerII, LayerIII:
+		return 144*f.BitrateIndex()*1000/f.SamplingIndex() + padding
+	default:
+		return 0
+	}
+}
+
 func (f *Frame) BitrateIndex() int {
 	switch {
 	case f.Version == MPEG1 && f.Layer == LayerI:
