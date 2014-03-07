@@ -92,13 +92,16 @@ type Frame struct {
 }
 
 func (f *Frame) Valid() bool {
-	if f.Version != MPEG1 {
+	if f.Version < MPEG2 || f.Version > MPEG1 {
 		return false
 	}
-	if f.Layer != LayerI {
+	if f.Layer < LayerIII || f.Layer > LayerI {
 		return false
 	}
-	if f.Bitrate == 0xff || f.Bitrate == 0 {
+	if f.Bitrate == 0xf || f.Bitrate == 0 {
+		return false
+	}
+	if f.Sampling >= 3 {
 		return false
 	}
 	return true
