@@ -17,10 +17,10 @@ func TestMp3(t *testing.T) {
 
 func TestHuffman(t *testing.T) {
 	l := []huffmanPair{
-		{[]byte{1}, [2]uint16{0, 0}},
-		{[]byte{0, 0, 1}, [2]uint16{0, 1}},
-		{[]byte{0, 1}, [2]uint16{1, 0}},
-		{[]byte{0, 0, 0}, [2]uint16{1, 1}},
+		{[]byte{1}, [2]byte{0, 0}},
+		{[]byte{0, 0, 1}, [2]byte{0, 1}},
+		{[]byte{0, 1}, [2]byte{1, 0}},
+		{[]byte{0, 0, 0}, [2]byte{1, 1}},
 	}
 	h, err := newHuffmanTree(l)
 	if err != nil {
@@ -28,10 +28,10 @@ func TestHuffman(t *testing.T) {
 	}
 	type Test struct {
 		input  []byte
-		output [][2]uint16
+		output [][2]byte
 	}
 	tests := []Test{
-		{[]byte{0xf0}, [][2]uint16{
+		{[]byte{0xf0}, [][2]byte{
 			{0, 0},
 			{0, 0},
 			{0, 0},

@@ -24,7 +24,7 @@ type huffmanTree struct {
 // is a left node and its value is in leftValue/rightValue.
 type huffmanNode struct {
 	left, right           uint16
-	leftValue, rightValue [2]uint16
+	leftValue, rightValue [2]byte
 }
 
 // invalidNodeValue is an invalid index which marks a leaf node in the tree.
@@ -32,7 +32,7 @@ const invalidNodeValue = 0xffff
 
 // Decode reads bits from the given bitReader and navigates the tree until a
 // symbol is found.
-func (t *huffmanTree) Decode(br *bitReader) (v [2]uint16) {
+func (t *huffmanTree) Decode(br *bitReader) (v [2]byte) {
 	nodeIndex := uint16(0) // node 0 is the root of the tree.
 
 	for {
@@ -56,6 +56,14 @@ func (t *huffmanTree) Decode(br *bitReader) (v [2]uint16) {
 			nodeIndex = node.right
 		}
 	}
+}
+
+func mustHuffmanTree(pairs []huffmanPair) huffmanTree {
+	t, err := newHuffmanTree(pairs)
+	if err != nil {
+		panic(err)
+	}
+	return t
 }
 
 func newHuffmanTree(pairs []huffmanPair) (huffmanTree, error) {
@@ -94,14 +102,14 @@ func newHuffmanTree(pairs []huffmanPair) (huffmanTree, error) {
 
 type huffmanPair struct {
 	bits  []byte
-	value [2]uint16
+	value [2]byte
 }
 
 // huffmanCode contains a symbol, its code and code length.
 type huffmanCode struct {
 	code    uint32
 	codeLen uint8
-	value   [2]uint16
+	value   [2]byte
 }
 
 // huffmanCodes is used to provide an interface for sorting.
