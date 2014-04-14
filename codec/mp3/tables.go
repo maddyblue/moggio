@@ -1472,122 +1472,122 @@ type huffmanTable struct {
 }
 
 var huffmanTables = [...]huffmanTable{
-	huffmanTable{}, // table_select uses 1-based indexes
-	huffmanTable{ // table 1
+	{}, // table_select uses 1-based indexes
+	{ // table 1
 		huffmanTableCodes1,
 		0,
 	},
-	huffmanTable{ // table 2
+	{ // table 2
 		huffmanTableCodes2,
 		0,
 	},
-	huffmanTable{ // table 3
+	{ // table 3
 		huffmanTableCodes3,
 		0,
 	},
-	huffmanTable{}, // table 4
-	huffmanTable{ // table 5
+	{}, // table 4
+	{ // table 5
 		huffmanTableCodes5,
 		0,
 	},
-	huffmanTable{ // table 6
+	{ // table 6
 		huffmanTableCodes6,
 		0,
 	},
-	huffmanTable{ // table 7
+	{ // table 7
 		huffmanTableCodes7,
 		0,
 	},
-	huffmanTable{ // table 8
+	{ // table 8
 		huffmanTableCodes8,
 		0,
 	},
-	huffmanTable{ // table 9
+	{ // table 9
 		huffmanTableCodes9,
 		0,
 	},
-	huffmanTable{ // table 10
+	{ // table 10
 		huffmanTableCodes10,
 		0,
 	},
-	huffmanTable{ // table 11
+	{ // table 11
 		huffmanTableCodes11,
 		0,
 	},
-	huffmanTable{ // table 12
+	{ // table 12
 		huffmanTableCodes12,
 		0,
 	},
-	huffmanTable{ // table 13
+	{ // table 13
 		huffmanTableCodes13,
 		0,
 	},
-	huffmanTable{}, // table 14
-	huffmanTable{ // table 15
+	{}, // table 14
+	{ // table 15
 		huffmanTableCodes15,
 		0,
 	},
-	huffmanTable{ // table 16
+	{ // table 16
 		huffmanTableCodes16,
 		1,
 	},
-	huffmanTable{ // table 17
+	{ // table 17
 		huffmanTableCodes16,
 		2,
 	},
-	huffmanTable{ // table 18
+	{ // table 18
 		huffmanTableCodes16,
 		3,
 	},
-	huffmanTable{ // table 19
+	{ // table 19
 		huffmanTableCodes16,
 		4,
 	},
-	huffmanTable{ // table 20
+	{ // table 20
 		huffmanTableCodes16,
 		6,
 	},
-	huffmanTable{ // table 21
+	{ // table 21
 		huffmanTableCodes16,
 		8,
 	},
-	huffmanTable{ // table 22
+	{ // table 22
 		huffmanTableCodes16,
 		10,
 	},
-	huffmanTable{ // table 23
+	{ // table 23
 		huffmanTableCodes16,
 		13,
 	},
-	huffmanTable{ // table 24
+	{ // table 24
 		huffmanTableCodes24,
 		4,
 	},
-	huffmanTable{ // table 25
+	{ // table 25
 		huffmanTableCodes24,
 		5,
 	},
-	huffmanTable{ // table 26
+	{ // table 26
 		huffmanTableCodes24,
 		6,
 	},
-	huffmanTable{ // table 27
+	{ // table 27
 		huffmanTableCodes24,
 		7,
 	},
-	huffmanTable{ // table 28
+	{ // table 28
 		huffmanTableCodes24,
 		8,
 	},
-	huffmanTable{ // table 29
+	{ // table 29
 		huffmanTableCodes24,
 		9,
 	},
-	huffmanTable{ // table 30
+	{ // table 30
 		huffmanTableCodes24,
 		11,
 	},
-	huffmanTable{ // table 31
+	{ // table 31
 		huffmanTableCodes24,
 		13,
 	},

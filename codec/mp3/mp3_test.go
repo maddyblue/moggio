@@ -21,8 +21,8 @@ func TestHuffmanTable(t *testing.T) {
 		0xfd,
 	}))
 	expected := [][2]byte{
-		[2]byte{0, 0},
-		[2]byte{0, 1},
+		{0, 0},
+		{0, 1},
 	}
 	for _, e := range expected {
 		got := table.tree.Decode(r)
