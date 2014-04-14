@@ -38,6 +38,11 @@ var huffmanQuadrupleB = mustHuffmanTree([]huffmanPair{
 	{[]byte{0, 0, 0, 0}, [2]byte{15, 0}},
 })
 
+var huffmanQuadTables = []*huffmanTree{
+	huffmanQuadrupleA,
+	huffmanQuadrupleB,
+}
+
 var huffmanTableCodes1 = mustHuffmanTree([]huffmanPair{
 	{[]byte{1}, [2]byte{0, 0}},
 	{[]byte{0, 0, 1}, [2]byte{0, 1}},
