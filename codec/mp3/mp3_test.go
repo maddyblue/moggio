@@ -15,6 +15,23 @@ func TestMp3(t *testing.T) {
 	m.Sequence()
 }
 
+func TestHuffmanTable(t *testing.T) {
+	table := huffmanTables[29]
+	r := newBitReader(bytes.NewBuffer([]byte{
+		0xfd,
+	}))
+	expected := [][2]byte{
+		[2]byte{0, 0},
+		[2]byte{0, 1},
+	}
+	for _, e := range expected {
+		got := table.tree.Decode(r)
+		if got != e {
+			t.Fatal("expected", e, "got", got)
+		}
+	}
+}
+
 func TestHuffman(t *testing.T) {
 	l := []huffmanPair{
 		{[]byte{1}, [2]byte{0, 0}},
