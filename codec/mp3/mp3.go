@@ -27,7 +27,7 @@ func New(r io.Reader) *MP3 {
 	}
 }
 
-func (m *MP3) Sequence() (audio []float32, err error) {
+func (m *MP3) Sequence() {
 	for {
 		m.frame()
 		break
@@ -145,15 +145,83 @@ func (m *MP3) audio_data() {
 					}
 				}
 			}
-			Huffmancodebits := uint(part2_3_length[gr]) - part2_length(switch_point[gr], scalefac_compress[gr], block_type[gr])
-			println("HUF", Huffmancodebits)
-			println("MDE", main_data_end)
+			bits := uint(part2_3_length[gr]) - part2_length(switch_point[gr], scalefac_compress[gr], block_type[gr])
+			region := 0
+			entry := huffmanTables[table_select[region][gr]]
+			var is [576]int
+			isx := 0
+			rcount := region_address1[gr] + 1
+			sfbwidthptr := 0
+			sfbwidth := sfbwidthTable[m.Sampling()].long
+			if block_type[gr] == 2 {
+				sfbwidth = sfbwidthTable[m.Sampling()].short
+			}
+			sfbound := sfbwidth[sfbwidthptr]
+			sfbwidthptr++
+			read := func(b byte) {
+				d := int(b)
+				if d == max_table_entry {
+					// The spec says that the linbits values should be added to max_table_entry
+					// - 1. libmad does not use a -1. I'm not sure if the spec is wrong, libmad
+					// is wrong, or I'm misinterpreting the spec.
+					d += int(m.b.ReadBits64(entry.linbits))
+				}
+				if d != 0 && m.b.ReadBits64(1) == 1 {
+					d = -d
+				}
+				is[isx] = d
+				isx++
+			}
+			until := m.b.read + bits
+			for big := big_values[gr]; big > 0 && m.b.read < until; big-- {
+				if isx == sfbound {
+					sfbound += sfbwidth[sfbwidthptr]
+					sfbwidthptr++
+					rcount--
+					if rcount == 0 {
+						if region == 0 {
+							rcount = region_address1[gr] + 1
+						} else {
+							rcount = 0
+						}
+						region++
+						entry = huffmanTables[table_select[region][gr]]
+					}
+				}
+				pair := entry.tree.Decode(m.b)
+				read(pair[0])
+				read(pair[1])
+			}
+			if m.b.read >= until {
+				panic("huffman overrun")
+			}
+			table := huffmanQuadTables[count1table_select[gr]]
+			setQuad := func(b, offset byte) {
+				v := 0
+				if b&offset != 0 {
+					if m.b.ReadBits64(1) == 1 {
+						v = -1
+					} else {
+						v = 1
+					}
+				}
+				is[isx] = v
+				isx++
+			}
+			for m.b.read < until {
+				quad := table.Decode(m.b)[0]
+				setQuad(quad, 1<<0) // v
+				setQuad(quad, 1<<1) // w
+				setQuad(quad, 1<<2) // x
+				setQuad(quad, 1<<3) // y
+			}
 			/*
 				for position != main_data_end {
-					m.b.ReadBits(1) // ancillary_bit
+					m.b.ReadBits64(1) // ancillary_bit
 				}
 			//*/
 		}
+		_ = main_data_end
 	}
 	/* else if (mode == ModeStereo) || (mode == ModeDual) || (mode == ModeJoint) {
 		main_data_end := uint16(m.b.ReadBits64(9))
@@ -328,8 +396,9 @@ const (
 )
 
 const (
-	cblimit       = 21
-	cblimit_short = 12
+	cblimit         = 21
+	cblimit_short   = 12
+	max_table_entry = 15
 )
 
 func switch_point_l(b byte) int {
