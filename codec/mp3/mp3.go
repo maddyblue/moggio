@@ -231,15 +231,15 @@ func (m *MP3) Length() int {
 	}
 	switch m.layer {
 	case LayerI:
-		return (12*m.BitrateIndex()*1000/m.SamplingIndex() + padding) * 4
+		return (12*m.Bitrate()*1000/m.Sampling() + padding) * 4
 	case LayerII, LayerIII:
-		return 144*m.BitrateIndex()*1000/m.SamplingIndex() + padding
+		return 144*m.Bitrate()*1000/m.Sampling() + padding
 	default:
 		return 0
 	}
 }
 
-func (m *MP3) BitrateIndex() int {
+func (m *MP3) Bitrate() int {
 	switch {
 	case m.layer == LayerIII:
 		switch m.bitrate_index {
@@ -276,7 +276,7 @@ func (m *MP3) BitrateIndex() int {
 	return 0
 }
 
-func (m *MP3) SamplingIndex() int {
+func (m *MP3) Sampling() int {
 	switch m.sampling_frequency {
 	case 0:
 		return 44100
