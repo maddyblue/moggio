@@ -1467,6 +1467,7 @@ type huffmanTable struct {
 }
 
 var huffmanTables = [...]huffmanTable{
+	huffmanTable{}, // table_select uses 1-based indexes
 	huffmanTable{ // table 1
 		huffmanTableCodes1,
 		0,
@@ -1479,6 +1480,7 @@ var huffmanTables = [...]huffmanTable{
 		huffmanTableCodes3,
 		0,
 	},
+	huffmanTable{}, // table 4
 	huffmanTable{ // table 5
 		huffmanTableCodes5,
 		0,
@@ -1515,6 +1517,7 @@ var huffmanTables = [...]huffmanTable{
 		huffmanTableCodes13,
 		0,
 	},
+	huffmanTable{}, // table 14
 	huffmanTable{ // table 15
 		huffmanTableCodes15,
 		0,
