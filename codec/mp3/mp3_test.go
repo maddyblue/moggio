@@ -42,7 +42,7 @@ func TestHuffman(t *testing.T) {
 	for _, test := range tests {
 		r := newBitReader(bytes.NewBuffer(test.input))
 		for i, v := range test.output {
-			got := h.Decode(&r)
+			got := h.Decode(r)
 			if err := r.Err(); err != nil {
 				t.Fatal(err)
 			}

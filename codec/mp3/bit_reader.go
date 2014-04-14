@@ -17,17 +17,18 @@ type bitReader struct {
 	r    io.ByteReader
 	n    uint64
 	bits uint
+	read uint // number of read bits
 	err  error
 }
 
 // newBitReader returns a new bitReader reading from r. If r is not
 // already an io.ByteReader, it will be converted via a bufio.Reader.
-func newBitReader(r io.Reader) bitReader {
+func newBitReader(r io.Reader) *bitReader {
 	byter, ok := r.(io.ByteReader)
 	if !ok {
 		byter = bufio.NewReader(r)
 	}
-	return bitReader{r: byter}
+	return &bitReader{r: byter}
 }
 
 // ReadBits64 reads the given number of bits and returns them in the
@@ -64,25 +65,13 @@ func (br *bitReader) ReadBits64(bits uint) (n uint64) {
 	// least-significant places and masks off anything above.
 	n = (br.n >> (br.bits - bits)) & ((1 << bits) - 1)
 	br.bits -= bits
+	br.read += bits
 	return
 }
 
-func (br *bitReader) ReadBits(bits uint) (n int) {
-	n64 := br.ReadBits64(bits)
-	return int(n64)
-}
-
 func (br *bitReader) ReadBit() bool {
-	n := br.ReadBits(1)
+	n := br.ReadBits64(1)
 	return n != 0
-}
-
-func (br *bitReader) TryReadBit() (bit byte, ok bool) {
-	if br.bits > 0 {
-		br.bits--
-		return byte(br.n>>br.bits) & 1, true
-	}
-	return 0, false
 }
 
 func (br *bitReader) Err() error {

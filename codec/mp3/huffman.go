@@ -37,28 +37,23 @@ func (t *huffmanTree) Decode(br *bitReader) (v [2]byte) {
 
 	for {
 		node := &t.nodes[nodeIndex]
-		bit, ok := br.TryReadBit()
-		if !ok && br.ReadBit() {
-			bit = 1
-		}
-		// mp3 encodes right as a true bit.
-		if bit == 0 {
-			// left
-			if node.left == invalidNodeValue {
-				return node.leftValue
-			}
-			nodeIndex = node.left
-		} else {
+		if br.ReadBit() {
 			// right
 			if node.right == invalidNodeValue {
 				return node.rightValue
 			}
 			nodeIndex = node.right
+		} else {
+			// left
+			if node.left == invalidNodeValue {
+				return node.leftValue
+			}
+			nodeIndex = node.left
 		}
 	}
 }
 
-func mustHuffmanTree(pairs []huffmanPair) huffmanTree {
+func mustHuffmanTree(pairs []huffmanPair) *huffmanTree {
 	t, err := newHuffmanTree(pairs)
 	if err != nil {
 		panic(err)
@@ -66,7 +61,7 @@ func mustHuffmanTree(pairs []huffmanPair) huffmanTree {
 	return t
 }
 
-func newHuffmanTree(pairs []huffmanPair) (huffmanTree, error) {
+func newHuffmanTree(pairs []huffmanPair) (*huffmanTree, error) {
 	if len(pairs) < 2 {
 		panic("newHuffmanTree: too few symbols")
 	}
@@ -97,7 +92,7 @@ func newHuffmanTree(pairs []huffmanPair) (huffmanTree, error) {
 
 	t.nodes = make([]huffmanNode, len(codes))
 	_, err := buildHuffmanNode(&t, codes, 0)
-	return t, err
+	return &t, err
 }
 
 type huffmanPair struct {

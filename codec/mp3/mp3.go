@@ -23,7 +23,7 @@ type MP3 struct {
 func New(r io.Reader) *MP3 {
 	b := newBitReader(r)
 	return &MP3{
-		b: &b,
+		b: b,
 	}
 }
 
@@ -42,31 +42,32 @@ func (m *MP3) frame() {
 }
 
 func (m *MP3) header() {
-	m.syncword = uint16(m.b.ReadBits(12))
-	m.ID = byte(m.b.ReadBits(1))
-	m.layer = Layer(m.b.ReadBits(2))
-	m.protection_bit = byte(m.b.ReadBits(1))
-	m.bitrate_index = byte(m.b.ReadBits(4))
-	m.sampling_frequency = byte(m.b.ReadBits(2))
-	m.padding_bit = byte(m.b.ReadBits(1))
-	m.private_bit = byte(m.b.ReadBits(1))
-	m.mode = Mode(m.b.ReadBits(2))
-	m.mode_extension = byte(m.b.ReadBits(2))
-	m.copyright = byte(m.b.ReadBits(1))
-	m.original_home = byte(m.b.ReadBits(1))
-	m.emphasis = Emphasis(m.b.ReadBits(2))
+	syncword := uint16(m.b.ReadBits64(12))
+	m.syncword = syncword
+	m.ID = byte(m.b.ReadBits64(1))
+	m.layer = Layer(m.b.ReadBits64(2))
+	m.protection_bit = byte(m.b.ReadBits64(1))
+	m.bitrate_index = byte(m.b.ReadBits64(4))
+	m.sampling_frequency = byte(m.b.ReadBits64(2))
+	m.padding_bit = byte(m.b.ReadBits64(1))
+	m.private_bit = byte(m.b.ReadBits64(1))
+	m.mode = Mode(m.b.ReadBits64(2))
+	m.mode_extension = byte(m.b.ReadBits64(2))
+	m.copyright = byte(m.b.ReadBits64(1))
+	m.original_home = byte(m.b.ReadBits64(1))
+	m.emphasis = Emphasis(m.b.ReadBits64(2))
 }
 
 func (m *MP3) error_check() {
 	if m.protection_bit == 0 {
-		m.b.ReadBits(16)
+		m.b.ReadBits64(16)
 	}
 }
 
 func (m *MP3) audio_data() {
 	if m.mode == ModeSingle {
-		main_data_end := uint16(m.b.ReadBits(9))
-		m.b.ReadBits(5) // private_bits
+		main_data_end := uint16(m.b.ReadBits64(9))
+		m.b.ReadBits64(5) // private_bits
 		scfsi := make([]byte, cblimit)
 		var part2_3_length [2]uint16
 		var big_values [2]uint16
@@ -82,33 +83,33 @@ func (m *MP3) audio_data() {
 		var scalefac [][2]uint8
 		var scalefacw [][3][2]uint8
 		for scfsi_band := 0; scfsi_band < 4; scfsi_band++ {
-			scfsi[scfsi_band] = byte(m.b.ReadBits(1))
+			scfsi[scfsi_band] = byte(m.b.ReadBits64(1))
 		}
 		for gr := 0; gr < 2; gr++ {
-			part2_3_length[gr] = uint16(m.b.ReadBits(12))
-			big_values[gr] = uint16(m.b.ReadBits(9))
-			global_gain[gr] = uint16(m.b.ReadBits(8))
-			scalefac_compress[gr] = byte(m.b.ReadBits(4))
-			blocksplit_flag[gr] = byte(m.b.ReadBits(1))
+			part2_3_length[gr] = uint16(m.b.ReadBits64(12))
+			big_values[gr] = uint16(m.b.ReadBits64(9))
+			global_gain[gr] = uint16(m.b.ReadBits64(8))
+			scalefac_compress[gr] = byte(m.b.ReadBits64(4))
+			blocksplit_flag[gr] = byte(m.b.ReadBits64(1))
 			if blocksplit_flag[gr] != 0 {
-				block_type[gr] = byte(m.b.ReadBits(2))
-				switch_point[gr] = byte(m.b.ReadBits(1))
+				block_type[gr] = byte(m.b.ReadBits64(2))
+				switch_point[gr] = byte(m.b.ReadBits64(1))
 				for region := 0; region < 2; region++ {
-					table_select[region][gr] = byte(m.b.ReadBits(5))
+					table_select[region][gr] = byte(m.b.ReadBits64(5))
 				}
 				for window := 0; window < 3; window++ {
-					subblock_gain[window][gr] = uint8(m.b.ReadBits(3))
+					subblock_gain[window][gr] = uint8(m.b.ReadBits64(3))
 				}
 			} else {
 				for region := 0; region < 3; region++ {
-					table_select[region][gr] = byte(m.b.ReadBits(5))
+					table_select[region][gr] = byte(m.b.ReadBits64(5))
 				}
-				region_address1[gr] = byte(m.b.ReadBits(4))
-				region_address2[gr] = byte(m.b.ReadBits(3))
+				region_address1[gr] = byte(m.b.ReadBits64(4))
+				region_address2[gr] = byte(m.b.ReadBits64(3))
 			}
-			preflag[gr] = byte(m.b.ReadBits(1))
-			scalefac_scale[gr] = byte(m.b.ReadBits(1))
-			count1table_select[gr] = byte(m.b.ReadBits(1))
+			preflag[gr] = byte(m.b.ReadBits64(1))
+			scalefac_scale[gr] = byte(m.b.ReadBits64(1))
+			count1table_select[gr] = byte(m.b.ReadBits64(1))
 
 		}
 		// The main_data follows. It does not follow the above side information in the bitstream. The main_data ends at a location in the main_data bitstream preceding the frame header of the following frame at an offset given by the value of main_data_end (see definition of main_data_end and 3-Annex Fig.3-A.7.1)
@@ -119,14 +120,14 @@ func (m *MP3) audio_data() {
 				for cb := 0; cb < switch_point_l(switch_point[gr]); cb++ {
 					if (scfsi[cb] == 0) || (gr == 0) {
 						slen := scalefactors_len(scalefac_compress[gr], block_type[gr], switch_point[gr], cb)
-						scalefac[cb][gr] = uint8(m.b.ReadBits(slen))
+						scalefac[cb][gr] = uint8(m.b.ReadBits64(slen))
 					}
 				}
 				for cb := switch_point_s(switch_point[gr]); cb < cblimit_short; cb++ {
 					slen := scalefactors_len(scalefac_compress[gr], block_type[gr], switch_point[gr], cb)
 					for window := 0; window < 3; window++ {
 						if (scfsi[cb] == 0) || (gr == 0) {
-							scalefacw[cb][window][gr] = uint8(m.b.ReadBits(slen))
+							scalefacw[cb][window][gr] = uint8(m.b.ReadBits64(slen))
 						}
 					}
 				}
@@ -135,7 +136,7 @@ func (m *MP3) audio_data() {
 				for cb := 0; cb < cblimit; cb++ {
 					if (scfsi[cb] == 0) || (gr == 0) {
 						slen := scalefactors_len(scalefac_compress[gr], block_type[gr], switch_point[gr], cb)
-						scalefac[cb][gr] = uint8(m.b.ReadBits(slen))
+						scalefac[cb][gr] = uint8(m.b.ReadBits64(slen))
 					}
 				}
 			}
@@ -150,39 +151,39 @@ func (m *MP3) audio_data() {
 		}
 	}
 	/* else if (mode == ModeStereo) || (mode == ModeDual) || (mode == ModeJoint) {
-		main_data_end := uint16(m.b.ReadBits(9))
-		private_bits := byte(m.b.ReadBits(3))
+		main_data_end := uint16(m.b.ReadBits64(9))
+		private_bits := byte(m.b.ReadBits64(3))
 		for ch := 0; ch < 2; ch++ {
 			for scfsi_band = 0; scfsi_band < 4; scfsi_band++ {
-				scfsi[scfsi_band][ch] = byte(m.b.ReadBits(1))
+				scfsi[scfsi_band][ch] = byte(m.b.ReadBits64(1))
 			}
 		}
 		for gr := 0; gr < 2; gr++ {
 			for ch := 0; ch < 2; ch++ {
-				part2_3_length[gr][ch] = uint16(m.b.ReadBits(12))
-				big_values[gr][ch] = uint16(m.b.ReadBits(9))
-				global_gain[gr][ch] = uint16(m.b.ReadBits(8))
-				scalefac_compress[gr][ch] = byte(m.b.ReadBits(4))
-				blocksplit_flag[gr][ch] = byte(m.b.ReadBits(1))
+				part2_3_length[gr][ch] = uint16(m.b.ReadBits64(12))
+				big_values[gr][ch] = uint16(m.b.ReadBits64(9))
+				global_gain[gr][ch] = uint16(m.b.ReadBits64(8))
+				scalefac_compress[gr][ch] = byte(m.b.ReadBits64(4))
+				blocksplit_flag[gr][ch] = byte(m.b.ReadBits64(1))
 				if blocksplit_flag[gr][ch] {
-					block_type[gr][ch] = byte(m.b.ReadBits(2))
-					switch_point[gr][ch] = uint16(m.b.ReadBits(1))
+					block_type[gr][ch] = byte(m.b.ReadBits64(2))
+					switch_point[gr][ch] = uint16(m.b.ReadBits64(1))
 					for region := 0; region < 2; region++ {
-						table_select[region][gr][ch] = byte(m.b.ReadBits(5))
+						table_select[region][gr][ch] = byte(m.b.ReadBits64(5))
 					}
 					for window := 0; window < 3; window++ {
-						subblock_gain[window][gr][ch] = uint8(m.b.ReadBits(3))
+						subblock_gain[window][gr][ch] = uint8(m.b.ReadBits64(3))
 					}
 				} else {
 					for region := 0; region < 3; region++ {
-						table_select[region][gr][ch] = byte(m.b.ReadBits(5))
+						table_select[region][gr][ch] = byte(m.b.ReadBits64(5))
 					}
-					region_address1[gr][ch] = byte(m.b.ReadBits(4))
-					region_address2[gr][ch] = byte(m.b.ReadBits(3))
+					region_address1[gr][ch] = byte(m.b.ReadBits64(4))
+					region_address2[gr][ch] = byte(m.b.ReadBits64(3))
 				}
-				preflag[gr][ch] = byte(m.b.ReadBits(1))
-				scalefac_scale[gr][ch] = byte(m.b.ReadBits(1))
-				count1table_select[gr][ch] = byte(m.b.ReadBits(1))
+				preflag[gr][ch] = byte(m.b.ReadBits64(1))
+				scalefac_scale[gr][ch] = byte(m.b.ReadBits64(1))
+				count1table_select[gr][ch] = byte(m.b.ReadBits64(1))
 				// The main_data follows. It does not follow the above side information in the bitstream. The main_data endsat a location in the main_data bitstream preceding the frame header of the following frame at an offset given by thevalue of main_data_end.
 			}
 		}
@@ -210,7 +211,7 @@ func (m *MP3) audio_data() {
 				}
 				// Huffmancodebits (part2_3_length-part2_length) bits bslbf
 				for position != main_data_end {
-					ancillary_bit := byte(m.b.ReadBits(1))
+					ancillary_bit := byte(m.b.ReadBits64(1))
 				}
 			}
 		}

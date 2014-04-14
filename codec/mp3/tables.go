@@ -1467,7 +1467,7 @@ var huffmanTableCodes24 = mustHuffmanTree([]huffmanPair{
 })
 
 type huffmanTable struct {
-	tree    huffmanTree
+	tree    *huffmanTree
 	linbits uint
 }
 
