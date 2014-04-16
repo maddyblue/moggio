@@ -245,6 +245,8 @@ func (m *MP3) audio_data() {
 			//*/
 		}
 		_ = main_data_end
+		// todo: determine channel blocktype, support blocktype == 2
+		aliasReduce(xr[:])
 	}
 	/* else if (mode == ModeStereo) || (mode == ModeDual) || (mode == ModeJoint) {
 		main_data_end := uint16(m.b.ReadBits64(9))
@@ -313,6 +315,39 @@ func (m *MP3) audio_data() {
 		}
 	}
 	//*/
+}
+
+var (
+	CI = [8]float64{
+		-0.6,
+		-0.535,
+		-0.33,
+		-0.185,
+		-0.095,
+		-0.041,
+		-0.0142,
+		-0.0037,
+	}
+	CS, CA [8]float64
+)
+
+func init() {
+	for i, v := range CI {
+		den := math.Sqrt(1 + math.Pow(v, 2))
+		CS[i] = 1 / den
+		CA[i] = v / den
+	}
+}
+
+func aliasReduce(s []float64) {
+	for x := 18; x < len(s); x += 18 {
+		for i := 0; i < 8; i++ {
+			a := s[x-i-1]
+			b := s[x+i]
+			s[x-i-1] = a*CS[i] - b*CA[i]
+			s[x+i] = b*CS[i] + a*CA[i]
+		}
+	}
 }
 
 // Length returns the frame length in bytes.
