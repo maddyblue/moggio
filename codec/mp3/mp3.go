@@ -1,6 +1,9 @@
 package mp3
 
-import "io"
+import (
+	"io"
+	"math"
+)
 
 type MP3 struct {
 	b *bitReader
@@ -115,7 +118,6 @@ func (m *MP3) audio_data() {
 			preflag[gr] = byte(m.b.ReadBits64(1))
 			scalefac_scale[gr] = byte(m.b.ReadBits64(1))
 			count1table_select[gr] = byte(m.b.ReadBits64(1))
-
 		}
 		// The main_data follows. It does not follow the above side information in the bitstream. The main_data ends at a location in the main_data bitstream preceding the frame header of the following frame at an offset given by the value of main_data_end (see definition of main_data_end and 3-Annex Fig.3-A.7.1)
 		for gr := 0; gr < 2; gr++ {
@@ -148,8 +150,9 @@ func (m *MP3) audio_data() {
 			bits := uint(part2_3_length[gr]) - part2_length(switch_point[gr], scalefac_compress[gr], block_type[gr])
 			region := 0
 			entry := huffmanTables[table_select[region][gr]]
-			var is [576]int
+			var xr [576]float64
 			isx := 0
+			cb := 0
 			rcount := region_address1[gr] + 1
 			sfbwidthptr := 0
 			sfbwidth := sfbwidthTable[m.Sampling()].long
@@ -158,6 +161,23 @@ func (m *MP3) audio_data() {
 			}
 			sfbound := sfbwidth[sfbwidthptr]
 			sfbwidthptr++
+			var factor float64
+			var sfm float64 = 2
+			if scalefac_scale[gr] == 1 {
+				sfm = 4
+			}
+			exp := func(i int) {
+				cb += i
+				if block_type[gr] == 2 {
+					// todo: factor = ...
+					panic("block type 2 - scale factors")
+				} else {
+					factor = (float64(global_gain[gr]) - 210) / 4
+					factor -= sfm * (float64(scalefac[cb][gr]) + float64(preflag[gr]*pretab[cb]))
+					factor = math.Pow(2, factor)
+				}
+			}
+			exp(0)
 			read := func(b byte) {
 				d := int(b)
 				if d == max_table_entry {
@@ -166,10 +186,12 @@ func (m *MP3) audio_data() {
 					// is wrong, or I'm misinterpreting the spec.
 					d += int(m.b.ReadBits64(entry.linbits))
 				}
-				if d != 0 && m.b.ReadBits64(1) == 1 {
-					d = -d
+				if d != 0 {
+					xr[isx] = math.Pow(float64(d), 4.0/3.0) * factor
+					if m.b.ReadBits64(1) == 1 {
+						xr[isx] = -xr[isx]
+					}
 				}
-				is[isx] = d
 				isx++
 			}
 			until := m.b.read + bits
@@ -187,6 +209,7 @@ func (m *MP3) audio_data() {
 						region++
 						entry = huffmanTables[table_select[region][gr]]
 					}
+					exp(1)
 				}
 				pair := entry.tree.Decode(m.b)
 				read(pair[0])
@@ -197,18 +220,18 @@ func (m *MP3) audio_data() {
 			}
 			table := huffmanQuadTables[count1table_select[gr]]
 			setQuad := func(b, offset byte) {
-				v := 0
+				var v byte
 				if b&offset != 0 {
-					if m.b.ReadBits64(1) == 1 {
-						v = -1
-					} else {
-						v = 1
-					}
+					v = 1
 				}
-				is[isx] = v
-				isx++
+				read(v)
 			}
 			for m.b.read < until {
+				if isx == sfbound {
+					sfbound += sfbwidth[sfbwidthptr]
+					sfbwidthptr++
+					exp(1)
+				}
 				quad := table.Decode(m.b)[0]
 				setQuad(quad, 1<<0) // v
 				setQuad(quad, 1<<1) // w
