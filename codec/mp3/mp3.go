@@ -120,6 +120,7 @@ func (m *MP3) audio_data() {
 			count1table_select[gr] = byte(m.b.ReadBits64(1))
 		}
 		// The main_data follows. It does not follow the above side information in the bitstream. The main_data ends at a location in the main_data bitstream preceding the frame header of the following frame at an offset given by the value of main_data_end (see definition of main_data_end and 3-Annex Fig.3-A.7.1)
+		var xr [576]float64
 		for gr := 0; gr < 2; gr++ {
 			if blocksplit_flag[gr] == 1 && block_type[gr] == 2 {
 				scalefac = make([][2]uint8, switch_point_l(switch_point[gr]))
@@ -150,7 +151,6 @@ func (m *MP3) audio_data() {
 			bits := uint(part2_3_length[gr]) - part2_length(switch_point[gr], scalefac_compress[gr], block_type[gr])
 			region := 0
 			entry := huffmanTables[table_select[region][gr]]
-			var xr [576]float64
 			isx := 0
 			cb := 0
 			rcount := region_address1[gr] + 1
