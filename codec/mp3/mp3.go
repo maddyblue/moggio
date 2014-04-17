@@ -246,7 +246,16 @@ func (m *MP3) audio_data() {
 		}
 		_ = main_data_end
 		// todo: determine channel blocktype, support blocktype == 2
-		aliasReduce(xr[:])
+		bt := block_type[0]
+		if bt != 2 {
+			aliasReduce(xr[:])
+			xi := make([]float64, len(xr)*2)
+			for i := 0; i < len(xr); i += 18 {
+				x := xi[i*2 : (i+18)*2]
+				imdct(xr[i:i+18], x)
+				window(x, bt)
+			}
+		}
 	}
 	/* else if (mode == ModeStereo) || (mode == ModeDual) || (mode == ModeJoint) {
 		main_data_end := uint16(m.b.ReadBits64(9))
@@ -347,6 +356,61 @@ func aliasReduce(s []float64) {
 			s[x-i-1] = a*CS[i] - b*CA[i]
 			s[x+i] = b*CS[i] + a*CA[i]
 		}
+	}
+}
+
+func imdct(in, out []float64) {
+	n := len(out)
+	fn := float64(n)
+	fn2 := fn * 2
+	fn_2 := fn / 2
+	for i := 0; i < n; i++ {
+		c := math.Pi / fn2 * (2*float64(i) + 1 + fn_2)
+		var x float64
+		for k := 0; k < n/2; k++ {
+			x += in[k] * math.Cos(c*(2*float64(k)+1))
+		}
+		out[i] = x
+	}
+}
+
+func window(out []float64, bt byte) {
+	for i := range out {
+		fi := float64(i)
+		var x float64
+		switch bt {
+		case 0:
+			x = math.Sin(math.Pi / 36 * (fi + 0.5))
+		case 1:
+			switch {
+			case i < 18:
+				x = math.Sin(math.Pi / 36 * (fi + 0.5))
+			case i < 24:
+				x = 1
+			case i < 30:
+				x = math.Sin(math.Pi / 12 * (fi - 18 + 0.5))
+			case i < 36:
+				x = 0
+			default:
+				panic("unreachable")
+			}
+		case 3:
+			switch {
+			case i < 6:
+				x = 0
+			case i < 12:
+				x = math.Sin(math.Pi / 12 * (fi - 6 + 0.5))
+			case i < 18:
+				x = 1
+			case i < 36:
+				x = math.Sin(math.Pi / 36 * (fi + 0.5))
+			default:
+				panic("unreachable")
+			}
+		default:
+			panic("unsupported block type window")
+		}
+		out[i] *= x
 	}
 }
 
