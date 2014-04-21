@@ -21,6 +21,8 @@ type MP3 struct {
 	copyright          byte
 	original_home      byte
 	emphasis           Emphasis
+
+	ov [2][32][18]float64
 }
 
 func New(r io.Reader) *MP3 {
@@ -120,7 +122,6 @@ func (m *MP3) audio_data() {
 			count1table_select[gr] = byte(m.b.ReadBits64(1))
 		}
 		// The main_data follows. It does not follow the above side information in the bitstream. The main_data ends at a location in the main_data bitstream preceding the frame header of the following frame at an offset given by the value of main_data_end (see definition of main_data_end and 3-Annex Fig.3-A.7.1)
-		var xr [576]float64
 		for gr := 0; gr < 2; gr++ {
 			if blocksplit_flag[gr] == 1 && block_type[gr] == 2 {
 				scalefac = make([][2]uint8, switch_point_l(switch_point[gr]))
@@ -161,6 +162,7 @@ func (m *MP3) audio_data() {
 			}
 			sfbound := sfbwidth[sfbwidthptr]
 			sfbwidthptr++
+			var xr [576]float64
 			var factor float64
 			var sfm float64 = 2
 			if scalefac_scale[gr] == 1 {
@@ -243,19 +245,27 @@ func (m *MP3) audio_data() {
 					m.b.ReadBits64(1) // ancillary_bit
 				}
 			//*/
-		}
-		_ = main_data_end
-		// todo: determine channel blocktype, support blocktype == 2
-		bt := block_type[0]
-		if bt != 2 {
-			aliasReduce(xr[:])
-			xi := make([]float64, len(xr)*2)
-			for i := 0; i < len(xr); i += 18 {
-				x := xi[i*2 : (i+18)*2]
-				imdct(xr[i:i+18], x)
-				window(x, bt)
+			// todo: determine channel blocktype, support blocktype == 2
+			bt := block_type[0]
+			ch := 0
+			if bt != 2 {
+				aliasReduce(xr[:])
+				xi := make([]float64, 36)
+				samples := make([][32]float64, 18)
+				i := 0
+				for sb := 0; sb < 32; sb++ {
+					x := xr[i : i+18]
+					i += 18
+					imdct(x, xi)
+					window(xi, bt)
+					m.overlap(xi, samples, ch, sb)
+					if sb&1 == 1 {
+						freqinver(samples, sb)
+					}
+				}
 			}
 		}
+		_ = main_data_end
 	}
 	/* else if (mode == ModeStereo) || (mode == ModeDual) || (mode == ModeJoint) {
 		main_data_end := uint16(m.b.ReadBits64(9))
@@ -371,6 +381,19 @@ func imdct(in, out []float64) {
 			x += in[k] * math.Cos(c*(2*float64(k)+1))
 		}
 		out[i] = x
+	}
+}
+
+func (m *MP3) overlap(in []float64, samples [][32]float64, ch, sb int) {
+	for i := 0; i < 18; i++ {
+		samples[i][sb] = in[i] + m.ov[ch][sb][i]
+		m.ov[ch][sb][i] = in[i+18]
+	}
+}
+
+func freqinver(samples [][32]float64, sb int) {
+	for i := 1; i < 18; i += 2 {
+		samples[i][sb] = -samples[i][sb]
 	}
 }
 
