@@ -235,10 +235,10 @@ func (m *MP3) audio_data() {
 					exp(1)
 				}
 				quad := table.Decode(m.b)[0]
-				setQuad(quad, 1<<0) // v
-				setQuad(quad, 1<<1) // w
-				setQuad(quad, 1<<2) // x
-				setQuad(quad, 1<<3) // y
+				setQuad(quad, 1<<3) // v
+				setQuad(quad, 1<<2) // w
+				setQuad(quad, 1<<1) // x
+				setQuad(quad, 1<<0) // y
 			}
 			/*
 				for position != main_data_end {
