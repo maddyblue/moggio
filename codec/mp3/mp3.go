@@ -158,9 +158,9 @@ func (m *MP3) audio_data() {
 			cb := 0
 			rcount := region_address1[gr] + 1
 			sfbwidthptr := 0
-			sfbwidth := sfbwidthTable[m.Sampling()].long
+			sfbwidth := sfbwidthTable[m.sampling()].long
 			if block_type[gr] == 2 {
-				sfbwidth = sfbwidthTable[m.Sampling()].short
+				sfbwidth = sfbwidthTable[m.sampling()].short
 			}
 			sfbound := sfbwidth[sfbwidthptr]
 			sfbwidthptr++
@@ -438,23 +438,23 @@ func window(out []float64, bt byte) {
 	}
 }
 
-// Length returns the frame length in bytes.
-func (m *MP3) Length() int {
+// length returns the frame length in bytes.
+func (m *MP3) length() int {
 	padding := 0
 	if m.padding_bit != 0 {
 		padding = 1
 	}
 	switch m.layer {
 	case LayerI:
-		return (12*m.Bitrate()*1000/m.Sampling() + padding) * 4
+		return (12*m.bitrate()*1000/m.sampling() + padding) * 4
 	case LayerII, LayerIII:
-		return 144*m.Bitrate()*1000/m.Sampling() + padding
+		return 144*m.bitrate()*1000/m.sampling() + padding
 	default:
 		return 0
 	}
 }
 
-func (m *MP3) Bitrate() int {
+func (m *MP3) bitrate() int {
 	switch {
 	case m.layer == LayerIII:
 		switch m.bitrate_index {
@@ -491,7 +491,7 @@ func (m *MP3) Bitrate() int {
 	return 0
 }
 
-func (m *MP3) Sampling() int {
+func (m *MP3) sampling() int {
 	switch m.sampling_frequency {
 	case 0:
 		return 44100
