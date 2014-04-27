@@ -11,8 +11,15 @@ func TestMp3(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	m := New(f)
-	m.Sequence()
+	m, err := New(f)
+	if err != nil {
+		t.Fatal(err)
+	}
+	n := 2000
+	s := m.Play(n)
+	if len(s) != n {
+		t.Fatalf("bad read len, got %d, expected %d", len(s), n)
+	}
 }
 
 func TestHuffmanTable(t *testing.T) {

@@ -1,9 +1,30 @@
 package mp3
 
 import (
+	"fmt"
 	"io"
 	"math"
+
+	"github.com/mjibson/mog/codec"
 )
+
+func init() {
+	codec.RegisterCodec("MP3", "\u00ff\u00fa", ReadMP3)
+	codec.RegisterCodec("MP3", "\u00ff\u00fb", ReadMP3)
+}
+
+func ReadMP3(r io.Reader) ([]codec.Song, error) {
+	m, err := New(r)
+	if err != nil {
+		return nil, err
+	}
+	if n, err := m.frame(); err != nil {
+		return nil, err
+	} else if n == 0 {
+		return nil, fmt.Errorf("mp3: cannot decode")
+	}
+	return []codec.Song{m}, nil
+}
 
 type MP3 struct {
 	b *bitReader
@@ -26,30 +47,57 @@ type MP3 struct {
 	samples []float32
 }
 
-func New(r io.Reader) *MP3 {
-	b := newBitReader(r)
-	return &MP3{
-		b: b,
+func New(r io.Reader) (*MP3, error) {
+	m := MP3{
+		b: newBitReader(r),
+	}
+
+	return &m, nil
+}
+
+func (m *MP3) Play(samples int) []float32 {
+	for len(m.samples) < samples {
+		if n, err := m.frame(); err != nil {
+			// todo: return err
+			return nil
+		} else if n == 0 {
+			break
+		}
+	}
+	if samples > len(m.samples) {
+		samples = len(m.samples)
+	}
+	r := m.samples[:samples]
+	m.samples = m.samples[samples:]
+	return r
+}
+
+func (m *MP3) Close() {
+}
+
+func (m *MP3) Info() codec.SongInfo {
+	return codec.SongInfo{
+		SampleRate: m.sampling(),
+		Channels:   m.channels(),
 	}
 }
 
-func (m *MP3) Sequence() {
-	for {
-		m.frame()
-		break
+func (m *MP3) frame() (read int, err error) {
+	if err := m.header(); err != nil {
+		return 0, err
 	}
-	return
-}
-
-func (m *MP3) frame() {
-	m.header()
 	m.error_check()
-	m.audio_data()
+	s := m.audio_data()
+	m.samples = append(m.samples, s...)
+	return len(s), nil
 }
 
-func (m *MP3) header() {
+func (m *MP3) header() error {
 	syncword := uint16(m.b.ReadBits64(12))
 	for i := 0; syncword != 0xfff; i++ {
+		if err := m.b.Err(); err != nil {
+			return err
+		}
 		syncword <<= 1
 		syncword &= 0xfff
 		syncword |= uint16(m.b.ReadBits64(1))
@@ -68,6 +116,7 @@ func (m *MP3) header() {
 	m.copyright = byte(m.b.ReadBits64(1))
 	m.original_home = byte(m.b.ReadBits64(1))
 	m.emphasis = Emphasis(m.b.ReadBits64(2))
+	return m.b.Err()
 }
 
 func (m *MP3) error_check() {
@@ -76,7 +125,7 @@ func (m *MP3) error_check() {
 	}
 }
 
-func (m *MP3) audio_data() {
+func (m *MP3) audio_data() []float32 {
 	if m.mode == ModeSingle {
 		main_data_end := uint16(m.b.ReadBits64(9))
 		m.b.ReadBits64(5) // private_bits
@@ -337,6 +386,7 @@ func (m *MP3) audio_data() {
 		}
 	}
 	//*/
+	return nil
 }
 
 var (
@@ -567,6 +617,16 @@ func (l Layer) String() string {
 	default:
 		return "unknown"
 	}
+}
+
+func (m *MP3) channels() int {
+	switch m.mode {
+	case ModeSingle:
+		return 1
+	case ModeStereo, ModeJoint, ModeDual:
+		return 2
+	}
+	return 0
 }
 
 type Mode byte
