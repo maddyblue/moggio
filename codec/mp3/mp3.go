@@ -22,7 +22,8 @@ type MP3 struct {
 	original_home      byte
 	emphasis           Emphasis
 
-	ov [2][32][18]float64
+	ov      [2][32][18]float64
+	samples []float32
 }
 
 func New(r io.Reader) *MP3 {
@@ -266,6 +267,7 @@ func (m *MP3) audio_data() {
 				}
 			}
 		}
+		return synth(samples)
 		_ = main_data_end
 	}
 	/* else if (mode == ModeStereo) || (mode == ModeDual) || (mode == ModeJoint) {
@@ -396,6 +398,49 @@ func freqinver(samples [][32]float64, sb int) {
 	for i := 1; i < 18; i += 2 {
 		samples[i][sb] = -samples[i][sb]
 	}
+}
+
+var Nik [64][32]float64
+
+func init() {
+	for i := range Nik {
+		for k := range Nik[i] {
+			Nik[i][k] = math.Cos(float64(16+i) * float64(2*k+1) * math.Pi / 64)
+		}
+	}
+}
+
+func synth(samples [][32]float64) []float32 {
+	r := make([]float32, 32*len(samples))
+	var V [1024]float64
+	var U [512]float64
+	var W [512]float32
+	for sbi, sb := range samples {
+		copy(V[:64], V[:])
+		for i := 0; i < 64; i++ {
+			V[i] = 0
+			for k, s := range sb {
+				V[i] += Nik[i][k] * s
+			}
+		}
+		for i := 0; i < 7; i++ {
+			for j := 0; j < 31; j++ {
+				U[i*64+j] = V[i*128+j]
+				U[i*64+32+j] = V[i*128+96+j]
+			}
+		}
+		for i := 0; i < 512; i++ {
+			W[i] = float32(U[i]) * mp3Di[i]
+		}
+		for j := 0; j < 32; j++ {
+			var S float32
+			for i := 0; i < 15; i++ {
+				S += W[j+32*i]
+			}
+			r[sbi*32+j] = S
+		}
+	}
+	return r
 }
 
 func window(out []float64, bt byte) {
