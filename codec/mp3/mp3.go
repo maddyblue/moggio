@@ -50,6 +50,7 @@ func (m *MP3) header() {
 	syncword := uint16(m.b.ReadBits64(12))
 	for i := 0; syncword != 0xfff; i++ {
 		syncword <<= 1
+		syncword &= 0xfff
 		syncword |= uint16(m.b.ReadBits64(1))
 		println("mis sync", i)
 	}
