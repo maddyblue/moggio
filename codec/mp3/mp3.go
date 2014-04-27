@@ -93,6 +93,7 @@ func (m *MP3) audio_data() {
 		var preflag, scalefac_scale, count1table_select [2]byte
 		var scalefac [][2]uint8
 		var scalefacw [][3][2]uint8
+		samples := make([][32]float64, 36)
 		for scfsi_band := 0; scfsi_band < 4; scfsi_band++ {
 			scfsi[scfsi_band] = byte(m.b.ReadBits64(1))
 		}
@@ -252,14 +253,13 @@ func (m *MP3) audio_data() {
 			if bt != 2 {
 				aliasReduce(xr[:])
 				xi := make([]float64, 36)
-				samples := make([][32]float64, 18)
 				i := 0
 				for sb := 0; sb < 32; sb++ {
 					x := xr[i : i+18]
 					i += 18
 					imdct(x, xi)
 					window(xi, bt)
-					m.overlap(xi, samples, ch, sb)
+					m.overlap(xi, samples[gr*18:], ch, sb)
 					if sb&1 == 1 {
 						freqinver(samples, sb)
 					}
