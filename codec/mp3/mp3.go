@@ -340,7 +340,7 @@ func (m *MP3) audio_data() {
 }
 
 var (
-	CI = [8]float64{
+	mp3CI = [8]float64{
 		-0.6,
 		-0.535,
 		-0.33,
@@ -350,14 +350,14 @@ var (
 		-0.0142,
 		-0.0037,
 	}
-	CS, CA [8]float64
+	mp3CS, mp3CA [8]float64
 )
 
 func init() {
-	for i, v := range CI {
+	for i, v := range mp3CI {
 		den := math.Sqrt(1 + math.Pow(v, 2))
-		CS[i] = 1 / den
-		CA[i] = v / den
+		mp3CS[i] = 1 / den
+		mp3CA[i] = v / den
 	}
 }
 
@@ -366,8 +366,8 @@ func aliasReduce(s []float64) {
 		for i := 0; i < 8; i++ {
 			a := s[x-i-1]
 			b := s[x+i]
-			s[x-i-1] = a*CS[i] - b*CA[i]
-			s[x+i] = b*CS[i] + a*CA[i]
+			s[x-i-1] = a*mp3CS[i] - b*mp3CA[i]
+			s[x+i] = b*mp3CS[i] + a*mp3CA[i]
 		}
 	}
 }
