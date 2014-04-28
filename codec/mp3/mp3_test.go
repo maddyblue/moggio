@@ -2,6 +2,7 @@ package mp3
 
 import (
 	"bytes"
+	"math"
 	"os"
 	"testing"
 )
@@ -15,10 +16,15 @@ func TestMp3(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	n := 2000
+	n := 1152
 	s := m.Play(n)
 	if len(s) != n {
 		t.Fatalf("bad read len, got %d, expected %d", len(s), n)
+	}
+	for i, v := range s {
+		if !Float64Equal(float64(v), float64(he_44khz_frame1[i])) {
+			t.Fatalf("%v: expected %v, got %v\n", i, he_44khz_frame1[i], v)
+		}
 	}
 }
 
@@ -75,4 +81,27 @@ func TestHuffman(t *testing.T) {
 			}
 		}
 	}
+}
+
+const (
+	closeFactor = 1e-8
+)
+
+// PrettyClose returns true if the slices a and b are very close, else false.
+func PrettyClose(a, b []float64) bool {
+	if len(a) != len(b) {
+		return false
+	}
+
+	for i, c := range a {
+		if !Float64Equal(c, b[i]) {
+			return false
+		}
+	}
+	return true
+}
+
+// Float64Equal returns true if a and b are very close, else false.
+func Float64Equal(a, b float64) bool {
+	return math.Abs(a-b) <= closeFactor || math.Abs(1-a/b) <= closeFactor
 }
