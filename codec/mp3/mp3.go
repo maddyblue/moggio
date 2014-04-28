@@ -98,9 +98,9 @@ func (m *MP3) header() error {
 		if err := m.b.Err(); err != nil {
 			return err
 		}
-		syncword <<= 1
+		syncword <<= 8
 		syncword &= 0xfff
-		syncword |= uint16(m.b.ReadBits64(1))
+		syncword |= uint16(m.b.ReadBits64(8))
 		println("mis sync", i)
 	}
 	m.syncword = syncword
