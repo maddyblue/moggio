@@ -23,7 +23,7 @@ func TestMp3(t *testing.T) {
 	for i, v := range s {
 		e := he_44khz_frame1[i]
 		if !float32Close(v, e) {
-			t.Errorf("%v: expected %v, got %v: %v\n", i, e, v, e/v)
+			t.Errorf("%v: expected %v, got %v\n", i, e, v)
 		}
 	}
 }
