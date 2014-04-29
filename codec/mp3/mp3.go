@@ -46,6 +46,7 @@ type MP3 struct {
 	ov      [2][32][18]float64
 	samples []float32
 	V       [1024]float64
+	this, next uint
 }
 
 func New(r io.Reader) (*MP3, error) {
@@ -104,6 +105,7 @@ func (m *MP3) header() error {
 		syncword |= uint16(m.b.ReadBits64(8))
 		println("mis sync", i)
 	}
+	m.this = m.b.read - 12
 	m.syncword = syncword
 	m.ID = byte(m.b.ReadBits64(1))
 	m.layer = Layer(m.b.ReadBits64(2))
@@ -117,6 +119,7 @@ func (m *MP3) header() error {
 	m.copyright = byte(m.b.ReadBits64(1))
 	m.original_home = byte(m.b.ReadBits64(1))
 	m.emphasis = Emphasis(m.b.ReadBits64(2))
+	m.next = m.this + uint(m.length()) * 8
 	return m.b.Err()
 }
 
@@ -316,6 +319,9 @@ func (m *MP3) audio_data() []float32 {
 					}
 				}
 			}
+		}
+		for m.b.read < m.next {
+			m.b.ReadBits64(1)
 		}
 		return m.synth(samples)
 		_ = main_data_end
