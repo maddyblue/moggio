@@ -15,7 +15,7 @@ func TestMp3(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	n := 1152
+	n := 2000
 	s := m.Play(n)
 	if len(s) != n {
 		t.Fatalf("bad read len, got %d, expected %d", len(s), n)

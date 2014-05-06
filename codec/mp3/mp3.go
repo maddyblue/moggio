@@ -1,6 +1,7 @@
 package mp3
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"math"
@@ -27,9 +28,10 @@ func ReadMP3(r io.Reader) ([]codec.Song, error) {
 }
 
 type MP3 struct {
-	b *bitReader
+	r  io.Reader
+	b  *bitReader
+	md []byte
 
-	syncword           uint16
 	ID                 byte
 	layer              Layer
 	protection_bit     byte
@@ -46,14 +48,12 @@ type MP3 struct {
 	ov      [2][32][18]float64
 	samples []float32
 	V       [1024]float64
-	this, next uint
 }
 
 func New(r io.Reader) (*MP3, error) {
 	m := MP3{
-		b: newBitReader(r),
+		r: r,
 	}
-
 	return &m, nil
 }
 
@@ -89,24 +89,28 @@ func (m *MP3) frame() (read int, err error) {
 		return 0, err
 	}
 	m.error_check()
-	s := m.audio_data()
+	s, err := m.audio_data()
+	if err != nil {
+		return 0, err
+	}
 	m.samples = append(m.samples, s...)
 	return len(s), nil
 }
 
 func (m *MP3) header() error {
-	syncword := uint16(m.b.ReadBits64(12))
-	for i := 0; syncword != 0xfff; i++ {
-		if err := m.b.Err(); err != nil {
+	header := make([]byte, 4)
+	if _, err := io.ReadFull(m.r, header); err != nil {
+		return err
+	}
+	for i := 0; header[0] != 0xff && header[1]&0xfe != 0xfa; i++ {
+		fmt.Println("SYNC miss", i)
+		copy(header, header[1:])
+		if _, err := io.ReadFull(m.r, header[3:]); err != nil {
 			return err
 		}
-		syncword <<= 8
-		syncword &= 0xfff
-		syncword |= uint16(m.b.ReadBits64(8))
-		println("mis sync", i)
 	}
-	m.this = m.b.read - 12
-	m.syncword = syncword
+	m.b = newBitReader(bytes.NewBuffer(header))
+	m.b.ReadBits64(12)
 	m.ID = byte(m.b.ReadBits64(1))
 	m.layer = Layer(m.b.ReadBits64(2))
 	m.protection_bit = byte(m.b.ReadBits64(1))
@@ -119,8 +123,18 @@ func (m *MP3) header() error {
 	m.copyright = byte(m.b.ReadBits64(1))
 	m.original_home = byte(m.b.ReadBits64(1))
 	m.emphasis = Emphasis(m.b.ReadBits64(2))
-	m.next = m.this + uint(m.length()) * 8
-	return m.b.Err()
+	if err := m.b.Err(); err != nil {
+		return err
+	}
+	md := make([]byte, len(m.md)+m.length()-4)
+	copy(md, m.md)
+	if n, err := m.r.Read(md[len(m.md):]); err != nil {
+		return err
+	} else if n < m.length()-4 {
+		return fmt.Errorf("mp3: did not read all main data bytes")
+	}
+	m.md = md
+	return nil
 }
 
 func (m *MP3) error_check() {
@@ -129,9 +143,17 @@ func (m *MP3) error_check() {
 	}
 }
 
-func (m *MP3) audio_data() []float32 {
+func (m *MP3) audio_data() ([]float32, error) {
+	m.b = newBitReader(bytes.NewBuffer(m.md[:2]))
+	main_data_end := int(m.b.ReadBits64(9))
+	if main_data_end > len(m.md) {
+		return nil, fmt.Errorf("mp3: bad main_data_end")
+	}
+	end := len(m.md) - main_data_end
+	m.b = newBitReader(bytes.NewBuffer(m.md[:end]))
+	m.md = m.md[end:]
 	if m.mode == ModeSingle {
-		main_data_end := uint16(m.b.ReadBits64(9))
+		m.b.ReadBits64(9) // main_data_end
 		m.b.ReadBits64(5) // private_bits
 		scfsi := make([]byte, cblimit)
 		var part2_3_length [2]uint16
@@ -252,8 +274,7 @@ func (m *MP3) audio_data() []float32 {
 				}
 				isx++
 			}
-			until := m.b.read + bits
-			for big := big_values[gr]; big > 0 && m.b.read < until; big-- {
+			for big := big_values[gr]; big > 0; big-- {
 				if isx == sfbound {
 					sfbound += sfbwidth[sfbwidthptr]
 					sfbwidthptr++
@@ -273,8 +294,8 @@ func (m *MP3) audio_data() []float32 {
 				read(pair[0])
 				read(pair[1])
 			}
-			if m.b.read >= until {
-				panic("huffman overrun")
+			if err := m.b.Err(); err != nil {
+				return nil, err
 			}
 			table := huffmanQuadTables[count1table_select[gr]]
 			setQuad := func(b, offset byte) {
@@ -284,7 +305,7 @@ func (m *MP3) audio_data() []float32 {
 				}
 				read(v)
 			}
-			for m.b.read < until {
+			for m.b.read < bits {
 				if isx == sfbound {
 					sfbound += sfbwidth[sfbwidthptr]
 					sfbwidthptr++
@@ -296,11 +317,6 @@ func (m *MP3) audio_data() []float32 {
 				setQuad(quad, 1<<1) // x
 				setQuad(quad, 1<<0) // y
 			}
-			/*
-				for position != main_data_end {
-					m.b.ReadBits64(1) // ancillary_bit
-				}
-			//*/
 			// todo: determine channel blocktype, support blocktype == 2
 			bt := block_type[0]
 			ch := 0
@@ -320,11 +336,7 @@ func (m *MP3) audio_data() []float32 {
 				}
 			}
 		}
-		for m.b.read < m.next {
-			m.b.ReadBits64(1)
-		}
-		return m.synth(samples)
-		_ = main_data_end
+		return m.synth(samples), nil
 	}
 	/* else if (mode == ModeStereo) || (mode == ModeDual) || (mode == ModeJoint) {
 		main_data_end := uint16(m.b.ReadBits64(9))
@@ -393,7 +405,7 @@ func (m *MP3) audio_data() []float32 {
 		}
 	}
 	//*/
-	return nil
+	return nil, fmt.Errorf("mp3: should not reach here")
 }
 
 var (
