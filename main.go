@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 
+	_ "github.com/korandiz/mog/codec/mpa"
 	_ "github.com/mjibson/mog/codec/nsf"
 	"github.com/mjibson/mog/mog"
 )
