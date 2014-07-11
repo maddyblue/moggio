@@ -16,9 +16,9 @@ import (
 func TestServer(t *testing.T) {
 	errs := make(chan error)
 	go func() {
-		errs <- ListenAndServe(DefaultAddr, "../codec")
+		errs <- ListenAndServe(DefaultAddr, "../codec/mp3")
 	}()
-	time.Sleep(time.Millisecond * 100)
+	time.Sleep(time.Millisecond * 1000)
 	fetch := func(path string, values url.Values) *http.Response {
 		rc := make(chan *http.Response)
 		go func() {
@@ -54,7 +54,7 @@ func TestServer(t *testing.T) {
 		t.Fatal(err)
 	}
 	v := make(url.Values)
-	for i, _ := range songs {
+	for i := range songs {
 		if i < 10 {
 			v.Add("add", strconv.Itoa(i))
 		}
