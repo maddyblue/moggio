@@ -9,13 +9,14 @@ import (
 	"testing"
 	"time"
 
+	_ "github.com/mjibson/mog/codec/mpa"
 	_ "github.com/mjibson/mog/codec/nsf"
 )
 
 func TestServer(t *testing.T) {
 	errs := make(chan error)
 	go func() {
-		errs <- ListenAndServe(DefaultAddr, "../codec/nsf")
+		errs <- ListenAndServe(DefaultAddr, "../codec")
 	}()
 	time.Sleep(time.Millisecond * 100)
 	fetch := func(path string, values url.Values) *http.Response {
