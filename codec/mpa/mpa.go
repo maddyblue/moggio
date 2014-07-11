@@ -2,11 +2,12 @@ package mpa
 
 import (
 	"bytes"
-	"github.com/korandiz/mpa"
-	"github.com/mjibson/mog/codec"
 	"io"
 	"io/ioutil"
 	"time"
+
+	"github.com/korandiz/mpa"
+	"github.com/mjibson/mog/codec"
 )
 
 func init() {
