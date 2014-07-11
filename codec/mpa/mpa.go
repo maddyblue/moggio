@@ -57,13 +57,13 @@ func (s *song) Info() codec.SongInfo {
 	}
 }
 
-func (s *song) Play(n int) (r []float32) {
+func (s *song) Play(n int) (r []float32, err error) {
 	if s.decoder == nil {
 		s.decoder = &mpa.Decoder{Input: bytes.NewBuffer(s.data)}
 	}
 	for len(r) < n {
 		if len(s.buff[0]) == 0 {
-			if err := s.decoder.DecodeFrame(); err != nil {
+			if err = s.decoder.DecodeFrame(); err != nil {
 				return
 			}
 			for i := 0; i < 2; i++ {

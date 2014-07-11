@@ -34,12 +34,12 @@ type NSFSong struct {
 	Playing bool
 }
 
-func (n *NSFSong) Play(samples int) []float32 {
+func (n *NSFSong) Play(samples int) ([]float32, error) {
 	if !n.Playing {
 		n.Init(n.Index)
 		n.Playing = true
 	}
-	return n.NSF.Play(samples)
+	return n.NSF.Play(samples), nil
 }
 
 func (n *NSFSong) Close() {
