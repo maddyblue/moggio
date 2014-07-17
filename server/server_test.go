@@ -1,24 +1,24 @@
-package mog
+package server
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"fmt"
 	"net/http"
 	"net/url"
-	"strconv"
 	"testing"
 	"time"
 
 	_ "github.com/mjibson/mog/codec/mpa"
 	_ "github.com/mjibson/mog/codec/nsf"
+	_ "github.com/mjibson/mog/protocol/file"
 )
 
 func TestServer(t *testing.T) {
 	errs := make(chan error)
 	go func() {
-		errs <- ListenAndServe(DefaultAddr, "../codec/mp3")
+		errs <- ListenAndServe(DefaultAddr)
 	}()
-	time.Sleep(time.Millisecond * 1000)
+	time.Sleep(time.Millisecond * 100)
 	fetch := func(path string, values url.Values) *http.Response {
 		rc := make(chan *http.Response)
 		go func() {
@@ -47,31 +47,36 @@ func TestServer(t *testing.T) {
 		panic("unreachable")
 	}
 
-	resp := fetch("/list", nil)
-	b, _ := ioutil.ReadAll(resp.Body)
-	songs := make(Songs)
-	if err := json.Unmarshal(b, &songs); err != nil {
+	var resp *http.Response
+	resp = fetch("/protocol/update", url.Values{
+		"protocol": []string{"file"},
+		"params":   []string{".."},
+	})
+	resp = fetch("/list", nil)
+	if resp.StatusCode != 200 {
+		t.Fatal("bad status")
+	}
+	songs := make([][]string, 0)
+	if err := json.NewDecoder(resp.Body).Decode(&songs); err != nil {
 		t.Fatal(err)
 	}
 	v := make(url.Values)
-	for i := range songs {
+	for i, s := range songs {
 		if i < 10 {
-			v.Add("add", strconv.Itoa(i))
+			v.Add("add", fmt.Sprintf("%v|%v", s[0], s[1]))
 		}
 	}
 	if len(v) == 0 {
 		t.Fatal("expected songs")
 	}
 	resp = fetch("/playlist/change", v)
-	b, _ = ioutil.ReadAll(resp.Body)
 	var pc PlaylistChange
-	if err := json.Unmarshal(b, &pc); err != nil {
+	if err := json.NewDecoder(resp.Body).Decode(&pc); err != nil {
 		t.Fatal(err)
 	}
 	resp = fetch("/playlist/get", nil)
-	b, _ = ioutil.ReadAll(resp.Body)
 	var pl Playlist
-	if err := json.Unmarshal(b, &pl); err != nil {
+	if err := json.NewDecoder(resp.Body).Decode(&pl); err != nil {
 		t.Fatal(err)
 	}
 	resp = fetch("/play", nil)
