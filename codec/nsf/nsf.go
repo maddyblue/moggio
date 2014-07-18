@@ -34,11 +34,13 @@ type NSFSong struct {
 	Playing bool
 }
 
+func (n *NSFSong) Init() (sampleRate, channels int, err error) {
+	n.NSF.Init(n.Index)
+	n.Playing = true
+	return int(n.SampleRate), 1, nil
+}
+
 func (n *NSFSong) Play(samples int) ([]float32, error) {
-	if !n.Playing {
-		n.Init(n.Index)
-		n.Playing = true
-	}
 	return n.NSF.Play(samples), nil
 }
 
@@ -48,12 +50,10 @@ func (n *NSFSong) Close() {
 
 func (n *NSFSong) Info() codec.SongInfo {
 	return codec.SongInfo{
-		Time:       time.Minute * 2,
-		Artist:     n.Artist,
-		Album:      n.Song,
-		Track:      n.Index,
-		Title:      fmt.Sprintf("%s:%d", n.Song, n.Index),
-		SampleRate: int(n.SampleRate),
-		Channels:   1,
+		Time:   time.Minute * 2,
+		Artist: n.Artist,
+		Album:  n.Song,
+		Track:  float64(n.Index),
+		Title:  fmt.Sprintf("%s:%d", n.Song, n.Index),
 	}
 }

@@ -49,11 +49,14 @@ func newSong(r io.Reader) (*song, error) {
 	return &song{data: data, freq: freq}, nil
 }
 
+func (s *song) Init() (sampleRate, channels int, err error) {
+	ch := 2 // may vary frame to frame
+	return s.freq, ch, nil
+}
+
 func (s *song) Info() codec.SongInfo {
 	return codec.SongInfo{
-		Time:       time.Duration(1<<63 - 1), // too hard to tell without decoding
-		SampleRate: s.freq,
-		Channels:   2, // may vary frame to frame
+		Time:       time.Duration(0), // too hard to tell without decoding
 	}
 }
 

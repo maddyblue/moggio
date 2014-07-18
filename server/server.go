@@ -125,7 +125,6 @@ func index(w http.ResponseWriter, r *http.Request) {
 func (srv *Server) audio() {
 	var o output.Output
 	var t chan interface{}
-	var err error
 	var present bool
 	var dur time.Duration
 	stop := func() {
@@ -156,20 +155,21 @@ func (srv *Server) audio() {
 			if !present {
 				return
 			}
-			info := srv.Song.Info()
-			if info.SampleRate != srv.Info.SampleRate || info.Channels != srv.Info.Channels {
-				if o != nil {
-					println(4)
-					o.Dispose()
-				}
-				o, err = output.NewPort(info.SampleRate, info.Channels)
-				if err != nil {
-					log.Println(fmt.Errorf("mog: could not open audio (%v, %v): %v", info.SampleRate, info.Channels, err))
-				}
+			sr, ch, err := srv.Song.Init()
+			if err != nil {
+				log.Fatal(err)
 			}
-			srv.Info = info
+			if o != nil {
+				o.Dispose()
+			}
+			o, err = output.NewPort(sr, ch)
+			if err != nil {
+				log.Fatal(fmt.Errorf("mog: could not open audio (%v, %v): %v", sr, ch, err))
+			}
+			srv.Info = srv.Song.Info()
+			fmt.Println("playing", srv.Info)
 			srv.Elapsed = 0
-			dur = time.Second / (time.Duration(srv.Info.SampleRate))
+			dur = time.Second / (time.Duration(sr))
 			t = make(chan interface{})
 			close(t)
 		}
