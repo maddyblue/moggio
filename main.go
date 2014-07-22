@@ -10,6 +10,8 @@ import (
 	"github.com/howeyc/fsnotify"
 	_ "github.com/mjibson/mog/codec/mpa"
 	_ "github.com/mjibson/mog/codec/nsf"
+	_ "github.com/mjibson/mog/protocol/file"
+	_ "github.com/mjibson/mog/protocol/gmusic"
 	"github.com/mjibson/mog/server"
 )
 

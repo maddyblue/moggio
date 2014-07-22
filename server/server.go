@@ -85,12 +85,13 @@ type Server struct {
 	Error         string
 	Repeat        bool
 	Random        bool
+	Protocols     map[string][]string
 
 	songID int
 	ch     chan command
 }
 
-var dir = filepath.Join("mog")
+var dir = filepath.Join("server")
 
 // ListenAndServe listens on the TCP network address srv.Addr and then calls
 // Serve to handle requests on incoming connections. If srv.Addr is blank,
@@ -98,18 +99,21 @@ var dir = filepath.Join("mog")
 func (srv *Server) ListenAndServe() error {
 	srv.ch = make(chan command)
 	srv.Songs = make(map[SongID]codec.Song)
+	srv.Protocols = make(map[string][]string)
 	go srv.audio()
 
 	addr := srv.Addr
 	if addr == "" {
 		addr = DefaultAddr
 	}
-	http.Handle("/status", JSON(srv.Status))
-	http.Handle("/list", JSON(srv.List))
-	http.Handle("/playlist/change", JSON(srv.PlaylistChange))
-	http.Handle("/playlist/get", JSON(srv.PlaylistGet))
-	http.Handle("/protocol/update", JSON(srv.ProtocolUpdate))
-	http.Handle("/play", JSON(srv.Play))
+	http.Handle("/api/status", JSON(srv.Status))
+	http.Handle("/api/list", JSON(srv.List))
+	http.Handle("/api/playlist/change", JSON(srv.PlaylistChange))
+	http.Handle("/api/playlist/get", JSON(srv.PlaylistGet))
+	http.Handle("/api/protocol/update", JSON(srv.ProtocolUpdate))
+	http.Handle("/api/protocol/get", JSON(srv.ProtocolGet))
+	http.Handle("/api/protocol/list", JSON(srv.ProtocolList))
+	http.Handle("/api/play", JSON(srv.Play))
 	fs := http.FileServer(http.Dir(dir))
 	http.Handle("/static/", fs)
 	http.HandleFunc("/", index)
@@ -230,6 +234,7 @@ func JSON(h func(http.ResponseWriter, *http.Request) (interface{}, error)) http.
 			serveError(w, err)
 			return
 		}
+		w.Header().Add("Content-Type", "application/json")
 		w.Write(b)
 	}
 }
@@ -243,6 +248,13 @@ func (srv *Server) PlaylistGet(w http.ResponseWriter, r *http.Request) (interfac
 	return srv.Playlist, nil
 }
 
+func (srv *Server) ProtocolGet(w http.ResponseWriter, r *http.Request) (interface{}, error) {
+	return protocol.Get(), nil
+}
+func (srv *Server) ProtocolList(w http.ResponseWriter, r *http.Request) (interface{}, error) {
+	return srv.Protocols, nil
+}
+
 func (srv *Server) ProtocolUpdate(w http.ResponseWriter, r *http.Request) (interface{}, error) {
 	p := r.FormValue("protocol")
 	params := r.Form["params"]
@@ -250,6 +262,7 @@ func (srv *Server) ProtocolUpdate(w http.ResponseWriter, r *http.Request) (inter
 	if err != nil {
 		return nil, err
 	}
+	srv.Protocols[p] = params
 	for id := range srv.Songs {
 		if id.Protocol == p {
 			delete(srv.Songs, id)
