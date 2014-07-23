@@ -40,6 +40,22 @@ var TrackList = React.createClass({
 	}
 });
 
+var Protocol = React.createClass({
+	render: function() {
+		var that = this;
+		var params = this.props.params.map(function(param, idx) {
+			var current = that.props.current || {};
+			return <li key={param}>{param}: {current[idx]}</li>;
+		});
+		return (
+			<div key={this.props.key}>
+				<h2>{this.props.key}</h2>
+				<ul>{params}</ul>
+			</div>
+		);
+	}
+});
+
 var Protocols = React.createClass({
 	getInitialState: function() {
 		return {
@@ -58,12 +74,9 @@ var Protocols = React.createClass({
 	render: function() {
 		var keys = Object.keys(this.state.available);
 		keys.sort();
+		var that = this;
 		var protocols = keys.map(function(protocol) {
-			return (
-				<div key={protocol}>
-					<h2>{protocol}</h2>
-				</div>
-			);
+			return <Protocol key={protocol} params={that.state.available[protocol]} current={that.state.current[protocol]} />;
 		});
 		return <div>{protocols}</div>;
 	}
