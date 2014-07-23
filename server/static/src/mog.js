@@ -69,7 +69,15 @@ var Protocols = React.createClass({
 	}
 });
 
+var routes = {};
+
 var Link = React.createClass({
+	componentDidMount: function() {
+		routes[this.props.href] = this.props.handler;
+		if (this.props.index) {
+			routes['/'] = this.props.handler;
+		}
+	},
 	click: function(event) {
 		history.pushState(null, this.props.Name, this.props.href);
 		router();
@@ -84,8 +92,8 @@ var Navigation = React.createClass({
 	render: function() {
 		return (
 			<ul>
-				<Link href="/list" name="List" />
-				<Link href="/protocols" name="Protocols" />
+				<Link href="/list" name="List" handler={TrackList} index={true} />
+				<Link href="/protocols" name="Protocols" handler={Protocols} />
 			</ul>
 		);
 	}
@@ -94,21 +102,11 @@ var Navigation = React.createClass({
 React.renderComponent(<Navigation />, document.getElementById('navigation'));
 
 function router() {
-	var component;
-	switch (window.location.pathname) {
-	case '/':
-	case '/list':
-		component = <TrackList />;
-		break;
-	case '/protocols':
-		component = <Protocols />;
-		break;
-	default:
-		alert('Unknown route');
-		break;
-	}
-	if (component) {
-		React.renderComponent(component, document.getElementById('main'));
+	var component = routes[window.location.pathname];
+	if (!component) {
+		alert('unknown route');
+	} else {
+		React.renderComponent(component(), document.getElementById('main'));
 	}
 }
 router();
