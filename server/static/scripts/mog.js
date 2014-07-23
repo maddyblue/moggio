@@ -23,13 +23,11 @@ var TrackList = React.createClass({displayName: 'TrackList',
 			tracks: []
 		};
 	},
-
 	componentDidMount: function() {
-		$.get(this.props.source, function(result) {
+		$.get('/api/list', function(result) {
 			this.setState({tracks: result});
 		}.bind(this));
 	},
-
 	render: function() {
 		var tracks = this.state.tracks.map(function (t) {
 			return Track({protocol: t[0], id: t[1], key: t[0] + '|' + t[1]});
@@ -39,6 +37,35 @@ var TrackList = React.createClass({displayName: 'TrackList',
 				React.DOM.tbody(null, tracks)
 			)
 		);
+	}
+});
+
+var Protocols = React.createClass({displayName: 'Protocols',
+	getInitialState: function() {
+		return {
+			available: {},
+			current: {},
+		};
+	},
+	componentDidMount: function() {
+		$.get('/api/protocol/get', function(result) {
+			this.setState({available: result});
+		}.bind(this));
+		$.get('/api/protocol/list', function(result) {
+			this.setState({current: result});
+		}.bind(this));
+	},
+	render: function() {
+		var keys = Object.keys(this.state.available);
+		keys.sort();
+		var protocols = keys.map(function(protocol) {
+			return (
+				React.DOM.div({key: protocol}, 
+					React.DOM.h2(null, protocol)
+				)
+			);
+		});
+		return React.DOM.div(null, protocols);
 	}
 });
 
@@ -56,7 +83,10 @@ var Link = React.createClass({displayName: 'Link',
 var Navigation = React.createClass({displayName: 'Navigation',
 	render: function() {
 		return (
-			Link({href: "/list", name: "List"})
+			React.DOM.ul(null, 
+				Link({href: "/list", name: "List"}), 
+				Link({href: "/protocols", name: "Protocols"})
+			)
 		);
 	}
 });
@@ -64,14 +94,21 @@ var Navigation = React.createClass({displayName: 'Navigation',
 React.renderComponent(Navigation(null), document.getElementById('navigation'));
 
 function router() {
+	var component;
 	switch (window.location.pathname) {
 	case '/':
 	case '/list':
-		React.renderComponent(TrackList({source: "/api/list"}), document.getElementById('main'));
+		component = TrackList(null);
+		break;
+	case '/protocols':
+		component = Protocols(null);
 		break;
 	default:
 		alert('Unknown route');
 		break;
+	}
+	if (component) {
+		React.renderComponent(component, document.getElementById('main'));
 	}
 }
 router();

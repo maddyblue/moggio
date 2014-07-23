@@ -23,13 +23,11 @@ var TrackList = React.createClass({
 			tracks: []
 		};
 	},
-
 	componentDidMount: function() {
-		$.get(this.props.source, function(result) {
+		$.get('/api/list', function(result) {
 			this.setState({tracks: result});
 		}.bind(this));
 	},
-
 	render: function() {
 		var tracks = this.state.tracks.map(function (t) {
 			return <Track protocol={t[0]} id={t[1]} key={t[0] + '|' + t[1]} />;
@@ -39,6 +37,35 @@ var TrackList = React.createClass({
 				<tbody>{tracks}</tbody>
 			</table>
 		);
+	}
+});
+
+var Protocols = React.createClass({
+	getInitialState: function() {
+		return {
+			available: {},
+			current: {},
+		};
+	},
+	componentDidMount: function() {
+		$.get('/api/protocol/get', function(result) {
+			this.setState({available: result});
+		}.bind(this));
+		$.get('/api/protocol/list', function(result) {
+			this.setState({current: result});
+		}.bind(this));
+	},
+	render: function() {
+		var keys = Object.keys(this.state.available);
+		keys.sort();
+		var protocols = keys.map(function(protocol) {
+			return (
+				<div key={protocol}>
+					<h2>{protocol}</h2>
+				</div>
+			);
+		});
+		return <div>{protocols}</div>;
 	}
 });
 
@@ -56,7 +83,10 @@ var Link = React.createClass({
 var Navigation = React.createClass({
 	render: function() {
 		return (
-			<Link href="/list" name="List" />
+			<ul>
+				<Link href="/list" name="List" />
+				<Link href="/protocols" name="Protocols" />
+			</ul>
 		);
 	}
 });
@@ -64,14 +94,21 @@ var Navigation = React.createClass({
 React.renderComponent(<Navigation />, document.getElementById('navigation'));
 
 function router() {
+	var component;
 	switch (window.location.pathname) {
 	case '/':
 	case '/list':
-		React.renderComponent(<TrackList source="/api/list" />, document.getElementById('main'));
+		component = <TrackList />;
+		break;
+	case '/protocols':
+		component = <Protocols />;
 		break;
 	default:
 		alert('Unknown route');
 		break;
+	}
+	if (component) {
+		React.renderComponent(component, document.getElementById('main'));
 	}
 }
 router();
