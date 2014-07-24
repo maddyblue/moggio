@@ -40,17 +40,76 @@ var TrackList = React.createClass({displayName: 'TrackList',
 	}
 });
 
-var Protocol = React.createClass({displayName: 'Protocol',
-	render: function() {
-		var that = this;
-		var params = this.props.params.map(function(param, idx) {
-			var current = that.props.current || {};
-			return React.DOM.li({key: param}, param, ": ", current[idx]);
+var ProtocolParam = React.createClass({displayName: 'ProtocolParam',
+	getInitialState: function() {
+		return {
+			value: '',
+			changed: false,
+		};
+	},
+	componentWillReceiveProps: function(props) {
+		if (this.state.changed) {
+			return;
+		}
+		this.setState({
+			value: props.value,
+			changed: true,
 		});
+	},
+	paramChange: function(event) {
+		this.setState({
+			value: event.target.value,
+		});
+		this.props.change();
+
+	},
+	render: function() {
+		return (
+			React.DOM.li(null, 
+				this.props.key, " ", React.DOM.input({type: "text", onChange: this.paramChange, value: this.state.value})
+			)
+		);
+	}
+});
+
+var Protocol = React.createClass({displayName: 'Protocol',
+	getInitialState: function() {
+		return {
+			save: false,
+		};
+	},
+	setSave: function() {
+		this.setState({save: true});
+	},
+	save: function() {
+		var params = Object.keys(this.refs).sort();
+		params = params.map(function(ref) {
+			return {
+				name: 'params',
+				value: this.refs[ref].state.value,
+			};
+		}, this);
+		params.push({
+			name: 'protocol',
+			value: this.props.key,
+		});
+		$.post('/api/protocol/update?' + $.param(params));
+		this.setState({save: false});
+	},
+	render: function() {
+		var params = this.props.params.map(function(param, idx) {
+			var current = this.props.current || [];
+			return ProtocolParam({key: param, ref: idx, value: current[idx], change: this.setSave});
+		}.bind(this));
+		var save;
+		if (this.state.save) {
+			save = React.DOM.button({onClick: this.save}, "save");
+		}
 		return (
 			React.DOM.div({key: this.props.key}, 
 				React.DOM.h2(null, this.props.key), 
-				React.DOM.ul(null, params)
+				React.DOM.ul(null, params), 
+				save
 			)
 		);
 	}
@@ -74,10 +133,9 @@ var Protocols = React.createClass({displayName: 'Protocols',
 	render: function() {
 		var keys = Object.keys(this.state.available);
 		keys.sort();
-		var that = this;
 		var protocols = keys.map(function(protocol) {
-			return Protocol({key: protocol, params: that.state.available[protocol], current: that.state.current[protocol]});
-		});
+			return Protocol({key: protocol, params: this.state.available[protocol], current: this.state.current[protocol]});
+		}.bind(this));
 		return React.DOM.div(null, protocols);
 	}
 });
