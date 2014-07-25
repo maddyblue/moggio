@@ -283,11 +283,13 @@ func (srv *Server) PlaylistChange(w http.ResponseWriter, r *http.Request) (inter
 		return nil, err
 	}
 	srv.PlaylistID++
+	srv.PlaylistIndex = 0
 	t := PlaylistChange{
 		PlaylistId: srv.PlaylistID,
 	}
 	if len(r.Form["clear"]) > 0 {
 		srv.Playlist = nil
+		srv.ch <- cmdStop
 	}
 	m := make(map[SongID]int)
 	for i, id := range srv.Playlist {
@@ -300,8 +302,10 @@ func (srv *Server) PlaylistChange(w http.ResponseWriter, r *http.Request) (inter
 			continue
 		}
 		id := SongID{sp[0], sp[1]}
-		if _, ok := srv.Songs[id]; !ok {
+		if s, ok := srv.Songs[id]; !ok {
 			t.Error("unknown id: %v", rem)
+		} else if s == srv.Song {
+			srv.ch <- cmdStop
 		}
 		delete(m, id)
 	}
