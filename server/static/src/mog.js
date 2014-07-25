@@ -93,8 +93,13 @@ var Protocol = React.createClass({
 			name: 'protocol',
 			value: this.props.key,
 		});
-		$.post('/api/protocol/update?' + $.param(params));
-		this.setState({save: false});
+		$.post('/api/protocol/update?' + $.param(params))
+			.success(function() {
+				this.setState({save: false});
+			}.bind(this))
+			.error(function(result) {
+				alert(result.responseText);
+			});
 	},
 	render: function() {
 		var params = this.props.params.map(function(param, idx) {
