@@ -7,9 +7,20 @@ var TrackListRow = React.createClass({displayName: 'TrackListRow',
 });
 
 var Track = React.createClass({displayName: 'Track',
+	play: function() {
+		var params = {
+			"clear": true,
+			"add": this.props.protocol + '|' + this.props.id
+		};
+		$.post('/api/playlist/change?' + $.param(params))
+			.success(function() {
+				$.post('/api/play');
+			});
+	},
 	render: function() {
 		return (
 			React.DOM.tr(null, 
+				React.DOM.td(null, React.DOM.button({onClick: this.play}, "▶")), 
 				React.DOM.td(null, this.props.protocol), 
 				React.DOM.td(null, this.props.id)
 			)
