@@ -17,49 +17,27 @@ func List(params []string) (protocol.SongList, error) {
 	if len(params) != 1 {
 		return nil, fmt.Errorf("bad params")
 	}
-
-	f, err := os.Open(params[0])
-	if err != nil {
-		return nil, err
-	}
-	fi, err := f.Stat()
-	if err != nil {
-		return nil, err
-	}
-	if !fi.IsDir() {
-		return nil, fmt.Errorf("not a directory: %s", params[0])
-	}
 	songs := make(protocol.SongList)
-	var walk func(string)
-	walk = func(dirname string) {
-		f, err := os.Open(dirname)
+	err := filepath.Walk(params[0], func(path string, info os.FileInfo, err error) error {
 		if err != nil {
-			return
+			return err
 		}
-		fis, err := f.Readdir(0)
+		if info.IsDir() {
+			return nil
+		}
+		f, err := os.Open(path)
 		if err != nil {
-			return
+			return nil
 		}
-		for _, fi := range fis {
-			p := filepath.Join(dirname, fi.Name())
-			if fi.IsDir() {
-				walk(p)
-			} else {
-				f, err := os.Open(p)
-				if err != nil {
-					continue
-				}
-				ss, _, err := codec.Decode(f)
-				if err != nil {
-					continue
-				}
-				for i, s := range ss {
-					id := fmt.Sprintf("%v-%v", i, p)
-					songs[id] = s
-				}
-			}
+		ss, _, err := codec.Decode(f)
+		if err != nil {
+			return nil
 		}
-	}
-	walk(params[0])
-	return songs, nil
+		for i, s := range ss {
+			id := fmt.Sprintf("%v-%v", i, path)
+			songs[id] = s
+		}
+		return nil
+	})
+	return songs, err
 }
