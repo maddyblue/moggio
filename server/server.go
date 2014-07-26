@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/julienschmidt/httprouter"
 	"github.com/mjibson/mog/codec"
 	"github.com/mjibson/mog/output"
 	"github.com/mjibson/mog/protocol"
@@ -106,17 +107,19 @@ func (srv *Server) ListenAndServe() error {
 	if addr == "" {
 		addr = DefaultAddr
 	}
-	http.Handle("/api/status", JSON(srv.Status))
-	http.Handle("/api/list", JSON(srv.List))
-	http.Handle("/api/playlist/change", JSON(srv.PlaylistChange))
-	http.Handle("/api/playlist/get", JSON(srv.PlaylistGet))
-	http.Handle("/api/protocol/update", JSON(srv.ProtocolUpdate))
-	http.Handle("/api/protocol/get", JSON(srv.ProtocolGet))
-	http.Handle("/api/protocol/list", JSON(srv.ProtocolList))
-	http.Handle("/api/play", JSON(srv.Play))
+	router := httprouter.New()
+	router.GET("/api/status", JSON(srv.Status))
+	router.GET("/api/list", JSON(srv.List))
+	router.GET("/api/playlist/change", JSON(srv.PlaylistChange))
+	router.GET("/api/playlist/get", JSON(srv.PlaylistGet))
+	router.GET("/api/protocol/update", JSON(srv.ProtocolUpdate))
+	router.GET("/api/protocol/get", JSON(srv.ProtocolGet))
+	router.GET("/api/protocol/list", JSON(srv.ProtocolList))
+	router.GET("/api/cmd/:cmd", JSON(srv.Cmd))
 	fs := http.FileServer(http.Dir(dir))
 	http.Handle("/static/", fs)
 	http.HandleFunc("/", index)
+	http.Handle("/api/", router)
 
 	log.Println("mog: listening on", addr)
 	return http.ListenAndServe(addr, nil)
@@ -219,9 +222,9 @@ const (
 	cmdStop
 )
 
-func JSON(h func(http.ResponseWriter, *http.Request) (interface{}, error)) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		d, err := h(w, r)
+func JSON(h func(http.ResponseWriter, *http.Request, httprouter.Params) (interface{}, error)) httprouter.Handle {
+	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+		d, err := h(w, r, ps)
 		if err != nil {
 			serveError(w, err)
 			return
@@ -239,23 +242,30 @@ func JSON(h func(http.ResponseWriter, *http.Request) (interface{}, error)) http.
 	}
 }
 
-func (srv *Server) Play(w http.ResponseWriter, r *http.Request) (interface{}, error) {
-	srv.ch <- cmdPlay
+func (srv *Server) Cmd(w http.ResponseWriter, r *http.Request, ps httprouter.Params) (interface{}, error) {
+	switch cmd := ps.ByName("cmd"); cmd {
+	case "play":
+		srv.ch <- cmdPlay
+	case "stop":
+		srv.ch <- cmdStop
+	default:
+		return nil, fmt.Errorf("unknown command: %v", cmd)
+	}
 	return nil, nil
 }
 
-func (srv *Server) PlaylistGet(w http.ResponseWriter, r *http.Request) (interface{}, error) {
+func (srv *Server) PlaylistGet(w http.ResponseWriter, r *http.Request, ps httprouter.Params) (interface{}, error) {
 	return srv.Playlist, nil
 }
 
-func (srv *Server) ProtocolGet(w http.ResponseWriter, r *http.Request) (interface{}, error) {
+func (srv *Server) ProtocolGet(w http.ResponseWriter, r *http.Request, ps httprouter.Params) (interface{}, error) {
 	return protocol.Get(), nil
 }
-func (srv *Server) ProtocolList(w http.ResponseWriter, r *http.Request) (interface{}, error) {
+func (srv *Server) ProtocolList(w http.ResponseWriter, r *http.Request, ps httprouter.Params) (interface{}, error) {
 	return srv.Protocols, nil
 }
 
-func (srv *Server) ProtocolUpdate(w http.ResponseWriter, r *http.Request) (interface{}, error) {
+func (srv *Server) ProtocolUpdate(w http.ResponseWriter, r *http.Request, ps httprouter.Params) (interface{}, error) {
 	p := r.FormValue("protocol")
 	params := r.Form["params"]
 	songs, err := protocol.List(p, params)
@@ -278,7 +288,7 @@ func (srv *Server) ProtocolUpdate(w http.ResponseWriter, r *http.Request) (inter
 // * clear: if set to anything will clear playlist
 // * remove/add: song ids
 // Duplicate songs will not be added.
-func (srv *Server) PlaylistChange(w http.ResponseWriter, r *http.Request) (interface{}, error) {
+func (srv *Server) PlaylistChange(w http.ResponseWriter, r *http.Request, ps httprouter.Params) (interface{}, error) {
 	if err := r.ParseForm(); err != nil {
 		return nil, err
 	}
@@ -337,7 +347,7 @@ func (p *PlaylistChange) Error(format string, a ...interface{}) {
 	p.Errors = append(p.Errors, fmt.Sprintf(format, a...))
 }
 
-func (s *Server) List(w http.ResponseWriter, r *http.Request) (interface{}, error) {
+func (s *Server) List(w http.ResponseWriter, r *http.Request, ps httprouter.Params) (interface{}, error) {
 	songs := make([]SongID, 0)
 	for id := range s.Songs {
 		songs = append(songs, id)
@@ -345,7 +355,7 @@ func (s *Server) List(w http.ResponseWriter, r *http.Request) (interface{}, erro
 	return songs, nil
 }
 
-func (s *Server) Status(w http.ResponseWriter, r *http.Request) (interface{}, error) {
+func (s *Server) Status(w http.ResponseWriter, r *http.Request, ps httprouter.Params) (interface{}, error) {
 	t := Status{
 		Volume:   s.Volume,
 		Playlist: s.PlaylistID,

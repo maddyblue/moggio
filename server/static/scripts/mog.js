@@ -12,9 +12,9 @@ var Track = React.createClass({displayName: 'Track',
 			"clear": true,
 			"add": this.props.protocol + '|' + this.props.id
 		};
-		$.post('/api/playlist/change?' + $.param(params))
+		$.get('/api/playlist/change?' + $.param(params))
 			.success(function() {
-				$.post('/api/play');
+				$.get('/api/cmd/play');
 			});
 	},
 	render: function() {
@@ -104,7 +104,7 @@ var Protocol = React.createClass({displayName: 'Protocol',
 			name: 'protocol',
 			value: this.props.key,
 		});
-		$.post('/api/protocol/update?' + $.param(params))
+		$.get('/api/protocol/update?' + $.param(params))
 			.success(function() {
 				this.setState({save: false});
 			}.bind(this))
