@@ -1,16 +1,10 @@
 /** @jsx React.DOM */
 
-var TrackListRow = React.createClass({
-	render: function() {
-		return (<tr><td>{this.props.protocol}</td><td>{this.props.id}</td></tr>);
-	}
-});
-
 var Track = React.createClass({
 	play: function() {
 		var params = {
 			"clear": true,
-			"add": this.props.protocol + '|' + this.props.id
+			"add": this.props.key
 		};
 		$.get('/api/playlist/change?' + $.param(params))
 			.success(function() {
@@ -21,8 +15,7 @@ var Track = React.createClass({
 		return (
 			<tr>
 				<td><button onClick={this.play}>&#x25b6;</button></td>
-				<td>{this.props.protocol}</td>
-				<td>{this.props.id}</td>
+				<td>{this.props.key}</td>
 			</tr>
 		);
 	}
@@ -41,7 +34,7 @@ var TrackList = React.createClass({
 	},
 	render: function() {
 		var tracks = this.state.tracks.map(function (t) {
-			return <Track protocol={t[0]} id={t[1]} key={t[0] + '|' + t[1]} />;
+			return <Track key={t} />;
 		});
 		return (
 			<table>
@@ -197,3 +190,38 @@ function router() {
 	}
 }
 router();
+
+var Player = React.createClass({
+	getInitialState: function() {
+		return {};
+	},
+	startWS: function() {
+		console.log('open ws');
+		var ws = new WebSocket('ws://' + window.location.host + '/ws/');
+		ws.onmessage = function(e) {
+			this.setState({status: JSON.parse(e.data)});
+		}.bind(this);
+		ws.onclose = function() {
+			setTimeout(this.startWS, 1000);
+		}.bind(this);
+	},
+	componentDidMount: function() {
+		this.startWS();
+	},
+	render: function() {
+		if (!this.state.status) {
+			return <div>unknown</div>;
+		}
+		return (
+			<ul>
+				<li>pl: {this.state.status.Playlist}</li>
+				<li>state: {this.state.status.State}</li>
+				<li>song: {this.state.status.Song}</li>
+				<li>elapsed: {this.state.status.Elapsed}</li>
+				<li>time: {this.state.status.Time}</li>
+			</ul>
+		);
+	}
+});
+
+React.renderComponent(<Player />, document.getElementById('player'));

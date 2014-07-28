@@ -1,16 +1,10 @@
 /** @jsx React.DOM */
 
-var TrackListRow = React.createClass({displayName: 'TrackListRow',
-	render: function() {
-		return (React.DOM.tr(null, React.DOM.td(null, this.props.protocol), React.DOM.td(null, this.props.id)));
-	}
-});
-
 var Track = React.createClass({displayName: 'Track',
 	play: function() {
 		var params = {
 			"clear": true,
-			"add": this.props.protocol + '|' + this.props.id
+			"add": this.props.key
 		};
 		$.get('/api/playlist/change?' + $.param(params))
 			.success(function() {
@@ -21,8 +15,7 @@ var Track = React.createClass({displayName: 'Track',
 		return (
 			React.DOM.tr(null, 
 				React.DOM.td(null, React.DOM.button({onClick: this.play}, "▶")), 
-				React.DOM.td(null, this.props.protocol), 
-				React.DOM.td(null, this.props.id)
+				React.DOM.td(null, this.props.key)
 			)
 		);
 	}
@@ -41,7 +34,7 @@ var TrackList = React.createClass({displayName: 'TrackList',
 	},
 	render: function() {
 		var tracks = this.state.tracks.map(function (t) {
-			return Track({protocol: t[0], id: t[1], key: t[0] + '|' + t[1]});
+			return Track({key: t});
 		});
 		return (
 			React.DOM.table(null, 
@@ -197,3 +190,38 @@ function router() {
 	}
 }
 router();
+
+var Player = React.createClass({displayName: 'Player',
+	getInitialState: function() {
+		return {};
+	},
+	startWS: function() {
+		console.log('open ws');
+		var ws = new WebSocket('ws://' + window.location.host + '/ws/');
+		ws.onmessage = function(e) {
+			this.setState({status: JSON.parse(e.data)});
+		}.bind(this);
+		ws.onclose = function() {
+			setTimeout(this.startWS, 1000);
+		}.bind(this);
+	},
+	componentDidMount: function() {
+		this.startWS();
+	},
+	render: function() {
+		if (!this.state.status) {
+			return React.DOM.div(null, "unknown");
+		}
+		return (
+			React.DOM.ul(null, 
+				React.DOM.li(null, "pl: ", this.state.status.Playlist), 
+				React.DOM.li(null, "state: ", this.state.status.State), 
+				React.DOM.li(null, "song: ", this.state.status.Song), 
+				React.DOM.li(null, "elapsed: ", this.state.status.Elapsed), 
+				React.DOM.li(null, "time: ", this.state.status.Time)
+			)
+		);
+	}
+});
+
+React.renderComponent(Player(null), document.getElementById('player'));

@@ -10,6 +10,8 @@ import (
 	"strings"
 	"time"
 
+	"code.google.com/p/go.net/websocket"
+
 	"github.com/julienschmidt/httprouter"
 	"github.com/mjibson/mog/codec"
 	"github.com/mjibson/mog/output"
@@ -52,12 +54,20 @@ type SongID struct {
 	ID       string
 }
 
+func ParseSongID(s string) (id SongID, err error) {
+	sp := strings.SplitN(s, "|", 2)
+	if len(sp) != 2 {
+		return id, fmt.Errorf("bad songid: %v", s)
+	}
+	return SongID{sp[0], sp[1]}, nil
+}
+
 func (s SongID) String() string {
 	return fmt.Sprintf("%s|%s", s.Protocol, s.ID)
 }
 
 func (s SongID) MarshalJSON() ([]byte, error) {
-	return json.Marshal([2]string{s.Protocol, s.ID})
+	return json.Marshal(s.String())
 }
 
 func (s *SongID) UnmarshalJSON(b []byte) error {
@@ -79,9 +89,9 @@ type Server struct {
 	PlaylistID int
 	// Index of current song in the playlist.
 	PlaylistIndex int
+	SongID        SongID
 	Song          codec.Song
 	Info          codec.SongInfo
-	Volume        int
 	Elapsed       time.Duration
 	Error         string
 	Repeat        bool
@@ -120,9 +130,19 @@ func (srv *Server) ListenAndServe() error {
 	http.Handle("/static/", fs)
 	http.HandleFunc("/", index)
 	http.Handle("/api/", router)
+	http.Handle("/ws/", websocket.Handler(srv.WebSocket))
 
 	log.Println("mog: listening on", addr)
 	return http.ListenAndServe(addr, nil)
+}
+
+func (srv *Server) WebSocket(ws *websocket.Conn) {
+	for _ = range time.Tick(time.Second) {
+		if err := websocket.JSON.Send(ws, srv.status()); err != nil {
+			log.Println(err)
+			break
+		}
+	}
 }
 
 func index(w http.ResponseWriter, r *http.Request) {
@@ -157,7 +177,8 @@ func (srv *Server) audio() {
 					return
 				}
 			}
-			srv.Song, present = srv.Songs[srv.Playlist[srv.PlaylistIndex]]
+			srv.SongID = srv.Playlist[srv.PlaylistIndex]
+			srv.Song, present = srv.Songs[srv.SongID]
 			srv.PlaylistIndex++
 			if !present {
 				return
@@ -358,30 +379,31 @@ func (s *Server) List(w http.ResponseWriter, r *http.Request, ps httprouter.Para
 	return songs, nil
 }
 
-func (s *Server) Status(w http.ResponseWriter, r *http.Request, ps httprouter.Params) (interface{}, error) {
-	t := Status{
-		Volume:   s.Volume,
+func (s *Server) status() *Status {
+	return &Status{
 		Playlist: s.PlaylistID,
 		State:    s.State,
-		//Song:     s.Song.Id,
-		Elapsed: s.Elapsed,
+		Song:     s.SongID,
+		Elapsed:  s.Elapsed.Seconds(),
+		Time:     s.Info.Time.Seconds(),
 	}
-	return &t, nil
+}
+
+func (s *Server) Status(w http.ResponseWriter, r *http.Request, ps httprouter.Params) (interface{}, error) {
+	return s.status(), nil
 }
 
 type Status struct {
-	// Volume from 0 - 100.
-	Volume int
 	// Playlist ID.
 	Playlist int
 	// Playback state
 	State State
 	// Song ID.
-	Song int
-	// Elapsed time of current song.
-	Elapsed time.Duration
-	// Duration of current song.
-	Time time.Duration
+	Song SongID
+	// Elapsed time of current song in seconds.
+	Elapsed float64
+	// Duration of current song in seconds.
+	Time float64
 }
 
 func serveError(w http.ResponseWriter, err error) {
