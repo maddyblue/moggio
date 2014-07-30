@@ -1,5 +1,11 @@
 /** @jsx React.DOM */
 
+var TrackListRow = React.createClass({
+	render: function() {
+		return (<tr><td>{this.props.protocol}</td><td>{this.props.id}</td></tr>);
+	}
+});
+
 var Track = React.createClass({
 	play: function() {
 		var params = {
@@ -191,9 +197,32 @@ function router() {
 }
 router();
 
+var songCache = {};
+function getSong(cached, id, cb) {
+	var lookup = songCache[id];
+	if (lookup) {
+		if (lookup != cached) {
+			cb({cache: lookup});
+		}
+		return;
+	}
+	$.get('/api/song/info?song=' + encodeURIComponent(id))
+		.success(function(data) {
+			songCache[id] = data[0].Title;
+			if (songCache[id] != cached) {
+				cb({cache: songCache[id]});
+			}
+		});
+}
+
 var Player = React.createClass({
 	getInitialState: function() {
 		return {};
+	},
+	componentDidUpdate: function(props, state) {
+		if (state.status && state.status.Song) {
+			getSong(this.state.cache, state.status.Song, this.setState.bind(this));
+		}
 	},
 	startWS: function() {
 		console.log('open ws');
@@ -214,6 +243,7 @@ var Player = React.createClass({
 		}
 		return (
 			<ul>
+				<li>cache: {this.state.cache}</li>
 				<li>pl: {this.state.status.Playlist}</li>
 				<li>state: {this.state.status.State}</li>
 				<li>song: {this.state.status.Song}</li>

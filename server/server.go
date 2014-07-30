@@ -125,6 +125,7 @@ func (srv *Server) ListenAndServe() error {
 	router.GET("/api/protocol/update", JSON(srv.ProtocolUpdate))
 	router.GET("/api/protocol/get", JSON(srv.ProtocolGet))
 	router.GET("/api/protocol/list", JSON(srv.ProtocolList))
+	router.GET("/api/song/info", JSON(srv.SongInfo))
 	router.GET("/api/cmd/:cmd", JSON(srv.Cmd))
 	fs := http.FileServer(http.Dir(dir))
 	http.Handle("/static/", fs)
@@ -276,6 +277,23 @@ func (srv *Server) Cmd(w http.ResponseWriter, r *http.Request, ps httprouter.Par
 		return nil, fmt.Errorf("unknown command: %v", cmd)
 	}
 	return nil, nil
+}
+
+func (srv *Server) SongInfo(w http.ResponseWriter, r *http.Request, ps httprouter.Params) (interface{}, error) {
+	var si []codec.SongInfo
+	r.ParseForm()
+	for _, s := range r.Form["song"] {
+		id, err := ParseSongID(s)
+		if err != nil {
+			return nil, err
+		}
+		song, ok := srv.Songs[id]
+		if !ok {
+			return nil, fmt.Errorf("unknown song: %v", id)
+		}
+		si = append(si, song.Info())
+	}
+	return si, nil
 }
 
 func (srv *Server) PlaylistGet(w http.ResponseWriter, r *http.Request, ps httprouter.Params) (interface{}, error) {

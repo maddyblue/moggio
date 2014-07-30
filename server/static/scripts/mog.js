@@ -1,5 +1,11 @@
 /** @jsx React.DOM */
 
+var TrackListRow = React.createClass({displayName: 'TrackListRow',
+	render: function() {
+		return (React.DOM.tr(null, React.DOM.td(null, this.props.protocol), React.DOM.td(null, this.props.id)));
+	}
+});
+
 var Track = React.createClass({displayName: 'Track',
 	play: function() {
 		var params = {
@@ -191,9 +197,32 @@ function router() {
 }
 router();
 
+var songCache = {};
+function getSong(cached, id, cb) {
+	var lookup = songCache[id];
+	if (lookup) {
+		if (lookup != cached) {
+			cb({cache: lookup});
+		}
+		return;
+	}
+	$.get('/api/song/info?song=' + encodeURIComponent(id))
+		.success(function(data) {
+			songCache[id] = data[0].Title;
+			if (songCache[id] != cached) {
+				cb({cache: songCache[id]});
+			}
+		});
+}
+
 var Player = React.createClass({displayName: 'Player',
 	getInitialState: function() {
 		return {};
+	},
+	componentDidUpdate: function(props, state) {
+		if (state.status && state.status.Song) {
+			getSong(this.state.cache, state.status.Song, this.setState.bind(this));
+		}
 	},
 	startWS: function() {
 		console.log('open ws');
@@ -214,6 +243,7 @@ var Player = React.createClass({displayName: 'Player',
 		}
 		return (
 			React.DOM.ul(null, 
+				React.DOM.li(null, "cache: ", this.state.cache), 
 				React.DOM.li(null, "pl: ", this.state.status.Playlist), 
 				React.DOM.li(null, "state: ", this.state.status.State), 
 				React.DOM.li(null, "song: ", this.state.status.Song), 
