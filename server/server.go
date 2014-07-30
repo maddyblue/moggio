@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"code.google.com/p/go.net/websocket"
@@ -100,6 +101,27 @@ type Server struct {
 
 	songID int
 	ch     chan command
+	waitch chan struct{}
+	lock   sync.Locker
+}
+
+func (srv *Server) wait() {
+	srv.lock.Lock()
+	if srv.waitch == nil {
+		srv.waitch = make(chan struct{})
+	}
+	srv.lock.Unlock()
+	<-srv.waitch
+}
+
+func (srv *Server) broadcast() {
+	srv.lock.Lock()
+	defer srv.lock.Unlock()
+	if srv.waitch == nil {
+		return
+	}
+	close(srv.waitch)
+	srv.waitch = nil
 }
 
 var dir = filepath.Join("server")
@@ -109,6 +131,7 @@ var dir = filepath.Join("server")
 // ":6601" is used.
 func (srv *Server) ListenAndServe() error {
 	srv.ch = make(chan command)
+	srv.lock = new(sync.Mutex)
 	srv.Songs = make(map[SongID]codec.Song)
 	srv.Protocols = make(map[string][]string)
 	go srv.audio()
@@ -138,7 +161,8 @@ func (srv *Server) ListenAndServe() error {
 }
 
 func (srv *Server) WebSocket(ws *websocket.Conn) {
-	for _ = range time.Tick(time.Second) {
+	for {
+		srv.wait()
 		if err := websocket.JSON.Send(ws, srv.status()); err != nil {
 			log.Println(err)
 			break
@@ -223,6 +247,11 @@ func (srv *Server) audio() {
 		}
 		tick()
 	}
+	go func() {
+		for _ = range time.Tick(time.Second) {
+			srv.broadcast()
+		}
+	}()
 	for {
 		select {
 		case <-t:
