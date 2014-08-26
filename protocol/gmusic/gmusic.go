@@ -56,11 +56,11 @@ func (s *Song) Play(n int) ([]float32, error) {
 func (s *Song) Info() codec.SongInfo {
 	duration, _ := strconv.Atoi(s.DurationMillis)
 	return codec.SongInfo{
-		Time:       time.Duration(duration) * time.Millisecond,
-		Artist:      s.Artist,
-		Title:      s.Title,
-		Album:      s.Album,
-		Track:      s.TrackNumber,
+		Time:   time.Duration(duration) * time.Millisecond,
+		Artist: s.Artist,
+		Title:  s.Title,
+		Album:  s.Album,
+		Track:  s.TrackNumber,
 	}
 }
 

@@ -56,7 +56,7 @@ func (s *song) Init() (sampleRate, channels int, err error) {
 
 func (s *song) Info() codec.SongInfo {
 	return codec.SongInfo{
-		Time:       time.Duration(0), // too hard to tell without decoding
+		Time: time.Duration(0), // too hard to tell without decoding
 	}
 }
 
