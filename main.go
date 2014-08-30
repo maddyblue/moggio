@@ -38,6 +38,7 @@ func quit() {
 
 func run(name string, arg ...string) func() {
 	return func() {
+		log.Println("running", name)
 		c := exec.Command(name, arg...)
 		stdout, err := c.StdoutPipe()
 		if err != nil {
@@ -52,6 +53,10 @@ func run(name string, arg ...string) func() {
 		}
 		go func() { io.Copy(os.Stdout, stdout) }()
 		go func() { io.Copy(os.Stderr, stderr) }()
+		if err := c.Wait(); err != nil {
+			log.Printf("run error: %v: %v", name, err)
+		}
+		log.Println("run complete:", name)
 	}
 }
 
@@ -72,6 +77,7 @@ func watch(root, pattern string, f func()) {
 		}
 		return nil
 	})
+	log.Println("watching", pattern, "in", root)
 	wait := time.Now()
 	go func() {
 		for {
