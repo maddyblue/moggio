@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"time"
 
 	_ "github.com/mjibson/mog/codec/mpa"
@@ -25,9 +26,15 @@ func main() {
 	flag.Parse()
 	if *flagWatch {
 		watch(".", "*.go", quit)
-		jsx := run("jsx", "server/static/src", "server/static/scripts")
-		watch("server/static/src", "*.js", jsx)
-		jsx()
+		base := filepath.Join("server", "static")
+		src := filepath.Join(base, "src")
+		scripts := filepath.Join(base, "scripts")
+		args, _ := filepath.Glob(filepath.Join(src, "*.js"))
+		sort.Strings(args)
+		args = append(args, "-o", filepath.Join(scripts, "mog.js"))
+		browserify := run("browserify", args...)
+		watch(src, "*.js", browserify)
+		browserify()
 	}
 	log.Fatal(server.ListenAndServe(":6601"))
 }
