@@ -3,6 +3,8 @@ package server
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+
 	"net/http"
 	"net/url"
 	"testing"
@@ -35,6 +37,10 @@ func TestServer(t *testing.T) {
 				errs <- err
 				return
 			}
+			if resp.StatusCode != 200 {
+				b, _ := ioutil.ReadAll(resp.Body)
+				errs <- fmt.Errorf("%s: %s", resp.Status, string(b))
+			}
 			rc <- resp
 		}()
 		select {
@@ -49,37 +55,40 @@ func TestServer(t *testing.T) {
 	}
 
 	var resp *http.Response
-	resp = fetch("/protocol/update", url.Values{
+	resp = fetch("/api/protocol/update", url.Values{
 		"protocol": []string{"file"},
 		"params":   []string{".."},
 	})
-	resp = fetch("/list", nil)
+	resp = fetch("/api/list", nil)
 	if resp.StatusCode != 200 {
 		t.Fatal("bad status")
 	}
-	songs := make([][]string, 0)
+	songs := make([]string, 0)
 	if err := json.NewDecoder(resp.Body).Decode(&songs); err != nil {
 		t.Fatal(err)
 	}
-	v := make(url.Values)
-	for i, s := range songs {
-		if i < 10 {
-			v.Add("add", fmt.Sprintf("%v|%v", s[0], s[1]))
-		}
-	}
-	if len(v) == 0 {
+	if len(songs) == 0 {
 		t.Fatal("expected songs")
 	}
-	resp = fetch("/playlist/change", v)
+	v := url.Values{
+		"add": []string{
+			"file|1-../mm3.nsf",
+			"file|2-../mm3.nsf",
+			"file|3-../mm3.nsf",
+			"file|4-../mm3.nsf",
+		},
+	}
+	resp = fetch("/api/playlist/change", v)
 	var pc PlaylistChange
 	if err := json.NewDecoder(resp.Body).Decode(&pc); err != nil {
 		t.Fatal(err)
 	}
-	resp = fetch("/playlist/get", nil)
-	var pl Playlist
-	if err := json.NewDecoder(resp.Body).Decode(&pl); err != nil {
-		t.Fatal(err)
-	}
-	resp = fetch("/play", nil)
-	select {}
+	resp = fetch("/api/cmd/play", nil)
+	time.Sleep(time.Second * 2)
+	resp = fetch("/api/cmd/next", nil)
+	time.Sleep(time.Second * 2)
+	resp = fetch("/api/cmd/next", nil)
+	time.Sleep(time.Second * 2)
+	resp = fetch("/api/cmd/next", nil)
+	time.Sleep(time.Second * 2)
 }
