@@ -227,7 +227,7 @@ func (srv *Server) audio() {
 			}
 			o, err = output.NewPort(sr, ch)
 			if err != nil {
-				log.Fatal(fmt.Errorf("mog: could not open audio (%v, %v): %v", sr, ch, err))
+				log.Fatalf("mog: could not open audio (%v, %v): %v", sr, ch, err)
 			}
 			srv.Info = srv.Song.Info()
 			fmt.Println("playing", srv.Info)
