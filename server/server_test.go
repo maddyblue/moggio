@@ -70,6 +70,12 @@ func TestServer(t *testing.T) {
 	time.Sleep(time.Second)
 	resp = fetch("/api/cmd/next", nil)
 	time.Sleep(time.Second)
-	resp = fetch("/api/cmd/next", nil)
+	resp = fetch("/api/cmd/pause", nil)
+	time.Sleep(time.Second)
+	resp = fetch("/api/cmd/pause", nil)
+	time.Sleep(time.Second)
+	resp = fetch("/api/cmd/prev", nil)
+	time.Sleep(time.Second)
+	resp = fetch("/api/cmd/prev", nil)
 	time.Sleep(time.Second)
 }

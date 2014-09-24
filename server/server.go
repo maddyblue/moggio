@@ -190,7 +190,25 @@ func (srv *Server) audio() {
 	var present bool
 	var dur time.Duration
 	srv.State = stateStop
-	var next, stop, tick, play func()
+	var next, stop, tick, play, pause, prev func()
+	prev = func() {
+		srv.PlaylistIndex--
+		if srv.Elapsed < time.Second*3 {
+			srv.PlaylistIndex--
+		}
+		next()
+	}
+	pause = func() {
+		switch srv.State {
+		case statePause, stateStop:
+			t = make(chan interface{})
+			close(t)
+			tick()
+		case statePlay:
+			t = nil
+			srv.State = statePause
+		}
+	}
 	next = func() {
 		log.Println("next")
 		stop()
@@ -267,7 +285,7 @@ func (srv *Server) audio() {
 		tick()
 	}
 	go func() {
-		for _ = range time.Tick(time.Second) {
+		for _ = range time.Tick(time.Millisecond * 250) {
 			srv.broadcast()
 		}
 	}()
@@ -283,6 +301,10 @@ func (srv *Server) audio() {
 				stop()
 			case cmdNext:
 				next()
+			case cmdPause:
+				pause()
+			case cmdPrev:
+				prev()
 			default:
 				log.Fatal("unknown command")
 			}
@@ -296,6 +318,8 @@ const (
 	cmdPlay command = iota
 	cmdStop
 	cmdNext
+	cmdPause
+	cmdPrev
 )
 
 func JSON(h func(http.ResponseWriter, *http.Request, httprouter.Params) (interface{}, error)) httprouter.Handle {
@@ -326,6 +350,10 @@ func (srv *Server) Cmd(w http.ResponseWriter, r *http.Request, ps httprouter.Par
 		srv.ch <- cmdStop
 	case "next":
 		srv.ch <- cmdNext
+	case "prev":
+		srv.ch <- cmdPrev
+	case "pause":
+		srv.ch <- cmdPause
 	default:
 		return nil, fmt.Errorf("unknown command: %v", cmd)
 	}
