@@ -65,11 +65,11 @@ func TestServer(t *testing.T) {
 		t.Fatal(err)
 	}
 	resp = fetch("/api/cmd/play", nil)
-	time.Sleep(time.Second * 2)
+	time.Sleep(time.Second)
 	resp = fetch("/api/cmd/next", nil)
-	time.Sleep(time.Second * 2)
+	time.Sleep(time.Second)
 	resp = fetch("/api/cmd/next", nil)
-	time.Sleep(time.Second * 2)
+	time.Sleep(time.Second)
 	resp = fetch("/api/cmd/next", nil)
-	time.Sleep(time.Second * 2)
+	time.Sleep(time.Second)
 }
