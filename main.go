@@ -32,6 +32,7 @@ func main() {
 		args, _ := filepath.Glob(filepath.Join(src, "*.js"))
 		sort.Strings(args)
 		args = append(args, "-o", filepath.Join(scripts, "mog.js"))
+		args = append([]string{"-t", "reactify"}, args...)
 		browserify := run("browserify", args...)
 		watch(src, "*.js", browserify)
 		browserify()
