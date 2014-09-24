@@ -237,20 +237,38 @@ var Player = React.createClass({
 	componentDidMount: function() {
 		this.startWS();
 	},
+	cmd: function(cmd) {
+		return function() {
+			$.get('/api/cmd/' + cmd)
+				.error(function(err) {
+					console.log(err.responseText);
+				});
+		};
+	},
 	render: function() {
-		if (!this.state.status) {
-			return <div>unknown</div>;
-		}
-		return (
-			<ul>
-				<li>cache: {this.state.cache}</li>
-				<li>pl: {this.state.status.Playlist}</li>
-				<li>state: {this.state.status.State}</li>
-				<li>song: {this.state.status.Song}</li>
-				<li>elapsed: {this.state.status.Elapsed}</li>
-				<li>time: {this.state.status.Time}</li>
-			</ul>
+		var player = (
+			<div>
+				<button onClick={this.cmd('prev')}>prev</button>
+				<button onClick={this.cmd('pause')}>play/pause</button>
+				<button onClick={this.cmd('next')}>next</button>
+			</div>
 		);
+		var status;
+		if (!this.state.status) {
+			status = <div>unknown</div>;
+		} else {
+			status = (
+				<ul>
+					<li>cache: {this.state.cache}</li>
+					<li>pl: {this.state.status.Playlist}</li>
+					<li>state: {this.state.status.State}</li>
+					<li>song: {this.state.status.Song}</li>
+					<li>elapsed: {this.state.status.Elapsed}</li>
+					<li>time: {this.state.status.Time}</li>
+				</ul>
+			);
+		};
+		return <div>{player}{status}</div>;
 	}
 });
 

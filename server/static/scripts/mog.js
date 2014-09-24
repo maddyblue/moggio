@@ -238,20 +238,38 @@ var Player = React.createClass({displayName: 'Player',
 	componentDidMount: function() {
 		this.startWS();
 	},
+	cmd: function(cmd) {
+		return function() {
+			$.get('/api/cmd/' + cmd)
+				.error(function(err) {
+					console.log(err.responseText);
+				});
+		};
+	},
 	render: function() {
-		if (!this.state.status) {
-			return React.DOM.div(null, "unknown");
-		}
-		return (
-			React.DOM.ul(null, 
-				React.DOM.li(null, "cache: ", this.state.cache), 
-				React.DOM.li(null, "pl: ", this.state.status.Playlist), 
-				React.DOM.li(null, "state: ", this.state.status.State), 
-				React.DOM.li(null, "song: ", this.state.status.Song), 
-				React.DOM.li(null, "elapsed: ", this.state.status.Elapsed), 
-				React.DOM.li(null, "time: ", this.state.status.Time)
+		var player = (
+			React.DOM.div(null, 
+				React.DOM.button({onClick: this.cmd('prev')}, "prev"), 
+				React.DOM.button({onClick: this.cmd('pause')}, "play/pause"), 
+				React.DOM.button({onClick: this.cmd('next')}, "next")
 			)
 		);
+		var status;
+		if (!this.state.status) {
+			status = React.DOM.div(null, "unknown");
+		} else {
+			status = (
+				React.DOM.ul(null, 
+					React.DOM.li(null, "cache: ", this.state.cache), 
+					React.DOM.li(null, "pl: ", this.state.status.Playlist), 
+					React.DOM.li(null, "state: ", this.state.status.State), 
+					React.DOM.li(null, "song: ", this.state.status.Song), 
+					React.DOM.li(null, "elapsed: ", this.state.status.Elapsed), 
+					React.DOM.li(null, "time: ", this.state.status.Time)
+				)
+			);
+		};
+		return React.DOM.div(null, player, status);
 	}
 });
 
