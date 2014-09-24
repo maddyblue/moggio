@@ -37,7 +37,7 @@ func main() {
 		watch(src, "*.js", browserify)
 		browserify()
 	}
-	log.Fatal(server.ListenAndServe(":6601"))
+	log.Fatal(server.ListenAndServe(server.DefaultAddr))
 }
 
 func quit() {
