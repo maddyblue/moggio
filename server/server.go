@@ -210,12 +210,10 @@ func (srv *Server) audio() {
 		}
 	}
 	next = func() {
-		log.Println("next")
 		stop()
 		play()
 	}
 	stop = func() {
-		log.Println("stop")
 		srv.State = stateStop
 		t = nil
 		srv.Song = nil
@@ -278,7 +276,6 @@ func (srv *Server) audio() {
 		}
 	}
 	play = func() {
-		log.Println("play")
 		if srv.PlaylistIndex > len(srv.Playlist) {
 			srv.PlaylistIndex = 0
 		}
