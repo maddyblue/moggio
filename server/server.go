@@ -29,20 +29,20 @@ func ListenAndServe(addr string) error {
 }
 
 const (
-	STATE_PLAY State = iota
-	STATE_STOP
-	STATE_PAUSE
+	statePlay State = iota
+	stateStop
+	statePause
 )
 
 type State int
 
 func (s State) String() string {
 	switch s {
-	case STATE_PLAY:
+	case statePlay:
 		return "play"
-	case STATE_STOP:
+	case stateStop:
 		return "stop"
-	case STATE_PAUSE:
+	case statePause:
 		return "pause"
 	}
 	return ""
