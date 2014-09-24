@@ -2,10 +2,10 @@ package server
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"testing"
 	"time"
@@ -17,41 +17,22 @@ import (
 )
 
 func TestServer(t *testing.T) {
-	errs := make(chan error)
-	go func() {
-		errs <- ListenAndServe(DefaultAddr)
-	}()
-	time.Sleep(time.Millisecond * 100)
+	srv := New()
+	ts := httptest.NewServer(srv.GetMux())
+	defer ts.Close()
+	client := &http.Client{Timeout: time.Second}
 	fetch := func(path string, values url.Values) *http.Response {
-		rc := make(chan *http.Response)
-		go func() {
-			u := &url.URL{
-				Scheme:   "http",
-				Host:     DefaultAddr,
-				Path:     path,
-				RawQuery: values.Encode(),
-			}
-			t.Log("fetching", u)
-			resp, err := http.Get(u.String())
-			if err != nil {
-				errs <- err
-				return
-			}
-			if resp.StatusCode != 200 {
-				b, _ := ioutil.ReadAll(resp.Body)
-				errs <- fmt.Errorf("%s: %s", resp.Status, string(b))
-			}
-			rc <- resp
-		}()
-		select {
-		case <-time.After(time.Second):
-			t.Fatal("timeout")
-		case err := <-errs:
+		u := ts.URL + path + "?" + values.Encode()
+		t.Log("fetching", u)
+		resp, err := client.Get(u)
+		if err != nil {
 			t.Fatal(err)
-		case resp := <-rc:
-			return resp
 		}
-		panic("unreachable")
+		if resp.StatusCode != 200 {
+			b, _ := ioutil.ReadAll(resp.Body)
+			t.Fatalf("%s: %s", resp.Status, string(b))
+		}
+		return resp
 	}
 
 	var resp *http.Response

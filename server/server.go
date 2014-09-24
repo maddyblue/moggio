@@ -24,7 +24,7 @@ const (
 )
 
 func ListenAndServe(addr string) error {
-	server := &Server{Addr: addr}
+	server := New()
 	return server.ListenAndServe()
 }
 
@@ -126,20 +126,18 @@ func (srv *Server) broadcast() {
 
 var dir = filepath.Join("server")
 
-// ListenAndServe listens on the TCP network address srv.Addr and then calls
-// Serve to handle requests on incoming connections. If srv.Addr is blank,
-// ":6601" is used.
-func (srv *Server) ListenAndServe() error {
-	srv.ch = make(chan command)
-	srv.lock = new(sync.Mutex)
-	srv.Songs = make(map[SongID]codec.Song)
-	srv.Protocols = make(map[string][]string)
-	go srv.audio()
-
-	addr := srv.Addr
-	if addr == "" {
-		addr = DefaultAddr
+func New() *Server {
+	srv := Server{
+		ch:        make(chan command),
+		lock:      new(sync.Mutex),
+		Songs:     make(map[SongID]codec.Song),
+		Protocols: make(map[string][]string),
 	}
+	go srv.audio()
+	return &srv
+}
+
+func (srv *Server) GetMux() *http.ServeMux {
 	router := httprouter.New()
 	router.GET("/api/status", JSON(srv.Status))
 	router.GET("/api/list", JSON(srv.List))
@@ -151,13 +149,25 @@ func (srv *Server) ListenAndServe() error {
 	router.GET("/api/song/info", JSON(srv.SongInfo))
 	router.GET("/api/cmd/:cmd", JSON(srv.Cmd))
 	fs := http.FileServer(http.Dir(dir))
-	http.Handle("/static/", fs)
-	http.HandleFunc("/", index)
-	http.Handle("/api/", router)
-	http.Handle("/ws/", websocket.Handler(srv.WebSocket))
+	mux := http.NewServeMux()
+	mux.Handle("/static/", fs)
+	mux.HandleFunc("/", index)
+	mux.Handle("/api/", router)
+	mux.Handle("/ws/", websocket.Handler(srv.WebSocket))
+	return mux
+}
 
+// ListenAndServe listens on the TCP network address srv.Addr and then calls
+// Serve to handle requests on incoming connections. If srv.Addr is blank,
+// ":6601" is used.
+func (srv *Server) ListenAndServe() error {
+	addr := srv.Addr
+	if addr == "" {
+		addr = DefaultAddr
+	}
+	mux := srv.GetMux()
 	log.Println("mog: listening on", addr)
-	return http.ListenAndServe(addr, nil)
+	return http.ListenAndServe(addr, mux)
 }
 
 func (srv *Server) WebSocket(ws *websocket.Conn) {
