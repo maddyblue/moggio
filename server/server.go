@@ -19,10 +19,6 @@ import (
 	"github.com/mjibson/mog/protocol"
 )
 
-const (
-	DefaultAddr = ":6601"
-)
-
 func ListenAndServe(addr string) error {
 	server := New()
 	return server.ListenAndServe()
@@ -162,9 +158,6 @@ func (srv *Server) GetMux() *http.ServeMux {
 // ":6601" is used.
 func (srv *Server) ListenAndServe() error {
 	addr := srv.Addr
-	if addr == "" {
-		addr = DefaultAddr
-	}
 	mux := srv.GetMux()
 	log.Println("mog: listening on", addr)
 	return http.ListenAndServe(addr, mux)
