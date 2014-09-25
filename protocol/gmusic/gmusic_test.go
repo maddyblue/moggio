@@ -25,7 +25,7 @@ func TestGMusic(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err := gm.ListTracks()
+	_, err = gm.ListTracks()
 	if err != nil {
 		t.Fatal(err)
 	}
