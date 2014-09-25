@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/url"
+	"os"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -13,15 +15,19 @@ import (
 
 	"code.google.com/p/go.net/websocket"
 
+	"github.com/BurntSushi/toml"
 	"github.com/julienschmidt/httprouter"
 	"github.com/mjibson/mog/codec"
 	"github.com/mjibson/mog/output"
 	"github.com/mjibson/mog/protocol"
 )
 
-func ListenAndServe(addr string) error {
-	server := New()
-	return server.ListenAndServe()
+func ListenAndServe(stateFile, addr string) error {
+	server, err := New(stateFile)
+	if err != nil {
+		return err
+	}
+	return server.ListenAndServe(addr)
 }
 
 const (
@@ -78,27 +84,26 @@ func (s *SongID) UnmarshalJSON(b []byte) error {
 }
 
 type Server struct {
-	Addr string // TCP address to listen on, ":6601"
-
-	Songs      map[SongID]codec.Song
-	State      State
 	Playlist   Playlist
 	PlaylistID int
-	// Index of current song in the playlist.
-	PlaylistIndex int
-	SongID        SongID
-	Song          codec.Song
-	Info          codec.SongInfo
-	Elapsed       time.Duration
-	Error         string
-	Repeat        bool
-	Random        bool
-	Protocols     map[string][]string
+	Repeat     bool
+	Random     bool
+	Protocols  map[string][]string
 
-	songID int
-	ch     chan command
-	waitch chan struct{}
-	lock   sync.Locker
+	// Current song data.
+	playlistIndex int
+	songID        SongID
+	song          codec.Song
+	info          codec.SongInfo
+	elapsed       time.Duration
+
+	ch          chan command
+	waitch      chan struct{}
+	lock        sync.Locker
+	state       State
+	songs       map[SongID]codec.Song
+	stateFile   string
+	savePending bool
 }
 
 func (srv *Server) wait() {
@@ -122,15 +127,69 @@ func (srv *Server) broadcast() {
 
 var dir = filepath.Join("server")
 
-func New() *Server {
+func New(stateFile string) (*Server, error) {
 	srv := Server{
 		ch:        make(chan command),
 		lock:      new(sync.Mutex),
-		Songs:     make(map[SongID]codec.Song),
+		songs:     make(map[SongID]codec.Song),
 		Protocols: make(map[string][]string),
 	}
+	if stateFile != "" {
+		if f, err := os.Open(stateFile); os.IsNotExist(err) {
+		} else if err != nil {
+			return nil, err
+		} else {
+			defer f.Close()
+			if _, err := toml.DecodeReader(f, &srv); err != nil {
+				return nil, err
+			}
+			for protocol, params := range srv.Protocols {
+				if _, err := srv.ProtocolUpdate(url.Values{
+					"protocol": []string{protocol},
+					"params":   params,
+				}, nil); err != nil {
+					return nil, err
+				}
+			}
+		}
+		srv.stateFile = stateFile
+	}
 	go srv.audio()
-	return &srv
+	go func() {
+		for _ = range time.Tick(time.Millisecond * 250) {
+			srv.broadcast()
+		}
+	}()
+	return &srv, nil
+}
+
+func (s *Server) Save() {
+	if s.stateFile == "" {
+		return
+	}
+	go func() {
+		s.lock.Lock()
+		defer s.lock.Unlock()
+		if s.savePending {
+			return
+		}
+		s.savePending = true
+		time.AfterFunc(time.Second, s.save)
+	}()
+}
+
+func (s *Server) save() {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	s.savePending = false
+	f, err := os.Create(s.stateFile)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	if err := toml.NewEncoder(f).Encode(s); err != nil {
+		log.Println(err)
+	}
 }
 
 func (srv *Server) GetMux() *http.ServeMux {
@@ -153,11 +212,9 @@ func (srv *Server) GetMux() *http.ServeMux {
 	return mux
 }
 
-// ListenAndServe listens on the TCP network address srv.Addr and then calls
-// Serve to handle requests on incoming connections. If srv.Addr is blank,
-// ":6601" is used.
-func (srv *Server) ListenAndServe() error {
-	addr := srv.Addr
+// ListenAndServe listens on the TCP network address addr and then calls
+// Serve to handle requests on incoming connections.
+func (srv *Server) ListenAndServe(addr string) error {
 	mux := srv.GetMux()
 	log.Println("mog: listening on", addr)
 	return http.ListenAndServe(addr, mux)
@@ -182,24 +239,24 @@ func (srv *Server) audio() {
 	var t chan interface{}
 	var present bool
 	var dur time.Duration
-	srv.State = stateStop
+	srv.state = stateStop
 	var next, stop, tick, play, pause, prev func()
 	prev = func() {
-		srv.PlaylistIndex--
-		if srv.Elapsed < time.Second*3 {
-			srv.PlaylistIndex--
+		srv.playlistIndex--
+		if srv.elapsed < time.Second*3 {
+			srv.playlistIndex--
 		}
 		next()
 	}
 	pause = func() {
-		switch srv.State {
+		switch srv.state {
 		case statePause, stateStop:
 			t = make(chan interface{})
 			close(t)
 			tick()
 		case statePlay:
 			t = nil
-			srv.State = statePause
+			srv.state = statePause
 		}
 	}
 	next = func() {
@@ -207,35 +264,35 @@ func (srv *Server) audio() {
 		play()
 	}
 	stop = func() {
-		srv.State = stateStop
+		srv.state = stateStop
 		t = nil
-		srv.Song = nil
+		srv.song = nil
 	}
 	tick = func() {
-		if srv.Elapsed > srv.Info.Time {
+		if srv.elapsed > srv.info.Time {
 			stop()
 		}
-		if srv.Song == nil {
+		if srv.song == nil {
 			if len(srv.Playlist) == 0 {
 				log.Println("empty playlist")
 				stop()
 				return
-			} else if srv.PlaylistIndex >= len(srv.Playlist) {
+			} else if srv.playlistIndex >= len(srv.Playlist) {
 				if srv.Repeat {
-					srv.PlaylistIndex = 0
+					srv.playlistIndex = 0
 				} else {
 					log.Println("end of playlist")
 					stop()
 					return
 				}
 			}
-			srv.SongID = srv.Playlist[srv.PlaylistIndex]
-			srv.Song, present = srv.Songs[srv.SongID]
-			srv.PlaylistIndex++
+			srv.songID = srv.Playlist[srv.playlistIndex]
+			srv.song, present = srv.songs[srv.songID]
+			srv.playlistIndex++
 			if !present {
 				return
 			}
-			sr, ch, err := srv.Song.Init()
+			sr, ch, err := srv.song.Init()
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -246,18 +303,18 @@ func (srv *Server) audio() {
 			if err != nil {
 				log.Fatalf("mog: could not open audio (%v, %v): %v", sr, ch, err)
 			}
-			srv.Info = srv.Song.Info()
-			fmt.Println("playing", srv.Info)
-			srv.Elapsed = 0
+			srv.info = srv.song.Info()
+			fmt.Println("playing", srv.info)
+			srv.elapsed = 0
 			dur = time.Second / (time.Duration(sr))
 			t = make(chan interface{})
 			close(t)
-			srv.State = statePlay
+			srv.state = statePlay
 		}
 		const expected = 4096
-		next, err := srv.Song.Play(expected)
+		next, err := srv.song.Play(expected)
 		if err == nil {
-			srv.Elapsed += time.Duration(len(next)) * dur
+			srv.elapsed += time.Duration(len(next)) * dur
 			if len(next) > 0 {
 				o.Push(next)
 			}
@@ -269,16 +326,11 @@ func (srv *Server) audio() {
 		}
 	}
 	play = func() {
-		if srv.PlaylistIndex > len(srv.Playlist) {
-			srv.PlaylistIndex = 0
+		if srv.playlistIndex > len(srv.Playlist) {
+			srv.playlistIndex = 0
 		}
 		tick()
 	}
-	go func() {
-		for _ = range time.Tick(time.Millisecond * 250) {
-			srv.broadcast()
-		}
-	}()
 	for {
 		select {
 		case <-t:
@@ -312,9 +364,13 @@ const (
 	cmdPrev
 )
 
-func JSON(h func(http.ResponseWriter, *http.Request, httprouter.Params) (interface{}, error)) httprouter.Handle {
+func JSON(h func(url.Values, httprouter.Params) (interface{}, error)) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-		d, err := h(w, r, ps)
+		if err := r.ParseForm(); err != nil {
+			serveError(w, err)
+			return
+		}
+		d, err := h(r.Form, ps)
 		if err != nil {
 			serveError(w, err)
 			return
@@ -332,7 +388,7 @@ func JSON(h func(http.ResponseWriter, *http.Request, httprouter.Params) (interfa
 	}
 }
 
-func (srv *Server) Cmd(w http.ResponseWriter, r *http.Request, ps httprouter.Params) (interface{}, error) {
+func (srv *Server) Cmd(form url.Values, ps httprouter.Params) (interface{}, error) {
 	switch cmd := ps.ByName("cmd"); cmd {
 	case "play":
 		srv.ch <- cmdPlay
@@ -350,15 +406,14 @@ func (srv *Server) Cmd(w http.ResponseWriter, r *http.Request, ps httprouter.Par
 	return nil, nil
 }
 
-func (srv *Server) SongInfo(w http.ResponseWriter, r *http.Request, ps httprouter.Params) (interface{}, error) {
+func (srv *Server) SongInfo(form url.Values, ps httprouter.Params) (interface{}, error) {
 	var si []codec.SongInfo
-	r.ParseForm()
-	for _, s := range r.Form["song"] {
+	for _, s := range form["song"] {
 		id, err := ParseSongID(s)
 		if err != nil {
 			return nil, err
 		}
-		song, ok := srv.Songs[id]
+		song, ok := srv.songs[id]
 		if !ok {
 			return nil, fmt.Errorf("unknown song: %v", id)
 		}
@@ -367,33 +422,34 @@ func (srv *Server) SongInfo(w http.ResponseWriter, r *http.Request, ps httproute
 	return si, nil
 }
 
-func (srv *Server) PlaylistGet(w http.ResponseWriter, r *http.Request, ps httprouter.Params) (interface{}, error) {
+func (srv *Server) PlaylistGet(form url.Values, ps httprouter.Params) (interface{}, error) {
 	return srv.Playlist, nil
 }
 
-func (srv *Server) ProtocolGet(w http.ResponseWriter, r *http.Request, ps httprouter.Params) (interface{}, error) {
+func (srv *Server) ProtocolGet(form url.Values, ps httprouter.Params) (interface{}, error) {
 	return protocol.Get(), nil
 }
-func (srv *Server) ProtocolList(w http.ResponseWriter, r *http.Request, ps httprouter.Params) (interface{}, error) {
+func (srv *Server) ProtocolList(form url.Values, ps httprouter.Params) (interface{}, error) {
 	return srv.Protocols, nil
 }
 
-func (srv *Server) ProtocolUpdate(w http.ResponseWriter, r *http.Request, ps httprouter.Params) (interface{}, error) {
-	p := r.FormValue("protocol")
-	params := r.Form["params"]
+func (srv *Server) ProtocolUpdate(form url.Values, ps httprouter.Params) (interface{}, error) {
+	p := form.Get("protocol")
+	params := form["params"]
 	songs, err := protocol.List(p, params)
 	if err != nil {
 		return nil, err
 	}
 	srv.Protocols[p] = params
-	for id := range srv.Songs {
+	for id := range srv.songs {
 		if id.Protocol == p {
-			delete(srv.Songs, id)
+			delete(srv.songs, id)
 		}
 	}
 	for id, s := range songs {
-		srv.Songs[SongID{Protocol: p, ID: id}] = s
+		srv.songs[SongID{Protocol: p, ID: id}] = s
 	}
+	srv.Save()
 	return nil, nil
 }
 
@@ -401,16 +457,13 @@ func (srv *Server) ProtocolUpdate(w http.ResponseWriter, r *http.Request, ps htt
 // * clear: if set to anything will clear playlist
 // * remove/add: song ids
 // Duplicate songs will not be added.
-func (srv *Server) PlaylistChange(w http.ResponseWriter, r *http.Request, ps httprouter.Params) (interface{}, error) {
-	if err := r.ParseForm(); err != nil {
-		return nil, err
-	}
+func (srv *Server) PlaylistChange(form url.Values, ps httprouter.Params) (interface{}, error) {
 	srv.PlaylistID++
-	srv.PlaylistIndex = 0
+	srv.playlistIndex = 0
 	t := PlaylistChange{
 		PlaylistId: srv.PlaylistID,
 	}
-	if len(r.Form["clear"]) > 0 {
+	if len(form["clear"]) > 0 {
 		srv.Playlist = nil
 		srv.ch <- cmdStop
 	}
@@ -418,28 +471,28 @@ func (srv *Server) PlaylistChange(w http.ResponseWriter, r *http.Request, ps htt
 	for i, id := range srv.Playlist {
 		m[id] = i
 	}
-	for _, rem := range r.Form["remove"] {
+	for _, rem := range form["remove"] {
 		sp := strings.SplitN(rem, "|", 2)
 		if len(sp) != 2 {
 			t.Error("bad id: %v", rem)
 			continue
 		}
 		id := SongID{sp[0], sp[1]}
-		if s, ok := srv.Songs[id]; !ok {
+		if s, ok := srv.songs[id]; !ok {
 			t.Error("unknown id: %v", rem)
-		} else if s == srv.Song {
+		} else if s == srv.song {
 			srv.ch <- cmdStop
 		}
 		delete(m, id)
 	}
-	for _, add := range r.Form["add"] {
+	for _, add := range form["add"] {
 		sp := strings.SplitN(add, "|", 2)
 		if len(sp) != 2 {
 			t.Error("bad id: %v", add)
 			continue
 		}
 		id := SongID{sp[0], sp[1]}
-		if _, ok := srv.Songs[id]; !ok {
+		if _, ok := srv.songs[id]; !ok {
 			t.Error("unknown id: %v", add)
 		}
 		m[id] = len(m)
@@ -448,6 +501,7 @@ func (srv *Server) PlaylistChange(w http.ResponseWriter, r *http.Request, ps htt
 	for songid, index := range m {
 		srv.Playlist[index] = songid
 	}
+	srv.Save()
 	return &t, nil
 }
 
@@ -460,9 +514,9 @@ func (p *PlaylistChange) Error(format string, a ...interface{}) {
 	p.Errors = append(p.Errors, fmt.Sprintf(format, a...))
 }
 
-func (s *Server) List(w http.ResponseWriter, r *http.Request, ps httprouter.Params) (interface{}, error) {
+func (s *Server) List(form url.Values, ps httprouter.Params) (interface{}, error) {
 	songs := make([]SongID, 0)
-	for id := range s.Songs {
+	for id := range s.songs {
 		songs = append(songs, id)
 	}
 	return songs, nil
@@ -471,14 +525,14 @@ func (s *Server) List(w http.ResponseWriter, r *http.Request, ps httprouter.Para
 func (s *Server) status() *Status {
 	return &Status{
 		Playlist: s.PlaylistID,
-		State:    s.State,
-		Song:     s.SongID,
-		Elapsed:  s.Elapsed.Seconds(),
-		Time:     s.Info.Time.Seconds(),
+		State:    s.state,
+		Song:     s.songID,
+		Elapsed:  s.elapsed.Seconds(),
+		Time:     s.info.Time.Seconds(),
 	}
 }
 
-func (s *Server) Status(w http.ResponseWriter, r *http.Request, ps httprouter.Params) (interface{}, error) {
+func (s *Server) Status(form url.Values, ps httprouter.Params) (interface{}, error) {
 	return s.status(), nil
 }
 

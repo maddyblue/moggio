@@ -17,7 +17,10 @@ import (
 )
 
 func TestServer(t *testing.T) {
-	srv := New()
+	srv, err := New("")
+	if err != nil {
+		t.Fatal(err)
+	}
 	ts := httptest.NewServer(srv.GetMux())
 	defer ts.Close()
 	client := &http.Client{Timeout: time.Second}

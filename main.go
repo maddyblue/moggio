@@ -37,7 +37,7 @@ func main() {
 		watch(src, "*.js", browserify)
 		browserify()
 	}
-	log.Fatal(server.ListenAndServe(DefaultAddr))
+	log.Fatal(server.ListenAndServe("mog.state", DefaultAddr))
 }
 
 const DefaultAddr = ":6601"
