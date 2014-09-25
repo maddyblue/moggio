@@ -182,13 +182,19 @@ func (s *Server) save() {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	s.savePending = false
-	f, err := os.Create(s.stateFile)
+	tmp := s.stateFile + ".tmp"
+	f, err := os.Create(tmp)
 	if err != nil {
 		log.Println(err)
 		return
 	}
 	if err := toml.NewEncoder(f).Encode(s); err != nil {
 		log.Println(err)
+		return
+	}
+	if err := os.Rename(tmp, s.stateFile); err != nil {
+		log.Println(err)
+		return
 	}
 }
 
