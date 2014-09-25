@@ -300,14 +300,14 @@ func (srv *Server) audio() {
 			}
 			sr, ch, err := srv.song.Init()
 			if err != nil {
-				log.Fatal(err)
+				panic(err)
 			}
 			if o != nil {
 				o.Dispose()
 			}
 			o, err = output.NewPort(sr, ch)
 			if err != nil {
-				log.Fatalf("mog: could not open audio (%v, %v): %v", sr, ch, err)
+				panic(fmt.Errorf("mog: could not open audio (%v, %v): %v", sr, ch, err))
 			}
 			srv.info = srv.song.Info()
 			fmt.Println("playing", srv.info)
@@ -354,7 +354,7 @@ func (srv *Server) audio() {
 			case cmdPrev:
 				prev()
 			default:
-				log.Fatal("unknown command")
+				panic("unknown command")
 			}
 		}
 	}
