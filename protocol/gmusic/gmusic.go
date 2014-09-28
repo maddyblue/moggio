@@ -139,9 +139,9 @@ func (g *GMusic) ListPlaylists() ([]*Playlist, error) {
 	if err != nil {
 		return nil, err
 	}
-	body, _ := ioutil.ReadAll(r.Body)
 	var data ListPlaylists
-	if err := json.Unmarshal(body, &data); err != nil {
+	defer r.Body.Close()
+	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
 		return nil, err
 	}
 	g.Playlists = data.Data.Items
@@ -175,9 +175,9 @@ func (g *GMusic) ListPlaylistEntries() ([]*PlaylistEntry, error) {
 	if err != nil {
 		return nil, err
 	}
-	body, _ := ioutil.ReadAll(r.Body)
 	var data ListPlaylistEntries
-	if err := json.Unmarshal(body, &data); err != nil {
+	defer r.Body.Close()
+	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
 		return nil, err
 	}
 	g.PlaylistEntries = data.Data.Items
@@ -210,9 +210,9 @@ func (g *GMusic) ListTracks() ([]*Track, error) {
 	if err != nil {
 		return nil, err
 	}
-	body, _ := ioutil.ReadAll(r.Body)
 	var data ListTracks
-	if err := json.Unmarshal(body, &data); err != nil {
+	defer r.Body.Close()
+	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
 		return nil, err
 	}
 	g.Tracks = data.Data.Items
