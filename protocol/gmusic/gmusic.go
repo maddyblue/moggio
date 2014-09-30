@@ -27,7 +27,7 @@ func List(params []string) (protocol.SongList, error) {
 	if len(params) != 3 {
 		return nil, fmt.Errorf("bad params")
 	}
-	g, err := Login(params[0], params[1])
+	g, err := Login(params[0], params[1], params[2])
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +65,7 @@ func (s *Song) Init() (sampleRate, channels int, err error) {
 }
 
 func (s *Song) Play(n int) ([]float32, error) {
-	return nil, fmt.Errorf("not implemented")
+	return s.m.Play(n)
 }
 
 func (s *Song) Info() (codec.SongInfo, error) {
@@ -101,7 +101,7 @@ type GMusic struct {
 	auth string
 }
 
-func Login(un, pw string) (*GMusic, error) {
+func Login(un, pw, deviceID string) (*GMusic, error) {
 	values := url.Values{}
 	values.Add("accountType", "HOSTED_OR_GOOGLE")
 	values.Add("Email", un)
@@ -117,7 +117,9 @@ func Login(un, pw string) (*GMusic, error) {
 	if err != nil {
 		return nil, err
 	}
-	var gm GMusic
+	gm := GMusic{
+		DeviceID: deviceID,
+	}
 	for _, line := range strings.Fields(string(b)) {
 		sp := strings.SplitN(line, "=", 2)
 		if len(sp) < 2 {
