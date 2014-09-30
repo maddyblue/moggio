@@ -2,6 +2,7 @@ package file
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 
@@ -29,7 +30,8 @@ func List(params []string) (protocol.SongList, error) {
 		if err != nil {
 			return nil
 		}
-		ss, _, err := codec.Decode(f)
+		defer f.Close()
+		ss, _, err := codec.Decode(fileReader(path))
 		if err != nil {
 			return nil
 		}
@@ -40,4 +42,10 @@ func List(params []string) (protocol.SongList, error) {
 		return nil
 	})
 	return songs, err
+}
+
+func fileReader(path string) codec.Reader {
+	return func() (io.ReadCloser, error) {
+		return os.Open(path)
+	}
 }

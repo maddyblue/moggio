@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -14,6 +15,7 @@ import (
 	"time"
 
 	"github.com/mjibson/mog/codec"
+	"github.com/mjibson/mog/codec/mpa"
 	"github.com/mjibson/mog/protocol"
 )
 
@@ -35,7 +37,10 @@ func List(params []string) (protocol.SongList, error) {
 	}
 	songs := make(protocol.SongList)
 	for _, t := range tracks {
-		songs[t.ID] = &Song{g, t}
+		songs[t.ID] = &Song{
+			GMusic: g,
+			Track:  t,
+		}
 	}
 	return songs, nil
 }
@@ -43,17 +48,27 @@ func List(params []string) (protocol.SongList, error) {
 type Song struct {
 	*GMusic
 	*Track
+	m *mpa.Song
 }
 
 func (s *Song) Init() (sampleRate, channels int, err error) {
-	return
+	s.m = &mpa.Song{
+		Reader: func() (io.ReadCloser, error) {
+			r, err := s.GMusic.GetStream(s.Track.ID)
+			if err != nil {
+				return nil, err
+			}
+			return r.Body, nil
+		},
+	}
+	return s.m.Init()
 }
 
 func (s *Song) Play(n int) ([]float32, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
-func (s *Song) Info() codec.SongInfo {
+func (s *Song) Info() (codec.SongInfo, error) {
 	duration, _ := strconv.Atoi(s.DurationMillis)
 	return codec.SongInfo{
 		Time:   time.Duration(duration) * time.Millisecond,
@@ -61,10 +76,13 @@ func (s *Song) Info() codec.SongInfo {
 		Title:  s.Title,
 		Album:  s.Album,
 		Track:  s.TrackNumber,
-	}
+	}, nil
 }
 
-func (s *Song) Close() {}
+func (s *Song) Close() {
+	s.m.Close()
+	s.m = nil
+}
 
 const (
 	clientLoginURL = "https://www.google.com/accounts/ClientLogin"

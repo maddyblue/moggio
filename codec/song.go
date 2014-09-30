@@ -4,7 +4,7 @@ import "time"
 
 type Song interface {
 	// Info returns information about a song.
-	Info() SongInfo
+	Info() (SongInfo, error)
 	// Init is called before the first call to Play(). It should prepare resources
 	// needed for Play().
 	Init() (sampleRate, channels int, err error)

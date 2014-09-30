@@ -309,7 +309,12 @@ func (srv *Server) audio() {
 			if err != nil {
 				panic(fmt.Errorf("mog: could not open audio (%v, %v): %v", sr, ch, err))
 			}
-			srv.info = srv.song.Info()
+			srv.info, err = srv.song.Info()
+			if err != nil {
+				log.Println(err)
+				next()
+				return
+			}
 			fmt.Println("playing", srv.info)
 			srv.elapsed = 0
 			dur = time.Second / (time.Duration(sr))
@@ -423,7 +428,11 @@ func (srv *Server) SongInfo(form url.Values, ps httprouter.Params) (interface{},
 		if !ok {
 			return nil, fmt.Errorf("unknown song: %v", id)
 		}
-		si = append(si, song.Info())
+		info, err := song.Info()
+		if err != nil {
+			return nil, err
+		}
+		si = append(si, info)
 	}
 	return si, nil
 }

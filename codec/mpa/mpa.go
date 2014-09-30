@@ -1,69 +1,63 @@
 package mpa
 
 import (
-	"bytes"
 	"io"
-	"io/ioutil"
-	"time"
 
 	"github.com/korandiz/mpa"
 	"github.com/mjibson/mog/codec"
 )
 
 func init() {
-	codec.RegisterCodec("MP3", "\xff\xfa", newSongs)
-	codec.RegisterCodec("MP3", "\xff\xfb", newSongs)
-	codec.RegisterCodec("MP3", "\xff\xfc", newSongs)
-	codec.RegisterCodec("MP3", "\xff\xfd", newSongs)
-	codec.RegisterCodec("MP3", "\xff\xfe", newSongs)
-	codec.RegisterCodec("MP3", "\xff\xff", newSongs)
+	codec.RegisterCodec("MP3", "\xff\xfa", NewSongs)
+	codec.RegisterCodec("MP3", "\xff\xfb", NewSongs)
+	codec.RegisterCodec("MP3", "\xff\xfc", NewSongs)
+	codec.RegisterCodec("MP3", "\xff\xfd", NewSongs)
+	codec.RegisterCodec("MP3", "\xff\xfe", NewSongs)
+	codec.RegisterCodec("MP3", "\xff\xff", NewSongs)
 }
 
-func newSongs(r io.Reader) ([]codec.Song, error) {
-	s, err := newSong(r)
+func NewSongs(rf codec.Reader) ([]codec.Song, error) {
+	s, err := NewSong(rf)
 	if err != nil {
 		return nil, err
 	}
 	return []codec.Song{s}, nil
 }
 
-type song struct {
-	data    []byte
-	freq    int
+type Song struct {
+	Reader  codec.Reader
+	r       io.ReadCloser
 	decoder *mpa.Decoder
 	buff    [2][]float32
 }
 
-func newSong(r io.Reader) (*song, error) {
-	data, err := ioutil.ReadAll(r) // this is stupid
+func NewSong(rf codec.Reader) (*Song, error) {
+	s := &Song{Reader: rf}
+	_, _, err := s.Init()
+	s.Close()
+	return s, err
+}
+
+func (s *Song) Init() (sampleRate, channels int, err error) {
+	r, err := s.Reader()
 	if err != nil {
-		return nil, err
+		return 0, 0, err
 	}
-
-	decoder := mpa.Decoder{Input: bytes.NewBuffer(data)}
-	if err := decoder.DecodeFrame(); err != nil {
-		return nil, err
+	s.decoder = &mpa.Decoder{Input: r}
+	s.r = r
+	if err := s.decoder.DecodeFrame(); err != nil {
+		return 0, 0, err
 	}
-	freq := decoder.SamplingFrequency()
-
-	return &song{data: data, freq: freq}, nil
+	return s.decoder.SamplingFrequency(), s.decoder.NChannels(), nil
 }
 
-func (s *song) Init() (sampleRate, channels int, err error) {
-	ch := 2 // may vary frame to frame
-	return s.freq, ch, nil
-}
-
-func (s *song) Info() codec.SongInfo {
+func (s *Song) Info() (codec.SongInfo, error) {
 	return codec.SongInfo{
-		Time: time.Duration(0), // too hard to tell without decoding
-	}
+		Time: 0, // too hard to tell without decoding
+	}, nil
 }
 
-func (s *song) Play(n int) (r []float32, err error) {
-	if s.decoder == nil {
-		s.decoder = &mpa.Decoder{Input: bytes.NewBuffer(s.data)}
-	}
+func (s *Song) Play(n int) (r []float32, err error) {
 	for len(r) < n {
 		if len(s.buff[0]) == 0 {
 			if err = s.decoder.DecodeFrame(); err != nil {
@@ -82,6 +76,7 @@ func (s *song) Play(n int) (r []float32, err error) {
 	return
 }
 
-func (s *song) Close() {
-	s.decoder, s.buff[0], s.buff[1] = nil, nil, nil
+func (s *Song) Close() {
+	s.r.Close()
+	s.decoder, s.buff[0], s.buff[1], s.r = nil, nil, nil, nil
 }
