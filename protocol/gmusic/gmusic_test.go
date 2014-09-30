@@ -13,7 +13,7 @@ func TestGMusic(t *testing.T) {
 		t.Fatal(err)
 	}
 	un := "matt.jibson"
-	gm, err = Login(un, string(pw))
+	gm, err = Login(un, string(pw), "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -43,7 +43,7 @@ func TestGMusic(t *testing.T) {
 func _TestBadLogin(t *testing.T) {
 	pw := "onethsochk"
 	un := "blah"
-	_, err := Login(un, pw)
+	_, err := Login(un, pw, "")
 	if err == nil {
 		t.Fatal("expected error")
 	}
