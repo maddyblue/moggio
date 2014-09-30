@@ -266,16 +266,19 @@ func (srv *Server) audio() {
 		}
 	}
 	next = func() {
+		log.Println("next")
 		stop()
 		play()
 	}
 	stop = func() {
+		log.Println("stop")
 		srv.state = stateStop
 		t = nil
 		srv.song = nil
 	}
 	tick = func() {
 		if srv.elapsed > srv.info.Time {
+			log.Println("elapsed time completed", srv.elapsed, srv.info.Time)
 			stop()
 		}
 		if srv.song == nil {
@@ -315,9 +318,9 @@ func (srv *Server) audio() {
 				next()
 				return
 			}
-			fmt.Println("playing", srv.info)
 			srv.elapsed = 0
 			dur = time.Second / (time.Duration(sr))
+			log.Println("playing", srv.info, sr, ch, dur, time.Duration(4096)*dur)
 			t = make(chan interface{})
 			close(t)
 			srv.state = statePlay
@@ -329,14 +332,14 @@ func (srv *Server) audio() {
 			if len(next) > 0 {
 				o.Push(next)
 			}
-		} else {
-			log.Println(err)
 		}
 		if len(next) < expected || err != nil {
+			log.Println("end of song", len(next), expected, err)
 			stop()
 		}
 	}
 	play = func() {
+		log.Println("play")
 		if srv.playlistIndex > len(srv.Playlist) {
 			srv.playlistIndex = 0
 		}
