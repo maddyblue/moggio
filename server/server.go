@@ -319,7 +319,7 @@ func (srv *Server) audio() {
 				return
 			}
 			srv.elapsed = 0
-			dur = time.Second / (time.Duration(sr))
+			dur = time.Second / (time.Duration(sr * ch))
 			log.Println("playing", srv.info, sr, ch, dur, time.Duration(4096)*dur)
 			t = make(chan interface{})
 			close(t)
