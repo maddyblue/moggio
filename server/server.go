@@ -248,6 +248,7 @@ func (srv *Server) audio() {
 	srv.state = stateStop
 	var next, stop, tick, play, pause, prev func()
 	prev = func() {
+		log.Println("prev")
 		srv.playlistIndex--
 		if srv.elapsed < time.Second*3 {
 			srv.playlistIndex--
@@ -255,12 +256,15 @@ func (srv *Server) audio() {
 		next()
 	}
 	pause = func() {
+		log.Println("pause")
 		switch srv.state {
 		case statePause, stateStop:
+			log.Println("pause: resume")
 			t = make(chan interface{})
 			close(t)
 			tick()
 		case statePlay:
+			log.Println("pause: pause")
 			t = nil
 			srv.state = statePause
 		}
