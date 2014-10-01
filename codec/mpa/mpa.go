@@ -8,12 +8,13 @@ import (
 )
 
 func init() {
-	codec.RegisterCodec("MP3", "\xff\xfa", NewSongs)
-	codec.RegisterCodec("MP3", "\xff\xfb", NewSongs)
-	codec.RegisterCodec("MP3", "\xff\xfc", NewSongs)
-	codec.RegisterCodec("MP3", "\xff\xfd", NewSongs)
-	codec.RegisterCodec("MP3", "\xff\xfe", NewSongs)
-	codec.RegisterCodec("MP3", "\xff\xff", NewSongs)
+	exts := []string{"mp3"}
+	codec.RegisterCodec("MP3", "\xff\xfa", exts, NewSongs)
+	codec.RegisterCodec("MP3", "\xff\xfb", exts, NewSongs)
+	codec.RegisterCodec("MP3", "\xff\xfc", exts, NewSongs)
+	codec.RegisterCodec("MP3", "\xff\xfd", exts, NewSongs)
+	codec.RegisterCodec("MP3", "\xff\xfe", exts, NewSongs)
+	codec.RegisterCodec("MP3", "\xff\xff", exts, NewSongs)
 }
 
 func NewSongs(rf codec.Reader) ([]codec.Song, error) {
@@ -39,7 +40,7 @@ func NewSong(rf codec.Reader) (*Song, error) {
 }
 
 func (s *Song) Init() (sampleRate, channels int, err error) {
-	r, err := s.Reader()
+	r, _, err := s.Reader()
 	if err != nil {
 		return 0, 0, err
 	}

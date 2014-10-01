@@ -3,6 +3,7 @@ package file
 import (
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"path/filepath"
 
@@ -14,12 +15,12 @@ func init() {
 	protocol.Register("file", []string{"directory"}, List)
 }
 
-func List(params []string) (protocol.SongList, error) {
-	if len(params) != 1 {
-		return nil, fmt.Errorf("bad params")
+func List(inst *protocol.Instance) (protocol.SongList, error) {
+	if len(inst.Params) != 1 {
+		return nil, fmt.Errorf("file: bad params")
 	}
 	songs := make(protocol.SongList)
-	err := filepath.Walk(params[0], func(path string, info os.FileInfo, err error) error {
+	err := filepath.Walk(inst.Params[0], func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -45,7 +46,17 @@ func List(params []string) (protocol.SongList, error) {
 }
 
 func fileReader(path string) codec.Reader {
-	return func() (io.ReadCloser, error) {
-		return os.Open(path)
+	return func() (io.ReadCloser, int64, error) {
+		log.Println("open file", path)
+		f, err := os.Open(path)
+		if err != nil {
+			return nil, 0, err
+		}
+		fi, err := f.Stat()
+		if err != nil {
+			f.Close()
+			return nil, 0, err
+		}
+		return f, fi.Size(), nil
 	}
 }

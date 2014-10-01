@@ -8,10 +8,12 @@ import (
 	"os/exec"
 	"path/filepath"
 	"sort"
+	"strings"
 	"time"
 
 	_ "github.com/mjibson/mog/codec/mpa"
 	_ "github.com/mjibson/mog/codec/nsf"
+	"github.com/mjibson/mog/protocol/drive"
 	_ "github.com/mjibson/mog/protocol/file"
 	_ "github.com/mjibson/mog/protocol/gmusic"
 	"github.com/mjibson/mog/server"
@@ -20,6 +22,7 @@ import (
 
 var (
 	flagWatch = flag.Bool("w", false, "watch current directory and exit on changes; for use with an autorestarter")
+	flagDrive = flag.String("drive", "", "Google Drive API credentials of the form ClientID:ClientSecret")
 )
 
 func main() {
@@ -36,6 +39,18 @@ func main() {
 		browserify := run("browserify", args...)
 		watch(src, "*.js", browserify)
 		browserify()
+	}
+	redir := DefaultAddr
+	if strings.HasPrefix(redir, ":") {
+		redir = "localhost" + redir
+	}
+	redir = "http://" + redir + "/api/oauth/"
+	if *flagDrive != "" {
+		sp := strings.Split(*flagDrive, ":")
+		if len(sp) != 2 {
+			log.Fatal("bad drive string %s", *flagDrive)
+		}
+		drive.Init(sp[0], sp[1], redir)
 	}
 	log.Fatal(server.ListenAndServe("mog.state", DefaultAddr))
 }

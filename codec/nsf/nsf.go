@@ -9,11 +9,11 @@ import (
 )
 
 func init() {
-	codec.RegisterCodec("NSF", "NESM\u001a", ReadNSFSongs)
+	codec.RegisterCodec("NSF", "NESM\u001a", []string{"nsf"}, ReadNSFSongs)
 }
 
 func ReadNSFSongs(rf codec.Reader) ([]codec.Song, error) {
-	r, err := rf()
+	r, _, err := rf()
 	if err != nil {
 		return nil, err
 	}
@@ -40,7 +40,7 @@ type NSFSong struct {
 }
 
 func (n *NSFSong) Init() (sampleRate, channels int, err error) {
-	r, err := n.Reader()
+	r, _, err := n.Reader()
 	if err != nil {
 		return 0, 0, err
 	}
@@ -74,7 +74,7 @@ func (n *NSFSong) Info() (si codec.SongInfo, err error) {
 		}
 		return
 	}
-	r, err := n.Reader()
+	r, _, err := n.Reader()
 	if err != nil {
 		return
 	}

@@ -82,10 +82,30 @@ var ProtocolParam = React.createClass({
 	}
 });
 
+var ProtocolOAuth = React.createClass({
+	render: function() {
+		var token;
+		if (this.props.token) {
+			token = <div>Connected until {this.props.token.Expiry}</div>;
+		}
+		return (
+			<li>
+				{token}
+				<a href={this.props.url}>connect</a>
+			</li>
+		);
+	}
+});
+
 var Protocol = React.createClass({
 	getInitialState: function() {
 		return {
 			save: false,
+		};
+	},
+	getDefaultProps: function() {
+		return {
+			current: {},
 		};
 	},
 	setSave: function() {
@@ -112,10 +132,16 @@ var Protocol = React.createClass({
 			});
 	},
 	render: function() {
-		var params = this.props.params.map(function(param, idx) {
-			var current = this.props.current || [];
-			return <ProtocolParam key={param} ref={idx} value={current[idx]} change={this.setSave} />;
-		}.bind(this));
+		var params = [];
+		if (this.props.params.Params) {
+			params = this.props.params.Params.map(function(param, idx) {
+				var current = this.props.current.Params || [];
+				return <ProtocolParam key={param} ref={idx} value={current[idx]} change={this.setSave} />;
+			}.bind(this));
+		}
+		if (this.props.params.OAuthURL) {
+			params.push(<ProtocolOAuth url={this.props.params.OAuthURL} token={this.props.current.OAuthToken} />);
+		}
 		var save;
 		if (this.state.save) {
 			save = <button onClick={this.save}>save</button>;

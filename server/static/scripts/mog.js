@@ -83,10 +83,30 @@ var ProtocolParam = React.createClass({displayName: 'ProtocolParam',
 	}
 });
 
+var ProtocolOAuth = React.createClass({displayName: 'ProtocolOAuth',
+	render: function() {
+		var token;
+		if (this.props.token) {
+			token = React.DOM.div(null, "Connected until ", this.props.token.Expiry);
+		}
+		return (
+			React.DOM.li(null, 
+				token, 
+				React.DOM.a({href: this.props.url}, "connect")
+			)
+		);
+	}
+});
+
 var Protocol = React.createClass({displayName: 'Protocol',
 	getInitialState: function() {
 		return {
 			save: false,
+		};
+	},
+	getDefaultProps: function() {
+		return {
+			current: {},
 		};
 	},
 	setSave: function() {
@@ -113,10 +133,16 @@ var Protocol = React.createClass({displayName: 'Protocol',
 			});
 	},
 	render: function() {
-		var params = this.props.params.map(function(param, idx) {
-			var current = this.props.current || [];
-			return ProtocolParam({key: param, ref: idx, value: current[idx], change: this.setSave});
-		}.bind(this));
+		var params = [];
+		if (this.props.params.Params) {
+			params = this.props.params.Params.map(function(param, idx) {
+				var current = this.props.current.Params || [];
+				return ProtocolParam({key: param, ref: idx, value: current[idx], change: this.setSave});
+			}.bind(this));
+		}
+		if (this.props.params.OAuthURL) {
+			params.push(ProtocolOAuth({url: this.props.params.OAuthURL, token: this.props.current.OAuthToken}));
+		}
 		var save;
 		if (this.state.save) {
 			save = React.DOM.button({onClick: this.save}, "save");

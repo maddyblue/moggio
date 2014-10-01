@@ -15,19 +15,31 @@ var ErrFormat = errors.New("codec: unknown format")
 
 type codec struct {
 	name, magic string
+	extensions  []string
 	decode      func(Reader) ([]Song, error)
 }
 
 // Codecs is the list of registered codecs.
 var codecs []codec
 
+var allExtensions = make(map[string]codec)
+
 // RegisterCodec registers an audio codec for use by Decode.
 // Name is the name of the format, like "nsf" or "wav".
 // Magic is the magic prefix that identifies the codec's encoding. The magic
 // string can contain "?" wildcards that each match any one byte.
 // Decode is the function that decodes the encoded codec.
-func RegisterCodec(name, magic string, decode func(Reader) ([]Song, error)) {
-	codecs = append(codecs, codec{name, magic, decode})
+func RegisterCodec(name, magic string, extensions []string, decode func(Reader) ([]Song, error)) {
+	c := codec{
+		name:       name,
+		magic:      magic,
+		extensions: extensions,
+		decode:     decode,
+	}
+	for _, e := range extensions {
+		allExtensions[e] = c
+	}
+	codecs = append(codecs, c)
 }
 
 // A reader is an io.Reader that can also peek ahead.
@@ -68,17 +80,20 @@ func sniff(r reader) codec {
 	return codec{}
 }
 
-type Reader func() (io.ReadCloser, error)
+// Reader returns a file reader and the file size in bytes (or 0 if streamed
+// or unknown).
+type Reader func() (io.ReadCloser, int64, error)
 
 // Decode decodes audio that has been encoded in a registered codec.
 // The string returned is the format name used during format registration.
 // Format registration is typically done by the init method of the codec-
 // specific package.
 func Decode(rf Reader) ([]Song, string, error) {
-	r, err := rf()
+	r, _, err := rf()
 	if err != nil {
 		return nil, "", err
 	}
+	defer r.Close()
 	rr := asReader(r)
 	f := sniff(rr)
 	if f.decode == nil {
@@ -86,4 +101,13 @@ func Decode(rf Reader) ([]Song, string, error) {
 	}
 	m, err := f.decode(rf)
 	return m, f.name, err
+}
+
+func ByExtension(ext string, rf Reader) ([]Song, string, error) {
+	c, ok := allExtensions[ext]
+	if !ok {
+		return nil, "", nil
+	}
+	songs, err := c.decode(rf)
+	return songs, c.name, err
 }
