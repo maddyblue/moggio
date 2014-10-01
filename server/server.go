@@ -263,6 +263,7 @@ func (srv *Server) audio() {
 			t = make(chan interface{})
 			close(t)
 			tick()
+			srv.state = statePlay
 		case statePlay:
 			log.Println("pause: pause")
 			t = nil
