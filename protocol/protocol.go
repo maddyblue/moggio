@@ -2,16 +2,15 @@ package protocol
 
 import (
 	"fmt"
-	"net/http"
 
-	"code.google.com/p/goauth2/oauth"
+	"github.com/golang/oauth2"
 
 	"github.com/mjibson/mog/codec"
 )
 
 type Protocol struct {
 	Params   []string
-	OAuth    *oauth.Config
+	OAuth    *oauth2.Config
 	OAuthURL string
 
 	List List
@@ -31,19 +30,9 @@ func (p *Protocol) ProtocolParams() ProtocolParams {
 	}
 }
 
-func (p *Protocol) OAuthTransport() *oauth.Transport {
-	return &oauth.Transport{Config: p.OAuth}
-}
-
-func (p *Protocol) GetOAuthClient(inst *Instance) *http.Client {
-	t := p.OAuthTransport()
-	t.Token = inst.OAuthToken
-	return t.Client()
-}
-
 type Instance struct {
-	Params     []string     `json:",omitempty"`
-	OAuthToken *oauth.Token `json:",omitempty"`
+	Params     []string      `json:",omitempty"`
+	OAuthToken *oauth2.Token `json:",omitempty"`
 }
 
 type SongList map[string]codec.Song
@@ -57,10 +46,10 @@ func Register(name string, params []string, list List) {
 	}
 }
 
-func RegisterOAuth(name string, config *oauth.Config, list List) {
+func RegisterOAuth(name string, config *oauth2.Config, list List) {
 	protocols[name] = &Protocol{
 		OAuth:    config,
-		OAuthURL: config.AuthCodeURL(""),
+		OAuthURL: config.AuthCodeURL("", "", ""),
 		List:     list,
 	}
 }

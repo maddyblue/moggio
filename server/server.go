@@ -428,8 +428,7 @@ func (srv *Server) OAuth(w http.ResponseWriter, r *http.Request, ps httprouter.P
 		serveError(w, fmt.Errorf("bad protocol"))
 		return
 	}
-	transport := prot.OAuthTransport()
-	token, err := transport.Exchange(r.FormValue("code"))
+	token, err := prot.OAuth.Exchange(r.FormValue("code"))
 	if err != nil {
 		serveError(w, err)
 		return

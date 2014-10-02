@@ -7,33 +7,37 @@ import (
 
 	"net/http"
 
-	"code.google.com/p/goauth2/oauth"
 	"code.google.com/p/google-api-go-client/drive/v2"
 
+	"github.com/golang/oauth2"
 	"github.com/mjibson/mog/codec"
 	"github.com/mjibson/mog/protocol"
 )
 
-var config *oauth.Config
+var config *oauth2.Config
 
 func Init(clientID, clientSecret, redirect string) {
-	config = &oauth.Config{
-		ClientId:     clientID,
-		ClientSecret: clientSecret,
-		Scope:        drive.DriveReadonlyScope,
-		AuthURL:      "https://accounts.google.com/o/oauth2/auth",
-		TokenURL:     "https://accounts.google.com/o/oauth2/token",
-		RedirectURL:  redirect + "drive",
+	c, err := oauth2.NewConfig(
+		&oauth2.Options{
+			ClientID:     clientID,
+			ClientSecret: clientSecret,
+			RedirectURL:  redirect + "drive",
+			Scopes:       []string{drive.DriveReadonlyScope},
+		},
+		"https://accounts.google.com/o/oauth2/auth",
+		"https://accounts.google.com/o/oauth2/token",
+	)
+	if err != nil {
+		log.Fatal(err)
 	}
+	config = c
 	protocol.RegisterOAuth("drive", config, List)
 }
 
-func getService(token *oauth.Token) (*drive.Service, *http.Client, error) {
-	t := &oauth.Transport{
-		Config: config,
-		Token:  token,
-	}
-	c := t.Client()
+func getService(token *oauth2.Token) (*drive.Service, *http.Client, error) {
+	t := config.NewTransport()
+	t.SetToken(token)
+	c := &http.Client{Transport: t}
 	s, err := drive.New(c)
 	return s, c, err
 }
