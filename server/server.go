@@ -319,10 +319,7 @@ func (srv *Server) audio() {
 			if err != nil {
 				panic(err)
 			}
-			if o != nil {
-				o.Dispose()
-			}
-			o, err = output.NewPort(sr, ch)
+			o, err = output.Get(sr, ch)
 			if err != nil {
 				panic(fmt.Errorf("mog: could not open audio (%v, %v): %v", sr, ch, err))
 			}
