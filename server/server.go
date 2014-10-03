@@ -291,7 +291,7 @@ func (srv *Server) audio() {
 		srv.song = nil
 	}
 	tick = func() {
-		if srv.elapsed > srv.info.Time {
+		if false && srv.elapsed > srv.info.Time {
 			log.Println("elapsed time completed", srv.elapsed, srv.info.Time)
 			stop()
 		}
