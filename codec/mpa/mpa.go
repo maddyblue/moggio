@@ -78,6 +78,8 @@ func (s *Song) Play(n int) (r []float32, err error) {
 }
 
 func (s *Song) Close() {
-	s.r.Close()
+	if s.r != nil {
+		s.r.Close()
+	}
 	s.decoder, s.buff[0], s.buff[1], s.r = nil, nil, nil, nil
 }
