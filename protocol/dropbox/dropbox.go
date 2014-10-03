@@ -47,7 +47,7 @@ func List(inst *protocol.Instance) (protocol.SongList, error) {
 	}
 	songs := make(protocol.SongList)
 	var ss []codec.Song
-	dirs := []string{"/Audio"}
+	dirs := []string{""}
 	for {
 		if len(dirs) == 0 {
 			break
