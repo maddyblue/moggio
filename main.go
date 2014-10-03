@@ -14,6 +14,7 @@ import (
 	_ "github.com/mjibson/mog/codec/mpa"
 	_ "github.com/mjibson/mog/codec/nsf"
 	"github.com/mjibson/mog/protocol/drive"
+	"github.com/mjibson/mog/protocol/dropbox"
 	_ "github.com/mjibson/mog/protocol/file"
 	_ "github.com/mjibson/mog/protocol/gmusic"
 	"github.com/mjibson/mog/server"
@@ -21,8 +22,9 @@ import (
 )
 
 var (
-	flagWatch = flag.Bool("w", false, "watch current directory and exit on changes; for use with an autorestarter")
-	flagDrive = flag.String("drive", "", "Google Drive API credentials of the form ClientID:ClientSecret")
+	flagWatch   = flag.Bool("w", false, "watch current directory and exit on changes; for use with an autorestarter")
+	flagDrive   = flag.String("drive", "", "Google Drive API credentials of the form ClientID:ClientSecret")
+	flagDropbox = flag.String("dropbox", "", "Dropbox API credentials of the form ClientID:ClientSecret")
 )
 
 func main() {
@@ -51,6 +53,13 @@ func main() {
 			log.Fatal("bad drive string %s", *flagDrive)
 		}
 		drive.Init(sp[0], sp[1], redir)
+	}
+	if *flagDropbox != "" {
+		sp := strings.Split(*flagDropbox, ":")
+		if len(sp) != 2 {
+			log.Fatal("bad drive string %s", *flagDropbox)
+		}
+		dropbox.Init(sp[0], sp[1], redir)
 	}
 	log.Fatal(server.ListenAndServe("mog.state", DefaultAddr))
 }

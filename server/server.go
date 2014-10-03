@@ -428,12 +428,15 @@ func (srv *Server) OAuth(w http.ResponseWriter, r *http.Request, ps httprouter.P
 		serveError(w, fmt.Errorf("bad protocol"))
 		return
 	}
-	token, err := prot.OAuth.Exchange(r.FormValue("code"))
+	t, err := prot.OAuth.Exchange(r.FormValue("code"))
 	if err != nil {
 		serveError(w, err)
 		return
 	}
-	instance.OAuthToken = token
+	instance.OAuthToken = t
+	// "Bearer" was added for dropbox. It happens to work also with Google Music's
+	// OAuth. This may need to be changed to be protocol-specific in the future.
+	instance.OAuthToken.TokenType = "Bearer"
 	srv.Save()
 	go srv.ProtocolRefresh(url.Values{"protocol": []string{name}}, nil)
 	http.Redirect(w, r, "/", http.StatusFound)
