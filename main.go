@@ -17,14 +17,16 @@ import (
 	"github.com/mjibson/mog/protocol/dropbox"
 	_ "github.com/mjibson/mog/protocol/file"
 	_ "github.com/mjibson/mog/protocol/gmusic"
+	"github.com/mjibson/mog/protocol/soundcloud"
 	"github.com/mjibson/mog/server"
 	"gopkg.in/fsnotify.v1"
 )
 
 var (
-	flagWatch   = flag.Bool("w", false, "watch current directory and exit on changes; for use with an autorestarter")
-	flagDrive   = flag.String("drive", "", "Google Drive API credentials of the form ClientID:ClientSecret")
-	flagDropbox = flag.String("dropbox", "", "Dropbox API credentials of the form ClientID:ClientSecret")
+	flagWatch      = flag.Bool("w", false, "watch current directory and exit on changes; for use with an autorestarter")
+	flagDrive      = flag.String("drive", "", "Google Drive API credentials of the form ClientID:ClientSecret")
+	flagDropbox    = flag.String("dropbox", "", "Dropbox API credentials of the form ClientID:ClientSecret")
+	flagSoundcloud = flag.String("soundcloud", "", "SoundCloud API credentials of the form ClientID:ClientSecret")
 )
 
 func main() {
@@ -60,6 +62,13 @@ func main() {
 			log.Fatal("bad drive string %s", *flagDropbox)
 		}
 		dropbox.Init(sp[0], sp[1], redir)
+	}
+	if *flagSoundcloud != "" {
+		sp := strings.Split(*flagSoundcloud, ":")
+		if len(sp) != 2 {
+			log.Fatal("bad drive string %s", *flagSoundcloud)
+		}
+		soundcloud.Init(sp[0], sp[1], redir)
 	}
 	log.Fatal(server.ListenAndServe("mog.state", DefaultAddr))
 }
