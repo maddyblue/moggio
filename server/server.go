@@ -539,12 +539,11 @@ func (srv *Server) PlaylistChange(form url.Values, ps httprouter.Params) (interf
 		m[id] = i
 	}
 	for _, rem := range form["remove"] {
-		sp := strings.SplitN(rem, "|", 2)
-		if len(sp) != 2 {
-			t.Error("bad id: %v", rem)
+		id, err := ParseSongID(rem)
+		if err != nil {
+			t.Error(err.Error())
 			continue
 		}
-		id := SongID{sp[0], sp[1]}
 		if s, ok := srv.songs[id]; !ok {
 			t.Error("unknown id: %v", rem)
 		} else if s == srv.song {
@@ -553,12 +552,11 @@ func (srv *Server) PlaylistChange(form url.Values, ps httprouter.Params) (interf
 		delete(m, id)
 	}
 	for _, add := range form["add"] {
-		sp := strings.SplitN(add, "|", 2)
-		if len(sp) != 2 {
-			t.Error("bad id: %v", add)
+		id, err := ParseSongID(add)
+		if err != nil {
+			t.Error(err.Error())
 			continue
 		}
-		id := SongID{sp[0], sp[1]}
 		if _, ok := srv.songs[id]; !ok {
 			t.Error("unknown id: %v", add)
 		}
