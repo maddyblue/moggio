@@ -15,7 +15,6 @@ import (
 
 	"code.google.com/p/go.net/websocket"
 
-	"github.com/BurntSushi/toml"
 	"github.com/julienschmidt/httprouter"
 	"github.com/mjibson/mog/codec"
 	"github.com/mjibson/mog/output"
@@ -54,19 +53,20 @@ type Playlist []SongID
 
 type SongID struct {
 	Protocol string
+	Key      string
 	ID       string
 }
 
 func ParseSongID(s string) (id SongID, err error) {
-	sp := strings.SplitN(s, "|", 2)
-	if len(sp) != 2 {
+	sp := strings.SplitN(s, "|", 3)
+	if len(sp) != 3 {
 		return id, fmt.Errorf("bad songid: %v", s)
 	}
-	return SongID{sp[0], sp[1]}, nil
+	return SongID{sp[0], sp[1], sp[2]}, nil
 }
 
 func (s SongID) String() string {
-	return fmt.Sprintf("%s|%s", s.Protocol, s.ID)
+	return fmt.Sprintf("%s|%s|%s", s.Protocol, s.Key, s.ID)
 }
 
 func (s SongID) MarshalJSON() ([]byte, error) {
@@ -74,12 +74,13 @@ func (s SongID) MarshalJSON() ([]byte, error) {
 }
 
 func (s *SongID) UnmarshalJSON(b []byte) error {
-	var v [2]string
+	var v [3]string
 	if err := json.Unmarshal(b, &v); err != nil {
 		return err
 	}
 	s.Protocol = v[0]
-	s.ID = v[1]
+	s.Key = v[1]
+	s.ID = v[2]
 	return nil
 }
 
@@ -88,7 +89,7 @@ type Server struct {
 	PlaylistID int
 	Repeat     bool
 	Random     bool
-	Protocols  map[string]*protocol.Instance
+	Protocols  map[string]map[string]*protocol.Instance
 
 	// Current song data.
 	playlistIndex int
@@ -132,7 +133,10 @@ func New(stateFile string) (*Server, error) {
 		ch:        make(chan command),
 		lock:      new(sync.Mutex),
 		songs:     make(map[SongID]codec.Song),
-		Protocols: make(map[string]*protocol.Instance),
+		Protocols: make(map[string]map[string]*protocol.Instance),
+	}
+	for name := range protocol.Get() {
+		srv.Protocols[name] = make(map[string]*protocol.Instance)
 	}
 	srv.lock.Lock()
 	defer srv.lock.Unlock()
@@ -142,24 +146,24 @@ func New(stateFile string) (*Server, error) {
 			return nil, err
 		} else {
 			defer f.Close()
-			if _, err := toml.DecodeReader(f, &srv); err != nil {
+			if err := json.NewDecoder(f).Decode(&srv); err != nil {
 				return nil, err
 			}
-			for name := range srv.Protocols {
-				go func(name string) {
-					_, err := srv.ProtocolRefresh(url.Values{"protocol": []string{name}}, nil)
-					if err != nil {
-						log.Println(err)
-					}
-				}(name)
+			for name, insts := range srv.Protocols {
+				for key := range insts {
+					go func(name, key string) {
+						_, err := srv.ProtocolRefresh(url.Values{
+							"protocol": []string{name},
+							"key":      []string{key},
+						}, nil)
+						if err != nil {
+							log.Println(err)
+						}
+					}(name, key)
+				}
 			}
 		}
 		srv.stateFile = stateFile
-	}
-	for k := range protocol.Get() {
-		if srv.Protocols[k] == nil {
-			srv.Protocols[k] = new(protocol.Instance)
-		}
 	}
 	go srv.audio()
 	go func() {
@@ -195,10 +199,12 @@ func (s *Server) save() {
 		log.Println(err)
 		return
 	}
-	if err := toml.NewEncoder(f).Encode(s); err != nil {
+	b, err := json.MarshalIndent(s, "", "  ")
+	if err != nil {
 		log.Println(err)
 		return
 	}
+	f.Write(b)
 	if err := os.Rename(tmp, s.stateFile); err != nil {
 		log.Println(err)
 		return
@@ -211,7 +217,8 @@ func (srv *Server) GetMux() *http.ServeMux {
 	router.GET("/api/list", JSON(srv.List))
 	router.GET("/api/playlist/change", JSON(srv.PlaylistChange))
 	router.GET("/api/playlist/get", JSON(srv.PlaylistGet))
-	router.GET("/api/protocol/update", JSON(srv.ProtocolUpdate))
+	router.GET("/api/protocol/add", JSON(srv.ProtocolAdd))
+	router.GET("/api/protocol/remove", JSON(srv.ProtocolRemove))
 	router.GET("/api/protocol/get", JSON(srv.ProtocolGet))
 	router.GET("/api/protocol/list", JSON(srv.ProtocolList))
 	router.GET("/api/protocol/refresh", JSON(srv.ProtocolRefresh))
@@ -420,7 +427,7 @@ func (srv *Server) OAuth(w http.ResponseWriter, r *http.Request, ps httprouter.P
 		serveError(w, err)
 		return
 	}
-	instance, ok := srv.Protocols[name]
+	prots, ok := srv.Protocols[name]
 	if !ok || prot.OAuth == nil {
 		serveError(w, fmt.Errorf("bad protocol"))
 		return
@@ -430,10 +437,13 @@ func (srv *Server) OAuth(w http.ResponseWriter, r *http.Request, ps httprouter.P
 		serveError(w, err)
 		return
 	}
-	instance.OAuthToken = t
 	// "Bearer" was added for dropbox. It happens to work also with Google Music's
 	// OAuth. This may need to be changed to be protocol-specific in the future.
-	instance.OAuthToken.TokenType = "Bearer"
+	t.TokenType = "Bearer"
+	instance := &protocol.Instance{
+		OAuthToken: t,
+	}
+	prots[t.AccessToken] = instance
 	srv.Save()
 	go srv.ProtocolRefresh(url.Values{"protocol": []string{name}}, nil)
 	http.Redirect(w, r, "/", http.StatusFound)
@@ -489,17 +499,25 @@ func (srv *Server) ProtocolList(form url.Values, ps httprouter.Params) (interfac
 	return srv.Protocols, nil
 }
 
+func (srv *Server) GetInstance(name, key string) (*protocol.Instance, error) {
+	prots, ok := srv.Protocols[name]
+	if !ok {
+		return nil, fmt.Errorf("unknown protocol: %s", name)
+	}
+	inst := prots[key]
+	if inst == nil {
+		return nil, fmt.Errorf("unknown key: %s", key)
+	}
+	return inst, nil
+}
+
 func (srv *Server) ProtocolRefresh(form url.Values, ps httprouter.Params) (interface{}, error) {
 	p := form.Get("protocol")
-	inst := srv.Protocols[p]
-	if inst == nil {
-		return nil, fmt.Errorf("unknown protocol")
+	key := form.Get("key")
+	inst, err := srv.GetInstance(p, key)
+	if err != nil {
+		return nil, err
 	}
-	if len(inst.Params) == 0 && inst.OAuthToken == nil {
-		return nil, nil
-	}
-	// On error, still process songs. Needed because it is valid to clear
-	// instances.
 	songs, err := protocol.ListSongs(p, inst)
 	for id := range srv.songs {
 		if id.Protocol == p {
@@ -507,17 +525,48 @@ func (srv *Server) ProtocolRefresh(form url.Values, ps httprouter.Params) (inter
 		}
 	}
 	for id, s := range songs {
-		srv.songs[SongID{Protocol: p, ID: id}] = s
+		srv.songs[SongID{
+			Protocol: p,
+			Key:      key,
+			ID:       id,
+		}] = s
 	}
 	srv.Save()
 	return nil, err
 }
 
-func (srv *Server) ProtocolUpdate(form url.Values, ps httprouter.Params) (interface{}, error) {
+func (srv *Server) ProtocolAdd(form url.Values, ps httprouter.Params) (interface{}, error) {
 	p := form.Get("protocol")
-	params := form["params"]
-	srv.Protocols[p].Params = params
+	prots, ok := srv.Protocols[p]
+	if !ok {
+		return nil, fmt.Errorf("unknown protocol: %v", p)
+	}
+	inst := &protocol.Instance{
+		Params: form["params"],
+	}
+	if len(inst.Params) == 0 {
+		return nil, fmt.Errorf("missing params")
+	}
+	form.Set("key", inst.Params[0])
+	prots[inst.Params[0]] = inst
 	return srv.ProtocolRefresh(form, ps)
+}
+
+func (srv *Server) ProtocolRemove(form url.Values, ps httprouter.Params) (interface{}, error) {
+	p := form.Get("protocol")
+	k := form.Get("key")
+	prots, ok := srv.Protocols[p]
+	if !ok {
+		return nil, fmt.Errorf("unknown protocol: %v", p)
+	}
+	delete(prots, k)
+	for id := range srv.songs {
+		if id.Protocol == p && id.Key == k {
+			delete(srv.songs, id)
+		}
+	}
+	srv.Save()
+	return nil, nil
 }
 
 // Takes form values:

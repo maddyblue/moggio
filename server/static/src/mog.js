@@ -71,12 +71,11 @@ var ProtocolParam = React.createClass({
 			value: event.target.value,
 		});
 		this.props.change();
-
 	},
 	render: function() {
 		return (
 			<li>
-				{this.props.key} <input type="text" onChange={this.paramChange} value={this.state.value} />
+				{this.props.key} <input type="text" onChange={this.paramChange} value={this.state.value || this.props.value} disabled={this.props.disabled ? 'disabled' : ''} />
 			</li>
 		);
 	}
@@ -86,7 +85,7 @@ var ProtocolOAuth = React.createClass({
 	render: function() {
 		var token;
 		if (this.props.token) {
-			token = <div>Connected until {this.props.token.Expiry}</div>;
+			token = <div>Connected until {this.props.token.expiry}</div>;
 		}
 		return (
 			<li>
@@ -105,7 +104,8 @@ var Protocol = React.createClass({
 	},
 	getDefaultProps: function() {
 		return {
-			current: {},
+			instance: {},
+			params: {},
 		};
 	},
 	setSave: function() {
@@ -121,9 +121,9 @@ var Protocol = React.createClass({
 		}, this);
 		params.push({
 			name: 'protocol',
-			value: this.props.key,
+			value: this.props.protocol,
 		});
-		$.get('/api/protocol/update?' + $.param(params))
+		$.get('/api/protocol/add?' + $.param(params))
 			.success(function() {
 				this.setState({save: false});
 			}.bind(this))
@@ -131,28 +131,39 @@ var Protocol = React.createClass({
 				alert(result.responseText);
 			});
 	},
+	remove: function() {
+		$.get('/api/protocol/remove?' + $.param({
+			protocol: this.props.protocol,
+			key: this.props.name,
+		}));
+	},
 	render: function() {
 		var params = [];
+		var disabled = !!this.props.name;
 		if (this.props.params.Params) {
 			params = this.props.params.Params.map(function(param, idx) {
-				var current = this.props.current.Params || [];
-				return <ProtocolParam key={param} ref={idx} value={current[idx]} change={this.setSave} />;
+				var current = this.props.instance.Params || [];;
+				return <ProtocolParam key={param} ref={idx} value={current[idx]} change={this.setSave} disabled={disabled} />;
 			}.bind(this));
 		}
 		if (this.props.params.OAuthURL) {
-			params.push(<ProtocolOAuth url={this.props.params.OAuthURL} token={this.props.current.OAuthToken} />);
+			params.push(<ProtocolOAuth key={'oauth-' + this.props.key} url={this.props.params.OAuthURL} token={this.props.instance.OAuthToken} disabled={disabled} />);
 		}
 		var save;
 		if (this.state.save) {
 			save = <button onClick={this.save}>save</button>;
 		}
-		return (
-			<div key={this.props.key}>
-				<h2>{this.props.key}</h2>
+		var title;
+		if (this.props.name) {
+			title = <h3>{this.props.protocol}: {this.props.name}
+					<small><button onClick={this.remove}>remove</button></small>
+				</h3>;
+		}
+		return <div>
+				{title}
 				<ul>{params}</ul>
 				{save}
-			</div>
-		);
+			</div>;
 	}
 });
 
@@ -161,6 +172,7 @@ var Protocols = React.createClass({
 		return {
 			available: {},
 			current: {},
+			selected: 'file',
 		};
 	},
 	componentDidMount: function() {
@@ -171,13 +183,32 @@ var Protocols = React.createClass({
 			this.setState({current: result});
 		}.bind(this));
 	},
+	handleChange: function(event) {
+		this.setState({selected: event.target.value});
+	},
 	render: function() {
-		var keys = Object.keys(this.state.available);
+		var keys = Object.keys(this.state.available) || [];
 		keys.sort();
-		var protocols = keys.map(function(protocol) {
-			return <Protocol key={protocol} params={this.state.available[protocol]} current={this.state.current[protocol]} />;
+		var options = keys.map(function(protocol) {
+			return <option key={protocol}>{protocol}</option>;
 		}.bind(this));
-		return <div>{protocols}</div>;
+		var protocols = [];
+		_.each(this.state.current, function(instances, protocol) {
+			_.each(instances, function(inst, key) {
+				protocols.push(<Protocol key={'current-' + protocol + '-' + key} protocol={protocol} params={this.state.available[protocol]} instance={inst} name={key} />);
+			}, this);
+		}, this);
+		var selected;
+		if (this.state.selected) {
+			selected = <Protocol key={'selected-' + this.state.selected} protocol={this.state.selected} params={this.state.available[this.state.selected]} />;
+		}
+		return <div>
+			<h2>New Protocol</h2>
+			<select onChange={this.handleChange} value={this.state.selected}>{options}</select>
+			{selected}
+			<h2>Existing Protocols</h2>
+			{protocols}
+		</div>;
 	}
 });
 
