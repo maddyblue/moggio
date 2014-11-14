@@ -35,27 +35,27 @@ type Song struct {
 func NewSong(rf codec.Reader) (*Song, error) {
 	s := &Song{Reader: rf}
 	_, _, err := s.Init()
-	s.Close()
 	return s, err
 }
 
 func (s *Song) Init() (sampleRate, channels int, err error) {
-	r, _, err := s.Reader()
-	if err != nil {
-		return 0, 0, err
-	}
-	s.decoder = &mpa.Decoder{Input: r}
-	s.r = r
-	if err := s.decoder.DecodeFrame(); err != nil {
-		return 0, 0, err
+	if s.decoder == nil {
+		r, _, err := s.Reader()
+		if err != nil {
+			return 0, 0, err
+		}
+		s.decoder = &mpa.Decoder{Input: r}
+		s.r = r
+		if err := s.decoder.DecodeFrame(); err != nil {
+			r.Close()
+			return 0, 0, err
+		}
 	}
 	return s.decoder.SamplingFrequency(), s.decoder.NChannels(), nil
 }
 
 func (s *Song) Info() (codec.SongInfo, error) {
-	return codec.SongInfo{
-		Time: 0, // too hard to tell without decoding
-	}, nil
+	return codec.SongInfo{}, nil
 }
 
 func (s *Song) Play(n int) (r []float32, err error) {

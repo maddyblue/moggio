@@ -1,26 +1,77 @@
 package file
 
 import (
+	"encoding/gob"
 	"fmt"
 	"io"
 	"log"
 	"os"
 	"path/filepath"
 
+	"github.com/golang/oauth2"
 	"github.com/mjibson/mog/codec"
 	"github.com/mjibson/mog/protocol"
 )
 
 func init() {
-	protocol.Register("file", []string{"directory"}, List)
+	protocol.Register("file", []string{"directory"}, New)
+	gob.Register(new(File))
 }
 
-func List(inst *protocol.Instance) (protocol.SongList, error) {
-	if len(inst.Params) != 1 {
-		return nil, fmt.Errorf("file: bad params")
+func New(params []string, token *oauth2.Token) (protocol.Instance, error) {
+	if len(params) != 1 {
+		return nil, fmt.Errorf("expected one parameter")
 	}
+	return &File{
+		Path:  params[0],
+		Songs: make(protocol.SongList),
+	}, nil
+}
+
+type File struct {
+	Path  string
+	Songs protocol.SongList
+}
+
+func (f *File) Key() string {
+	return f.Path
+}
+
+func (f *File) Info(id string) (*codec.SongInfo, error) {
+	if _, ok := f.Songs[id]; !ok {
+		if _, err := f.List(); err != nil {
+			return nil, err
+		}
+	}
+	v := f.Songs[id]
+	if v == nil {
+		return nil, fmt.Errorf("could not find %v", id)
+	}
+	return v, nil
+}
+
+func (f *File) GetSong(id string) (codec.Song, error) {
+	path, num, err := protocol.ParseID(id)
+	if err != nil {
+		return nil, err
+	}
+	songs, _, err := codec.ByExtension(path, fileReader(path))
+	if err != nil {
+		return nil, err
+	}
+	return songs[num], nil
+}
+
+func (f *File) List() (protocol.SongList, error) {
+	if len(f.Songs) == 0 {
+		return f.Refresh()
+	}
+	return f.Songs, nil
+}
+
+func (f *File) Refresh() (protocol.SongList, error) {
 	songs := make(protocol.SongList)
-	err := filepath.Walk(inst.Params[0], func(path string, info os.FileInfo, err error) error {
+	err := filepath.Walk(f.Path, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -32,16 +83,20 @@ func List(inst *protocol.Instance) (protocol.SongList, error) {
 			return nil
 		}
 		defer f.Close()
-		ss, _, err := codec.Decode(fileReader(path))
-		if err != nil {
+		ss, _, err := codec.ByExtension(path, fileReader(path))
+		if err != nil || len(ss) == 0 {
 			return nil
 		}
 		for i, s := range ss {
 			id := fmt.Sprintf("%v-%v", i, path)
-			songs[id] = s
+			info, err := s.Info()
+			if err == nil {
+				songs[id] = &info
+			}
 		}
 		return nil
 	})
+	f.Songs = songs
 	return songs, err
 }
 

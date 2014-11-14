@@ -10,7 +10,7 @@ var Track = React.createClass({
 	play: function() {
 		var params = {
 			"clear": true,
-			"add": this.props.key
+			"add": this.props.Protocol + '|' + this.props.Key + '|' + this.props.ID
 		};
 		$.get('/api/playlist/change?' + $.param(params))
 			.success(function() {
@@ -21,7 +21,7 @@ var Track = React.createClass({
 		return (
 			<tr>
 				<td><button onClick={this.play}>&#x25b6;</button></td>
-				<td>{this.props.key}</td>
+				<td>{this.props.ID}</td>
 			</tr>
 		);
 	}
@@ -40,7 +40,7 @@ var TrackList = React.createClass({
 	},
 	render: function() {
 		var tracks = this.state.tracks.map(function (t) {
-			return <Track key={t} />;
+			return <Track {...t} />;
 		});
 		return (
 			<table>
@@ -142,7 +142,7 @@ var Protocol = React.createClass({
 		var disabled = !!this.props.name;
 		if (this.props.params.Params) {
 			params = this.props.params.Params.map(function(param, idx) {
-				var current = this.props.instance.Params || [];;
+				var current = this.props.instance.Params || [];
 				return <ProtocolParam key={param} ref={idx} value={current[idx]} change={this.setSave} disabled={disabled} />;
 			}.bind(this));
 		}
@@ -282,6 +282,7 @@ var Player = React.createClass({
 		}
 	},
 	startWS: function() {
+		return;
 		console.log('open ws');
 		var ws = new WebSocket('ws://' + window.location.host + '/ws/');
 		ws.onmessage = function(e) {

@@ -1,6 +1,7 @@
 package server
 
 import (
+	"bytes"
 	"encoding/json"
 	"io/ioutil"
 
@@ -13,7 +14,6 @@ import (
 	_ "github.com/mjibson/mog/codec/mpa"
 	_ "github.com/mjibson/mog/codec/nsf"
 	_ "github.com/mjibson/mog/protocol/file"
-	_ "github.com/mjibson/mog/protocol/gmusic"
 )
 
 func TestServer(t *testing.T) {
@@ -35,19 +35,24 @@ func TestServer(t *testing.T) {
 			b, _ := ioutil.ReadAll(resp.Body)
 			t.Fatalf("%s: %s", resp.Status, string(b))
 		}
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			t.Fatal(err)
+		}
+		resp.Body = ioutil.NopCloser(bytes.NewBuffer(body))
 		return resp
 	}
 
 	var resp *http.Response
-	resp = fetch("/api/protocol/update", url.Values{
+	resp = fetch("/api/protocol/add", url.Values{
 		"protocol": []string{"file"},
-		"params":   []string{".."},
+		"params":   []string{"../m"},
 	})
 	resp = fetch("/api/list", nil)
 	if resp.StatusCode != 200 {
 		t.Fatal("bad status")
 	}
-	songs := make([]string, 0)
+	songs := make([]SongID, 0)
 	if err := json.NewDecoder(resp.Body).Decode(&songs); err != nil {
 		t.Fatal(err)
 	}
@@ -56,16 +61,19 @@ func TestServer(t *testing.T) {
 	}
 	v := url.Values{
 		"add": []string{
-			"file|1-../mm3.nsf",
-			"file|2-../mm3.nsf",
-			"file|3-../mm3.nsf",
-			"file|4-../mm3.nsf",
+			"file|../m|1-../m/mm3.nsf",
+			"file|../m|2-../m/mm3.nsf",
+			"file|../m|3-../m/mm3.nsf",
+			"file|../m|4-../m/mm3.nsf",
 		},
 	}
 	resp = fetch("/api/playlist/change", v)
 	var pc PlaylistChange
 	if err := json.NewDecoder(resp.Body).Decode(&pc); err != nil {
 		t.Fatal(err)
+	}
+	if len(pc.Errors) > 0 {
+		t.Fatal(pc.Errors[0])
 	}
 	resp = fetch("/api/cmd/play", nil)
 	time.Sleep(time.Second)

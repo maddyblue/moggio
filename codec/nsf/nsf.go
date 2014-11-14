@@ -25,6 +25,7 @@ func ReadNSFSongs(rf codec.Reader) ([]codec.Song, error) {
 	songs := make([]codec.Song, n.Songs)
 	for i := range songs {
 		songs[i] = &NSFSong{
+			NSF:    n,
 			Index:  i + 1,
 			Reader: rf,
 		}
@@ -40,14 +41,16 @@ type NSFSong struct {
 }
 
 func (n *NSFSong) Init() (sampleRate, channels int, err error) {
-	r, _, err := n.Reader()
-	if err != nil {
-		return 0, 0, err
-	}
-	defer r.Close()
-	n.NSF, err = nsf.ReadNSF(r)
-	if err != nil {
-		return 0, 0, err
+	if n.NSF == nil {
+		r, _, err := n.Reader()
+		if err != nil {
+			return 0, 0, err
+		}
+		defer r.Close()
+		n.NSF, err = nsf.ReadNSF(r)
+		if err != nil {
+			return 0, 0, err
+		}
 	}
 	n.NSF.Init(n.Index)
 	n.Playing = true

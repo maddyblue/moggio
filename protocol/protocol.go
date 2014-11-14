@@ -2,55 +2,61 @@ package protocol
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
 
 	"github.com/golang/oauth2"
-
 	"github.com/mjibson/mog/codec"
 )
 
 type Protocol struct {
-	Params   []string
-	OAuth    *oauth2.Config
-	OAuthURL string
-
-	List List
+	*Params
+	OAuth       *oauth2.Config
+	newInstance func([]string, *oauth2.Token) (Instance, error)
 }
 
-type List func(*Instance) (SongList, error)
-
-type ProtocolParams struct {
+type Params struct {
 	Params   []string `json:",omitempty"`
 	OAuthURL string   `json:",omitempty"`
 }
 
-func (p *Protocol) ProtocolParams() ProtocolParams {
-	return ProtocolParams{
-		Params:   p.Params[:],
-		OAuthURL: p.OAuthURL,
-	}
+type Instance interface {
+	// Key returns a unique identifier for the instance.
+	Key() string
+	// List returns the list of available songs, possibly cached.
+	List() (SongList, error)
+	// Refresh forces an update of the song list.
+	Refresh() (SongList, error)
+	// Info returns information about one song.
+	Info(string) (*codec.SongInfo, error)
+	// GetSong returns a playable song.
+	GetSong(string) (codec.Song, error)
 }
 
-type Instance struct {
-	Params     []string      `json:",omitempty"`
-	OAuthToken *oauth2.Token `json:",omitempty"`
-}
+type SongList map[string]*codec.SongInfo
 
-type SongList map[string]codec.Song
+func (p *Protocol) NewInstance(params []string, token *oauth2.Token) (Instance, error) {
+	return p.newInstance(params, token)
+}
 
 var protocols = make(map[string]*Protocol)
 
-func Register(name string, params []string, list List) {
+func Register(name string, params []string, newInstance func([]string, *oauth2.Token) (Instance, error)) {
 	protocols[name] = &Protocol{
-		Params: params,
-		List:   list,
+		Params: &Params{
+			Params: params,
+		},
+		newInstance: newInstance,
 	}
 }
 
-func RegisterOAuth(name string, config *oauth2.Config, list List) {
+func RegisterOAuth(name string, config *oauth2.Config, newInstance func([]string, *oauth2.Token) (Instance, error)) {
 	protocols[name] = &Protocol{
-		OAuth:    config,
-		OAuthURL: config.AuthCodeURL("", "", ""),
-		List:     list,
+		Params: &Params{
+			OAuthURL: config.AuthCodeURL("", "", ""),
+		},
+		OAuth:       config,
+		newInstance: newInstance,
 	}
 }
 
@@ -62,18 +68,19 @@ func ByName(name string) (*Protocol, error) {
 	return p, nil
 }
 
-func Get() map[string]ProtocolParams {
-	m := make(map[string]ProtocolParams)
+func Get() map[string]Params {
+	m := make(map[string]Params)
 	for n, p := range protocols {
-		m[n] = p.ProtocolParams()
+		m[n] = *p.Params
 	}
 	return m
 }
 
-func ListSongs(name string, inst *Instance) (SongList, error) {
-	p, ok := protocols[name]
-	if !ok {
-		return nil, fmt.Errorf("unknown protocol")
+func ParseID(id string) (path string, num int, err error) {
+	sp := strings.SplitN(id, "-", 2)
+	i, err := strconv.Atoi(sp[0])
+	if len(sp) != 2 || err != nil {
+		return "", 0, fmt.Errorf("bad format")
 	}
-	return p.List(inst)
+	return sp[1], i, nil
 }

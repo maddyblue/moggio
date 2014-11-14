@@ -2,6 +2,7 @@
 package server
 
 import (
+	"encoding/gob"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -69,27 +70,12 @@ func (s SongID) String() string {
 	return fmt.Sprintf("%s|%s|%s", s.Protocol, s.Key, s.ID)
 }
 
-func (s SongID) MarshalJSON() ([]byte, error) {
-	return json.Marshal(s.String())
-}
-
-func (s *SongID) UnmarshalJSON(b []byte) error {
-	var v [3]string
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	s.Protocol = v[0]
-	s.Key = v[1]
-	s.ID = v[2]
-	return nil
-}
-
 type Server struct {
 	Playlist   Playlist
 	PlaylistID int
 	Repeat     bool
 	Random     bool
-	Protocols  map[string]map[string]*protocol.Instance
+	Protocols  map[string]map[string]protocol.Instance
 
 	// Current song data.
 	playlistIndex int
@@ -102,7 +88,7 @@ type Server struct {
 	waitch      chan struct{}
 	lock        sync.Locker
 	state       State
-	songs       map[SongID]codec.Song
+	songs       map[SongID]*codec.SongInfo
 	stateFile   string
 	savePending bool
 }
@@ -132,11 +118,11 @@ func New(stateFile string) (*Server, error) {
 	srv := Server{
 		ch:        make(chan command),
 		lock:      new(sync.Mutex),
-		songs:     make(map[SongID]codec.Song),
-		Protocols: make(map[string]map[string]*protocol.Instance),
+		songs:     make(map[SongID]*codec.SongInfo),
+		Protocols: make(map[string]map[string]protocol.Instance),
 	}
 	for name := range protocol.Get() {
-		srv.Protocols[name] = make(map[string]*protocol.Instance)
+		srv.Protocols[name] = make(map[string]protocol.Instance)
 	}
 	srv.lock.Lock()
 	defer srv.lock.Unlock()
@@ -146,17 +132,13 @@ func New(stateFile string) (*Server, error) {
 			return nil, err
 		} else {
 			defer f.Close()
-			if err := json.NewDecoder(f).Decode(&srv); err != nil {
+			if err := gob.NewDecoder(f).Decode(&srv); err != nil {
 				return nil, err
 			}
 			for name, insts := range srv.Protocols {
 				for key := range insts {
 					go func(name, key string) {
-						_, err := srv.ProtocolRefresh(url.Values{
-							"protocol": []string{name},
-							"key":      []string{key},
-						}, nil)
-						if err != nil {
+						if err := srv.protocolRefresh(name, key); err != nil {
 							log.Println(err)
 						}
 					}(name, key)
@@ -199,12 +181,10 @@ func (s *Server) save() {
 		log.Println(err)
 		return
 	}
-	b, err := json.MarshalIndent(s, "", "  ")
-	if err != nil {
+	if err := gob.NewEncoder(f).Encode(s); err != nil {
 		log.Println(err)
 		return
 	}
-	f.Write(b)
 	if err := os.Rename(tmp, s.stateFile); err != nil {
 		log.Println(err)
 		return
@@ -259,7 +239,6 @@ func index(w http.ResponseWriter, r *http.Request) {
 func (srv *Server) audio() {
 	var o output.Output
 	var t chan interface{}
-	var present bool
 	var dur time.Duration
 	srv.state = stateStop
 	var next, stop, tick, play, pause, prev func()
@@ -316,26 +295,26 @@ func (srv *Server) audio() {
 					return
 				}
 			}
+
 			srv.songID = srv.Playlist[srv.playlistIndex]
-			srv.song, present = srv.songs[srv.songID]
+			sid := srv.songID
 			srv.playlistIndex++
-			if !present {
+			song, err := srv.Protocols[sid.Protocol][sid.Key].GetSong(sid.ID)
+			if err != nil {
+				panic(err)
 				return
 			}
+			srv.song = song
 			sr, ch, err := srv.song.Init()
 			if err != nil {
+				srv.song.Close()
 				panic(err)
 			}
 			o, err = output.Get(sr, ch)
 			if err != nil {
 				panic(fmt.Errorf("mog: could not open audio (%v, %v): %v", sr, ch, err))
 			}
-			srv.info, err = srv.song.Info()
-			if err != nil {
-				log.Println(err)
-				next()
-				return
-			}
+			srv.info = *srv.songs[sid]
 			srv.elapsed = 0
 			dur = time.Second / (time.Duration(sr * ch))
 			log.Println("playing", srv.info, sr, ch, dur, time.Duration(4096)*dur)
@@ -440,12 +419,14 @@ func (srv *Server) OAuth(w http.ResponseWriter, r *http.Request, ps httprouter.P
 	// "Bearer" was added for dropbox. It happens to work also with Google Music's
 	// OAuth. This may need to be changed to be protocol-specific in the future.
 	t.TokenType = "Bearer"
-	instance := &protocol.Instance{
-		OAuthToken: t,
+	instance, err := prot.NewInstance(nil, t)
+	if err != nil {
+		serveError(w, err)
+		return
 	}
 	prots[t.AccessToken] = instance
 	srv.Save()
-	go srv.ProtocolRefresh(url.Values{"protocol": []string{name}}, nil)
+	go srv.ProtocolRefresh(url.Values{"protocol": []string{name}, "key": []string{instance.Key()}}, nil)
 	http.Redirect(w, r, "/", http.StatusFound)
 }
 
@@ -468,7 +449,7 @@ func (srv *Server) Cmd(form url.Values, ps httprouter.Params) (interface{}, erro
 }
 
 func (srv *Server) SongInfo(form url.Values, ps httprouter.Params) (interface{}, error) {
-	var si []codec.SongInfo
+	var si []*codec.SongInfo
 	for _, s := range form["song"] {
 		id, err := ParseSongID(s)
 		if err != nil {
@@ -478,11 +459,7 @@ func (srv *Server) SongInfo(form url.Values, ps httprouter.Params) (interface{},
 		if !ok {
 			return nil, fmt.Errorf("unknown song: %v", id)
 		}
-		info, err := song.Info()
-		if err != nil {
-			return nil, err
-		}
-		si = append(si, info)
+		si = append(si, song)
 	}
 	return si, nil
 }
@@ -499,7 +476,7 @@ func (srv *Server) ProtocolList(form url.Values, ps httprouter.Params) (interfac
 	return srv.Protocols, nil
 }
 
-func (srv *Server) GetInstance(name, key string) (*protocol.Instance, error) {
+func (srv *Server) GetInstance(name, key string) (protocol.Instance, error) {
 	prots, ok := srv.Protocols[name]
 	if !ok {
 		return nil, fmt.Errorf("unknown protocol: %s", name)
@@ -511,45 +488,49 @@ func (srv *Server) GetInstance(name, key string) (*protocol.Instance, error) {
 	return inst, nil
 }
 
-func (srv *Server) ProtocolRefresh(form url.Values, ps httprouter.Params) (interface{}, error) {
-	p := form.Get("protocol")
-	key := form.Get("key")
-	inst, err := srv.GetInstance(p, key)
+func (srv *Server) protocolRefresh(protocol, key string) error {
+	inst, err := srv.GetInstance(protocol, key)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	songs, err := protocol.ListSongs(p, inst)
+	songs, err := inst.List()
+	if err != nil {
+		return err
+	}
 	for id := range srv.songs {
-		if id.Protocol == p {
+		if id.Protocol == protocol {
 			delete(srv.songs, id)
 		}
 	}
 	for id, s := range songs {
 		srv.songs[SongID{
-			Protocol: p,
+			Protocol: protocol,
 			Key:      key,
 			ID:       id,
 		}] = s
 	}
 	srv.Save()
-	return nil, err
+	return err
+}
+
+func (srv *Server) ProtocolRefresh(form url.Values, ps httprouter.Params) (interface{}, error) {
+	p := form.Get("protocol")
+	key := form.Get("key")
+	return nil, srv.protocolRefresh(p, key)
 }
 
 func (srv *Server) ProtocolAdd(form url.Values, ps httprouter.Params) (interface{}, error) {
 	p := form.Get("protocol")
-	prots, ok := srv.Protocols[p]
-	if !ok {
-		return nil, fmt.Errorf("unknown protocol: %v", p)
+	prot, err := protocol.ByName(p)
+	if err != nil {
+		return nil, err
 	}
-	inst := &protocol.Instance{
-		Params: form["params"],
+	inst, err := prot.NewInstance(form["params"], nil)
+	if err != nil {
+		return nil, err
 	}
-	if len(inst.Params) == 0 {
-		return nil, fmt.Errorf("missing params")
-	}
-	form.Set("key", inst.Params[0])
-	prots[inst.Params[0]] = inst
-	return srv.ProtocolRefresh(form, ps)
+	srv.Protocols[p][inst.Key()] = inst
+	return nil, srv.protocolRefresh(p, inst.Key())
 }
 
 func (srv *Server) ProtocolRemove(form url.Values, ps httprouter.Params) (interface{}, error) {
@@ -595,7 +576,7 @@ func (srv *Server) PlaylistChange(form url.Values, ps httprouter.Params) (interf
 		}
 		if s, ok := srv.songs[id]; !ok {
 			t.Error("unknown id: %v", rem)
-		} else if s == srv.song {
+		} else if *s == srv.info {
 			srv.ch <- cmdStop
 		}
 		delete(m, id)

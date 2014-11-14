@@ -1,10 +1,13 @@
 package soundcloud
 
 import (
+	"encoding/gob"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
+	"strconv"
+	"time"
 
 	"code.google.com/p/google-api-go-client/googleapi"
 
@@ -17,6 +20,10 @@ import (
 
 var config *oauth2.Config
 var oauthClientID string
+
+func init() {
+	gob.Register(new(Soundcloud))
+}
 
 func Init(clientID, clientSecret, redirect string) {
 	c, err := oauth2.NewConfig(
@@ -34,19 +41,90 @@ func Init(clientID, clientSecret, redirect string) {
 	}
 	config = c
 	oauthClientID = clientID
-	protocol.RegisterOAuth("soundcloud", config, List)
+	protocol.RegisterOAuth("soundcloud", config, New)
 }
 
-func getService(token *oauth2.Token) (*soundcloud.Service, *http.Client, error) {
+func (s *Soundcloud) getService() (*soundcloud.Service, *http.Client, error) {
 	t := config.NewTransport()
-	t.SetToken(token)
+	t.SetToken(s.Token)
 	c := &http.Client{Transport: t}
-	s, err := soundcloud.New(c, token)
-	return s, c, err
+	svc, err := soundcloud.New(c, s.Token)
+	return svc, c, err
 }
 
-func List(inst *protocol.Instance) (protocol.SongList, error) {
-	service, client, err := getService(inst.OAuthToken)
+type Soundcloud struct {
+	Token     *oauth2.Token
+	Favorites map[string]*soundcloud.Favorite
+}
+
+func New(params []string, token *oauth2.Token) (protocol.Instance, error) {
+	if token == nil {
+		return nil, fmt.Errorf("expected oauth token")
+	}
+	return &Soundcloud{
+		Token: token,
+	}, nil
+}
+
+func (s *Soundcloud) Key() string {
+	return s.Token.AccessToken
+}
+
+func (s *Soundcloud) Info(id string) (*codec.SongInfo, error) {
+	f := s.Favorites[id]
+	if f == nil {
+		return nil, fmt.Errorf("could not find %v", id)
+	}
+	return toInfo(f), nil
+}
+
+func toInfo(f *soundcloud.Favorite) *codec.SongInfo {
+	return &codec.SongInfo{
+		Time:   time.Duration(f.Duration) * time.Millisecond,
+		Artist: f.User.Username,
+		Title:  f.Title,
+	}
+}
+
+func (s *Soundcloud) SongList() protocol.SongList {
+	m := make(protocol.SongList)
+	for k, f := range s.Favorites {
+		m[k] = toInfo(f)
+	}
+	return m
+}
+
+func (s *Soundcloud) List() (protocol.SongList, error) {
+	if len(s.Favorites) == 0 {
+		return s.Refresh()
+	}
+	return s.SongList(), nil
+}
+
+func (s *Soundcloud) GetSong(id string) (codec.Song, error) {
+	fmt.Println("SOUNDCLOUD", id)
+	_, client, err := s.getService()
+	if err != nil {
+		return nil, err
+	}
+	f := s.Favorites[id]
+	if f == nil {
+		return nil, fmt.Errorf("bad id: %v", id)
+	}
+	return mpa.NewSong(func() (io.ReadCloser, int64, error) {
+		res, err := client.Get(f.StreamURL + "?client_id=" + oauthClientID)
+		if err != nil {
+			return nil, 0, err
+		}
+		if err := googleapi.CheckResponse(res); err != nil {
+			return nil, 0, err
+		}
+		return res.Body, 0, nil
+	})
+}
+
+func (s *Soundcloud) Refresh() (protocol.SongList, error) {
+	service, _, err := s.getService()
 	if err != nil {
 		return nil, err
 	}
@@ -54,28 +132,10 @@ func List(inst *protocol.Instance) (protocol.SongList, error) {
 	if err != nil {
 		return nil, err
 	}
-	songs := make(protocol.SongList)
-	var ss []codec.Song
+	favs := make(map[string]*soundcloud.Favorite)
 	for _, f := range favorites {
-		f := f
-		ss, err = mpa.NewSongs(func() (io.ReadCloser, int64, error) {
-			fmt.Println("DROPBOX SOUNDCLOUD", f.Title)
-			res, err := client.Get(f.StreamURL + "?client_id=" + oauthClientID)
-			if err != nil {
-				return nil, 0, err
-			}
-			if err := googleapi.CheckResponse(res); err != nil {
-				return nil, 0, err
-			}
-			return res.Body, 0, nil
-		})
-		if err != nil {
-			continue
-		}
-		for i, v := range ss {
-			id := fmt.Sprintf("%v-%v", i, f.ID)
-			songs[id] = v
-		}
+		favs[strconv.FormatInt(f.ID, 10)] = f
 	}
-	return songs, err
+	s.Favorites = favs
+	return s.SongList(), err
 }

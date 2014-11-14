@@ -3,7 +3,7 @@
 
 var TrackListRow = React.createClass({displayName: 'TrackListRow',
 	render: function() {
-		return (React.DOM.tr(null, React.DOM.td(null, this.props.protocol), React.DOM.td(null, this.props.id)));
+		return (React.createElement("tr", null, React.createElement("td", null, this.props.protocol), React.createElement("td", null, this.props.id)));
 	}
 });
 
@@ -11,7 +11,7 @@ var Track = React.createClass({displayName: 'Track',
 	play: function() {
 		var params = {
 			"clear": true,
-			"add": this.props.key
+			"add": this.props.Protocol + '|' + this.props.Key + '|' + this.props.ID
 		};
 		$.get('/api/playlist/change?' + $.param(params))
 			.success(function() {
@@ -20,9 +20,9 @@ var Track = React.createClass({displayName: 'Track',
 	},
 	render: function() {
 		return (
-			React.DOM.tr(null, 
-				React.DOM.td(null, React.DOM.button({onClick: this.play}, "▶")), 
-				React.DOM.td(null, this.props.key)
+			React.createElement("tr", null, 
+				React.createElement("td", null, React.createElement("button", {onClick: this.play}, "▶")), 
+				React.createElement("td", null, this.props.ID)
 			)
 		);
 	}
@@ -41,11 +41,11 @@ var TrackList = React.createClass({displayName: 'TrackList',
 	},
 	render: function() {
 		var tracks = this.state.tracks.map(function (t) {
-			return Track({key: t});
+			return React.createElement(Track, React.__spread({},  t));
 		});
 		return (
-			React.DOM.table(null, 
-				React.DOM.tbody(null, tracks)
+			React.createElement("table", null, 
+				React.createElement("tbody", null, tracks)
 			)
 		);
 	}
@@ -75,8 +75,8 @@ var ProtocolParam = React.createClass({displayName: 'ProtocolParam',
 	},
 	render: function() {
 		return (
-			React.DOM.li(null, 
-				this.props.key, " ", React.DOM.input({type: "text", onChange: this.paramChange, value: this.state.value || this.props.value, disabled: this.props.disabled ? 'disabled' : ''})
+			React.createElement("li", null, 
+				this.props.key, " ", React.createElement("input", {type: "text", onChange: this.paramChange, value: this.state.value || this.props.value, disabled: this.props.disabled ? 'disabled' : ''})
 			)
 		);
 	}
@@ -86,12 +86,12 @@ var ProtocolOAuth = React.createClass({displayName: 'ProtocolOAuth',
 	render: function() {
 		var token;
 		if (this.props.token) {
-			token = React.DOM.div(null, "Connected until ", this.props.token.expiry);
+			token = React.createElement("div", null, "Connected until ", this.props.token.expiry);
 		}
 		return (
-			React.DOM.li(null, 
+			React.createElement("li", null, 
 				token, 
-				React.DOM.a({href: this.props.url}, "connect")
+				React.createElement("a", {href: this.props.url}, "connect")
 			)
 		);
 	}
@@ -143,26 +143,26 @@ var Protocol = React.createClass({displayName: 'Protocol',
 		var disabled = !!this.props.name;
 		if (this.props.params.Params) {
 			params = this.props.params.Params.map(function(param, idx) {
-				var current = this.props.instance.Params || [];;
-				return ProtocolParam({key: param, ref: idx, value: current[idx], change: this.setSave, disabled: disabled});
+				var current = this.props.instance.Params || [];
+				return React.createElement(ProtocolParam, {key: param, ref: idx, value: current[idx], change: this.setSave, disabled: disabled});
 			}.bind(this));
 		}
 		if (this.props.params.OAuthURL) {
-			params.push(ProtocolOAuth({key: 'oauth-' + this.props.key, url: this.props.params.OAuthURL, token: this.props.instance.OAuthToken, disabled: disabled}));
+			params.push(React.createElement(ProtocolOAuth, {key: 'oauth-' + this.props.key, url: this.props.params.OAuthURL, token: this.props.instance.OAuthToken, disabled: disabled}));
 		}
 		var save;
 		if (this.state.save) {
-			save = React.DOM.button({onClick: this.save}, "save");
+			save = React.createElement("button", {onClick: this.save}, "save");
 		}
 		var title;
 		if (this.props.name) {
-			title = React.DOM.h3(null, this.props.protocol, ": ", this.props.name, 
-					React.DOM.small(null, React.DOM.button({onClick: this.remove}, "remove"))
+			title = React.createElement("h3", null, this.props.protocol, ": ", this.props.name, 
+					React.createElement("small", null, React.createElement("button", {onClick: this.remove}, "remove"))
 				);
 		}
-		return React.DOM.div(null, 
+		return React.createElement("div", null, 
 				title, 
-				React.DOM.ul(null, params), 
+				React.createElement("ul", null, params), 
 				save
 			);
 	}
@@ -191,23 +191,23 @@ var Protocols = React.createClass({displayName: 'Protocols',
 		var keys = Object.keys(this.state.available) || [];
 		keys.sort();
 		var options = keys.map(function(protocol) {
-			return React.DOM.option({key: protocol}, protocol);
+			return React.createElement("option", {key: protocol}, protocol);
 		}.bind(this));
 		var protocols = [];
 		_.each(this.state.current, function(instances, protocol) {
 			_.each(instances, function(inst, key) {
-				protocols.push(Protocol({key: 'current-' + protocol + '-' + key, protocol: protocol, params: this.state.available[protocol], instance: inst, name: key}));
+				protocols.push(React.createElement(Protocol, {key: 'current-' + protocol + '-' + key, protocol: protocol, params: this.state.available[protocol], instance: inst, name: key}));
 			}, this);
 		}, this);
 		var selected;
 		if (this.state.selected) {
-			selected = Protocol({key: 'selected-' + this.state.selected, protocol: this.state.selected, params: this.state.available[this.state.selected]});
+			selected = React.createElement(Protocol, {key: 'selected-' + this.state.selected, protocol: this.state.selected, params: this.state.available[this.state.selected]});
 		}
-		return React.DOM.div(null, 
-			React.DOM.h2(null, "New Protocol"), 
-			React.DOM.select({onChange: this.handleChange, value: this.state.selected}, options), 
+		return React.createElement("div", null, 
+			React.createElement("h2", null, "New Protocol"), 
+			React.createElement("select", {onChange: this.handleChange, value: this.state.selected}, options), 
 			selected, 
-			React.DOM.h2(null, "Existing Protocols"), 
+			React.createElement("h2", null, "Existing Protocols"), 
 			protocols
 		);
 	}
@@ -228,22 +228,22 @@ var Link = React.createClass({displayName: 'Link',
 		event.preventDefault();
 	},
 	render: function() {
-		return React.DOM.li(null, React.DOM.a({href: this.props.href, onClick: this.click}, this.props.name))
+		return React.createElement("li", null, React.createElement("a", {href: this.props.href, onClick: this.click}, this.props.name))
 	}
 });
 
 var Navigation = React.createClass({displayName: 'Navigation',
 	render: function() {
 		return (
-			React.DOM.ul(null, 
-				Link({href: "/list", name: "List", handler: TrackList, index: true}), 
-				Link({href: "/protocols", name: "Protocols", handler: Protocols})
+			React.createElement("ul", null, 
+				React.createElement(Link, {href: "/list", name: "List", handler: TrackList, index: true}), 
+				React.createElement(Link, {href: "/protocols", name: "Protocols", handler: Protocols})
 			)
 		);
 	}
 });
 
-React.renderComponent(Navigation(null), document.getElementById('navigation'));
+React.renderComponent(React.createElement(Navigation, null), document.getElementById('navigation'));
 
 function router() {
 	var component = routes[window.location.pathname];
@@ -283,6 +283,7 @@ var Player = React.createClass({displayName: 'Player',
 		}
 	},
 	startWS: function() {
+		return;
 		console.log('open ws');
 		var ws = new WebSocket('ws://' + window.location.host + '/ws/');
 		ws.onmessage = function(e) {
@@ -305,30 +306,30 @@ var Player = React.createClass({displayName: 'Player',
 	},
 	render: function() {
 		var player = (
-			React.DOM.div(null, 
-				React.DOM.button({onClick: this.cmd('prev')}, "prev"), 
-				React.DOM.button({onClick: this.cmd('pause')}, "play/pause"), 
-				React.DOM.button({onClick: this.cmd('next')}, "next")
+			React.createElement("div", null, 
+				React.createElement("button", {onClick: this.cmd('prev')}, "prev"), 
+				React.createElement("button", {onClick: this.cmd('pause')}, "play/pause"), 
+				React.createElement("button", {onClick: this.cmd('next')}, "next")
 			)
 		);
 		var status;
 		if (!this.state.status) {
-			status = React.DOM.div(null, "unknown");
+			status = React.createElement("div", null, "unknown");
 		} else {
 			status = (
-				React.DOM.ul(null, 
-					React.DOM.li(null, "cache: ", this.state.cache), 
-					React.DOM.li(null, "pl: ", this.state.status.Playlist), 
-					React.DOM.li(null, "state: ", this.state.status.State), 
-					React.DOM.li(null, "song: ", this.state.status.Song), 
-					React.DOM.li(null, "elapsed: ", this.state.status.Elapsed), 
-					React.DOM.li(null, "time: ", this.state.status.Time)
+				React.createElement("ul", null, 
+					React.createElement("li", null, "cache: ", this.state.cache), 
+					React.createElement("li", null, "pl: ", this.state.status.Playlist), 
+					React.createElement("li", null, "state: ", this.state.status.State), 
+					React.createElement("li", null, "song: ", this.state.status.Song), 
+					React.createElement("li", null, "elapsed: ", this.state.status.Elapsed), 
+					React.createElement("li", null, "time: ", this.state.status.Time)
 				)
 			);
 		};
-		return React.DOM.div(null, player, status);
+		return React.createElement("div", null, player, status);
 	}
 });
 
-React.renderComponent(Player(null), document.getElementById('player'));
+React.renderComponent(React.createElement(Player, null), document.getElementById('player'));
 },{}]},{},[1]);

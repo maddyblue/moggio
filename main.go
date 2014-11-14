@@ -11,15 +11,19 @@ import (
 	"strings"
 	"time"
 
+	"github.com/mjibson/mog/server"
+	"gopkg.in/fsnotify.v1"
+
+	// codecs
 	_ "github.com/mjibson/mog/codec/mpa"
 	_ "github.com/mjibson/mog/codec/nsf"
+
+	// protocols
 	"github.com/mjibson/mog/protocol/drive"
 	"github.com/mjibson/mog/protocol/dropbox"
 	_ "github.com/mjibson/mog/protocol/file"
 	_ "github.com/mjibson/mog/protocol/gmusic"
 	"github.com/mjibson/mog/protocol/soundcloud"
-	"github.com/mjibson/mog/server"
-	"gopkg.in/fsnotify.v1"
 )
 
 var (

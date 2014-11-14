@@ -8,6 +8,8 @@ import (
 	"bufio"
 	"errors"
 	"io"
+	"path/filepath"
+	"strings"
 )
 
 // ErrFormat indicates that decoding encountered an unknown format.
@@ -103,7 +105,12 @@ func Decode(rf Reader) ([]Song, string, error) {
 	return m, f.name, err
 }
 
-func ByExtension(ext string, rf Reader) ([]Song, string, error) {
+func ByExtension(path string, rf Reader) ([]Song, string, error) {
+	ext := filepath.Ext(path)
+	ext = strings.Trim(ext, ".")
+	if ext == "" {
+		ext = path
+	}
 	c, ok := allExtensions[ext]
 	if !ok {
 		return nil, "", nil
