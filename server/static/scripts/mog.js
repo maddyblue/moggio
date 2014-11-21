@@ -264,7 +264,7 @@ function getSong(cached, id, cb) {
 		}
 		return;
 	}
-	$.get('/api/song/info?song=' + encodeURIComponent(id))
+	$.get('/api/song/info?song=' + encodeURIComponent(JSON.stringify(id)))
 		.success(function(data) {
 			songCache[id] = data[0].Title;
 			if (songCache[id] != cached) {
@@ -278,12 +278,11 @@ var Player = React.createClass({displayName: 'Player',
 		return {};
 	},
 	componentDidUpdate: function(props, state) {
-		if (state.status && state.status.Song) {
+		if (state.status && state.status.Song && state.status.Song.ID) {
 			getSong(this.state.cache, state.status.Song, this.setState.bind(this));
 		}
 	},
 	startWS: function() {
-		return;
 		console.log('open ws');
 		var ws = new WebSocket('ws://' + window.location.host + '/ws/');
 		ws.onmessage = function(e) {

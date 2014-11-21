@@ -451,8 +451,8 @@ func (srv *Server) Cmd(form url.Values, ps httprouter.Params) (interface{}, erro
 func (srv *Server) SongInfo(form url.Values, ps httprouter.Params) (interface{}, error) {
 	var si []*codec.SongInfo
 	for _, s := range form["song"] {
-		id, err := ParseSongID(s)
-		if err != nil {
+		var id SongID
+		if err := json.Unmarshal([]byte(s), &id); err != nil {
 			return nil, err
 		}
 		song, ok := srv.songs[id]
