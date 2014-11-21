@@ -73,7 +73,7 @@ func (n *NSFSong) Info() (si codec.SongInfo, err error) {
 			Artist: n.NSF.Artist,
 			Album:  n.NSF.Song,
 			Track:  float64(n.Index),
-			Title:  fmt.Sprintf("%s:%d", n.NSF.Song, n.Index),
+			Title:  fmt.Sprintf("%s:%02d", n.NSF.Song, n.Index),
 		}
 		return
 	}
