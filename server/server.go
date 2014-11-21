@@ -582,8 +582,8 @@ func (srv *Server) PlaylistChange(form url.Values, ps httprouter.Params) (interf
 		delete(m, id)
 	}
 	for _, add := range form["add"] {
-		id, err := ParseSongID(add)
-		if err != nil {
+		var id SongID
+		if err := json.Unmarshal([]byte(add), &id); err != nil {
 			t.Error(err.Error())
 			continue
 		}
@@ -610,9 +610,16 @@ func (p *PlaylistChange) Error(format string, a ...interface{}) {
 }
 
 func (s *Server) List(form url.Values, ps httprouter.Params) (interface{}, error) {
-	songs := make([]SongID, 0)
-	for id := range s.songs {
-		songs = append(songs, id)
+	type item struct {
+		ID   SongID
+		Info *codec.SongInfo
+	}
+	songs := make([]*item, 0)
+	for id, info := range s.songs {
+		songs = append(songs, &item{
+			ID:   id,
+			Info: info,
+		})
 	}
 	return songs, nil
 }

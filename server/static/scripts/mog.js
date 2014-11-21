@@ -11,7 +11,7 @@ var Track = React.createClass({displayName: 'Track',
 	play: function() {
 		var params = {
 			"clear": true,
-			"add": this.props.Protocol + '|' + this.props.Key + '|' + this.props.ID
+			"add": JSON.stringify(this.props.ID)
 		};
 		$.get('/api/playlist/change?' + $.param(params))
 			.success(function() {
@@ -22,7 +22,9 @@ var Track = React.createClass({displayName: 'Track',
 		return (
 			React.createElement("tr", null, 
 				React.createElement("td", null, React.createElement("button", {onClick: this.play}, "▶")), 
-				React.createElement("td", null, this.props.ID)
+				React.createElement("td", null, this.props.Info.Title), 
+				React.createElement("td", null, this.props.Info.Artist), 
+				React.createElement("td", null, this.props.Info.Album)
 			)
 		);
 	}
@@ -45,6 +47,14 @@ var TrackList = React.createClass({displayName: 'TrackList',
 		});
 		return (
 			React.createElement("table", null, 
+				React.createElement("thead", null, 
+					React.createElement("tr", null, 
+						React.createElement("th", null), 
+						React.createElement("th", null, "Name"), 
+						React.createElement("th", null, "Artist"), 
+						React.createElement("th", null, "Album")
+					)
+				), 
 				React.createElement("tbody", null, tracks)
 			)
 		);
