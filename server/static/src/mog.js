@@ -20,8 +20,7 @@ var Track = React.createClass({
 	render: function() {
 		return (
 			<tr>
-				<td><button onClick={this.play}>&#x25b6;</button></td>
-				<td>{this.props.Info.Title}</td>
+				<td><button onClick={this.play}>&#x25b6;</button> {this.props.Info.Title}</td>
 				<td>{this.props.Info.Artist}</td>
 				<td>{this.props.Info.Album}</td>
 			</tr>
@@ -48,7 +47,6 @@ var TrackList = React.createClass({
 			<table>
 				<thead>
 					<tr>
-						<th></th>
 						<th>Name</th>
 						<th>Artist</th>
 						<th>Album</th>

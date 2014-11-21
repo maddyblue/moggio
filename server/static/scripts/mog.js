@@ -21,8 +21,7 @@ var Track = React.createClass({displayName: 'Track',
 	render: function() {
 		return (
 			React.createElement("tr", null, 
-				React.createElement("td", null, React.createElement("button", {onClick: this.play}, "▶")), 
-				React.createElement("td", null, this.props.Info.Title), 
+				React.createElement("td", null, React.createElement("button", {onClick: this.play}, "▶"), " ", this.props.Info.Title), 
 				React.createElement("td", null, this.props.Info.Artist), 
 				React.createElement("td", null, this.props.Info.Album)
 			)
@@ -49,7 +48,6 @@ var TrackList = React.createClass({displayName: 'TrackList',
 			React.createElement("table", null, 
 				React.createElement("thead", null, 
 					React.createElement("tr", null, 
-						React.createElement("th", null), 
 						React.createElement("th", null, "Name"), 
 						React.createElement("th", null, "Artist"), 
 						React.createElement("th", null, "Album")
