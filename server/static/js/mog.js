@@ -245,7 +245,7 @@ var Link = React.createClass({displayName: 'Link',
 var Navigation = React.createClass({displayName: 'Navigation',
 	render: function() {
 		return (
-			React.createElement("ul", null, 
+			React.createElement("ul", {className: "nav navbar-nav"}, 
 				React.createElement(Link, {href: "/list", name: "List", handler: TrackList, index: true}), 
 				React.createElement(Link, {href: "/protocols", name: "Protocols", handler: Protocols})
 			)
@@ -253,7 +253,7 @@ var Navigation = React.createClass({displayName: 'Navigation',
 	}
 });
 
-React.renderComponent(React.createElement(Navigation, null), document.getElementById('navigation'));
+React.renderComponent(React.createElement(Navigation, null), document.getElementById('navbar'));
 
 function router() {
 	var component = routes[window.location.pathname];
@@ -336,9 +336,10 @@ var Player = React.createClass({displayName: 'Player',
 				)
 			);
 		};
-		return React.createElement("div", null, player, status);
+		return React.createElement("div", null, player);
 	}
 });
 
 React.renderComponent(React.createElement(Player, null), document.getElementById('player'));
+
 },{}]},{},[1]);

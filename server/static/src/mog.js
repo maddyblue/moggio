@@ -244,7 +244,7 @@ var Link = React.createClass({
 var Navigation = React.createClass({
 	render: function() {
 		return (
-			<ul>
+			<ul className="nav navbar-nav">
 				<Link href="/list" name="List" handler={TrackList} index={true} />
 				<Link href="/protocols" name="Protocols" handler={Protocols} />
 			</ul>
@@ -252,7 +252,7 @@ var Navigation = React.createClass({
 	}
 });
 
-React.renderComponent(<Navigation />, document.getElementById('navigation'));
+React.renderComponent(<Navigation />, document.getElementById('navbar'));
 
 function router() {
 	var component = routes[window.location.pathname];
@@ -335,7 +335,7 @@ var Player = React.createClass({
 				</ul>
 			);
 		};
-		return <div>{player}{status}</div>;
+		return <div>{player}</div>;
 	}
 });
 

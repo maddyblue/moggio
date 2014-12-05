@@ -39,14 +39,14 @@ func main() {
 		watch(".", "*.go", quit)
 		base := filepath.Join("server", "static")
 		src := filepath.Join(base, "src")
-		scripts := filepath.Join(base, "scripts")
+		scripts := filepath.Join(base, "js")
 		args, _ := filepath.Glob(filepath.Join(src, "*.js"))
 		sort.Strings(args)
 		args = append(args, "-o", filepath.Join(scripts, "mog.js"))
 		args = append([]string{"-t", "reactify"}, args...)
 		browserify := run("browserify", args...)
 		watch(src, "*.js", browserify)
-		browserify()
+		go browserify()
 	}
 	redir := DefaultAddr
 	if strings.HasPrefix(redir, ":") {
