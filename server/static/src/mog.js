@@ -304,7 +304,6 @@ var Player = React.createClass({
 		}
 	},
 	startWS: function() {
-		console.log('open ws');
 		var ws = new WebSocket('ws://' + window.location.host + '/ws/');
 		ws.onmessage = function(e) {
 			this.setState({status: JSON.parse(e.data)});
