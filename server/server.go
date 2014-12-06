@@ -5,6 +5,7 @@ import (
 	"encoding/gob"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
@@ -191,7 +192,22 @@ func (s *Server) save() {
 	}
 }
 
-func (srv *Server) GetMux() *http.ServeMux {
+var indexHTML []byte
+
+func (srv *Server) GetMux(devMode bool) *http.ServeMux {
+	var err error
+	webFS := FS(devMode)
+	if devMode {
+		log.Println("using local web assets")
+	}
+	index, err := webFS.Open("/static/index.html")
+	if err != nil {
+		log.Fatal(err)
+	}
+	indexHTML, err = ioutil.ReadAll(index)
+	if err != nil {
+		log.Fatal(err)
+	}
 	router := httprouter.New()
 	router.GET("/api/status", JSON(srv.Status))
 	router.GET("/api/list", JSON(srv.List))
@@ -205,10 +221,9 @@ func (srv *Server) GetMux() *http.ServeMux {
 	router.GET("/api/song/info", JSON(srv.SongInfo))
 	router.GET("/api/cmd/:cmd", JSON(srv.Cmd))
 	router.GET("/api/oauth/:protocol", srv.OAuth)
-	fs := http.FileServer(http.Dir(dir))
 	mux := http.NewServeMux()
-	mux.Handle("/static/", fs)
-	mux.HandleFunc("/", index)
+	mux.Handle("/static/", http.FileServer(webFS))
+	mux.HandleFunc("/", Index)
 	mux.Handle("/api/", router)
 	mux.Handle("/ws/", websocket.Handler(srv.WebSocket))
 	return mux
@@ -217,7 +232,7 @@ func (srv *Server) GetMux() *http.ServeMux {
 // ListenAndServe listens on the TCP network address addr and then calls
 // Serve to handle requests on incoming connections.
 func (srv *Server) ListenAndServe(addr string) error {
-	mux := srv.GetMux()
+	mux := srv.GetMux(true)
 	log.Println("mog: listening on", addr)
 	return http.ListenAndServe(addr, mux)
 }
@@ -232,8 +247,8 @@ func (srv *Server) WebSocket(ws *websocket.Conn) {
 	}
 }
 
-func index(w http.ResponseWriter, r *http.Request) {
-	http.ServeFile(w, r, filepath.Join(dir, "static", "index.html"))
+func Index(w http.ResponseWriter, r *http.Request) {
+	w.Write(indexHTML)
 }
 
 func (srv *Server) audio() {

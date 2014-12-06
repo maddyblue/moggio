@@ -21,7 +21,7 @@ func TestServer(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	ts := httptest.NewServer(srv.GetMux())
+	ts := httptest.NewServer(srv.GetMux(true))
 	defer ts.Close()
 	client := &http.Client{Timeout: time.Second}
 	fetch := func(path string, values url.Values) *http.Response {
