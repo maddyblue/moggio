@@ -48,12 +48,15 @@ var TrackList = React.createClass({
 	},
 	componentDidMount: function() {
 		$.get('/api/list', function(result) {
+			result.forEach(function(t) {
+				t.ID.uid = t.ID.Protocol + "|" + t.ID.Key + "|" + t.ID.ID;
+			});
 			this.setState({tracks: result});
 		}.bind(this));
 	},
 	render: function() {
 		var tracks = this.state.tracks.map(function (t) {
-			return <Track {...t} />;
+			return <Track key={t.ID.uid} {...t} />;
 		});
 		return (
 			<table className="table">

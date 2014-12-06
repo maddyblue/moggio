@@ -49,12 +49,15 @@ var TrackList = React.createClass({displayName: 'TrackList',
 	},
 	componentDidMount: function() {
 		$.get('/api/list', function(result) {
+			result.forEach(function(t) {
+				t.ID.uid = t.ID.Protocol + "|" + t.ID.Key + "|" + t.ID.ID;
+			});
 			this.setState({tracks: result});
 		}.bind(this));
 	},
 	render: function() {
 		var tracks = this.state.tracks.map(function (t) {
-			return React.createElement(Track, React.__spread({},  t));
+			return React.createElement(Track, React.__spread({key: t.ID.uid},  t));
 		});
 		return (
 			React.createElement("table", {className: "table"}, 
