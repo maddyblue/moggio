@@ -264,14 +264,15 @@ var Navigation = React.createClass({displayName: 'Navigation',
 	}
 });
 
-React.renderComponent(React.createElement(Navigation, null), document.getElementById('navbar'));
+var navigation = React.createElement(Navigation, null);
+React.render(navigation, document.getElementById('navbar'));
 
 function router() {
 	var component = routes[window.location.pathname];
 	if (!component) {
 		alert('unknown route');
 	} else {
-		React.renderComponent(component(), document.getElementById('main'));
+		React.render(React.createElement(component, {key: window.location.pathname}), document.getElementById('main'));
 	}
 }
 router();
@@ -351,6 +352,7 @@ var Player = React.createClass({displayName: 'Player',
 	}
 });
 
-React.renderComponent(React.createElement(Player, null), document.getElementById('player'));
+var player = React.createElement(Player, null);
+React.render(player, document.getElementById('player'));
 
 },{}]},{},[1]);
