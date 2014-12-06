@@ -644,8 +644,8 @@ func (s *Server) status() *Status {
 		Playlist: s.PlaylistID,
 		State:    s.state,
 		Song:     s.songID,
-		Elapsed:  s.elapsed.Seconds(),
-		Time:     s.info.Time.Seconds(),
+		Elapsed:  s.elapsed,
+		Time:     s.info.Time,
 	}
 }
 
@@ -660,10 +660,10 @@ type Status struct {
 	State State
 	// Song ID.
 	Song SongID
-	// Elapsed time of current song in seconds.
-	Elapsed float64
-	// Duration of current song in seconds.
-	Time float64
+	// Elapsed time of current song.
+	Elapsed time.Duration
+	// Duration of current song.
+	Time time.Duration
 }
 
 func serveError(w http.ResponseWriter, err error) {

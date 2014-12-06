@@ -7,6 +7,17 @@ var TrackListRow = React.createClass({displayName: 'TrackListRow',
 	}
 });
 
+var Time = React.createClass({displayName: 'Time',
+	render: function() {
+		var t = moment.duration(this.props.time / 1e6);
+		var s = t.seconds().toString();
+		if (s.length == 1) {
+			s = "0" + s;
+		}
+		return React.createElement("span", null, t.minutes(), ":", s);
+	}
+});
+
 var Track = React.createClass({displayName: 'Track',
 	play: function() {
 		var params = {
@@ -21,7 +32,8 @@ var Track = React.createClass({displayName: 'Track',
 	render: function() {
 		return (
 			React.createElement("tr", null, 
-				React.createElement("td", null, React.createElement("button", {className: "btn btn-default", onClick: this.play}, "▶"), " ", this.props.Info.Title), 
+				React.createElement("td", null, React.createElement("button", {className: "btn btn-default btn-sm", onClick: this.play}, "▶"), " ", this.props.Info.Title), 
+				React.createElement("td", null, React.createElement(Time, {time: this.props.Info.Time})), 
 				React.createElement("td", null, this.props.Info.Artist), 
 				React.createElement("td", null, this.props.Info.Album)
 			)
@@ -45,10 +57,11 @@ var TrackList = React.createClass({displayName: 'TrackList',
 			return React.createElement(Track, React.__spread({},  t));
 		});
 		return (
-			React.createElement("table", null, 
+			React.createElement("table", {className: "table"}, 
 				React.createElement("thead", null, 
 					React.createElement("tr", null, 
 						React.createElement("th", null, "Name"), 
+						React.createElement("th", null, "Time"), 
 						React.createElement("th", null, "Artist"), 
 						React.createElement("th", null, "Album")
 					)
@@ -322,8 +335,8 @@ var Player = React.createClass({displayName: 'Player',
 					React.createElement("li", null, "pl: ", this.state.status.Playlist), 
 					React.createElement("li", null, "state: ", this.state.status.State), 
 					React.createElement("li", null, "song: ", this.state.status.Song), 
-					React.createElement("li", null, "elapsed: ", this.state.status.Elapsed), 
-					React.createElement("li", null, "time: ", this.state.status.Time)
+					React.createElement("li", null, "elapsed: ", React.createElement(Time, {time: this.state.status.Elapsed})), 
+					React.createElement("li", null, "time: ", React.createElement(Time, {time: this.state.status.Time}))
 				)
 			);
 		};

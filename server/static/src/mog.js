@@ -6,6 +6,17 @@ var TrackListRow = React.createClass({
 	}
 });
 
+var Time = React.createClass({
+	render: function() {
+		var t = moment.duration(this.props.time / 1e6);
+		var s = t.seconds().toString();
+		if (s.length == 1) {
+			s = "0" + s;
+		}
+		return <span>{t.minutes()}:{s}</span>;
+	}
+});
+
 var Track = React.createClass({
 	play: function() {
 		var params = {
@@ -20,7 +31,8 @@ var Track = React.createClass({
 	render: function() {
 		return (
 			<tr>
-				<td><button className="btn btn-default" onClick={this.play}>&#x25b6;</button> {this.props.Info.Title}</td>
+				<td><button className="btn btn-default btn-sm" onClick={this.play}>&#x25b6;</button> {this.props.Info.Title}</td>
+				<td><Time time={this.props.Info.Time} /></td>
 				<td>{this.props.Info.Artist}</td>
 				<td>{this.props.Info.Album}</td>
 			</tr>
@@ -44,10 +56,11 @@ var TrackList = React.createClass({
 			return <Track {...t} />;
 		});
 		return (
-			<table>
+			<table className="table">
 				<thead>
 					<tr>
 						<th>Name</th>
+						<th>Time</th>
 						<th>Artist</th>
 						<th>Album</th>
 					</tr>
@@ -321,8 +334,8 @@ var Player = React.createClass({
 					<li>pl: {this.state.status.Playlist}</li>
 					<li>state: {this.state.status.State}</li>
 					<li>song: {this.state.status.Song}</li>
-					<li>elapsed: {this.state.status.Elapsed}</li>
-					<li>time: {this.state.status.Time}</li>
+					<li>elapsed: <Time time={this.state.status.Elapsed} /></li>
+					<li>time: <Time time={this.state.status.Time} /></li>
 				</ul>
 			);
 		};
