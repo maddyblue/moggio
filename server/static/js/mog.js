@@ -21,7 +21,7 @@ var Track = React.createClass({displayName: 'Track',
 	render: function() {
 		return (
 			React.createElement("tr", null, 
-				React.createElement("td", null, React.createElement("button", {onClick: this.play}, "▶"), " ", this.props.Info.Title), 
+				React.createElement("td", null, React.createElement("button", {className: "btn btn-default", onClick: this.play}, "▶"), " ", this.props.Info.Title), 
 				React.createElement("td", null, this.props.Info.Artist), 
 				React.createElement("td", null, this.props.Info.Album)
 			)
@@ -312,19 +312,12 @@ var Player = React.createClass({displayName: 'Player',
 		};
 	},
 	render: function() {
-		var player = (
-			React.createElement("div", null, 
-				React.createElement("button", {onClick: this.cmd('prev')}, "prev"), 
-				React.createElement("button", {onClick: this.cmd('pause')}, "play/pause"), 
-				React.createElement("button", {onClick: this.cmd('next')}, "next")
-			)
-		);
 		var status;
 		if (!this.state.status) {
 			status = React.createElement("div", null, "unknown");
 		} else {
 			status = (
-				React.createElement("ul", null, 
+				React.createElement("ul", {className: "list-inline"}, 
 					React.createElement("li", null, "cache: ", this.state.cache), 
 					React.createElement("li", null, "pl: ", this.state.status.Playlist), 
 					React.createElement("li", null, "state: ", this.state.status.State), 
@@ -334,7 +327,14 @@ var Player = React.createClass({displayName: 'Player',
 				)
 			);
 		};
-		return React.createElement("div", null, player);
+		return (
+			React.createElement("ul", {className: "list-inline"}, 
+				React.createElement("li", null, React.createElement("button", {className: "btn btn-default", onClick: this.cmd('prev')}, "prev")), 
+				React.createElement("li", null, React.createElement("button", {className: "btn btn-default", onClick: this.cmd('pause')}, "play/pause")), 
+				React.createElement("li", null, React.createElement("button", {className: "btn btn-default", onClick: this.cmd('next')}, "next")), 
+				React.createElement("li", null, status)
+			)
+		);
 	}
 });
 

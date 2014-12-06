@@ -20,7 +20,7 @@ var Track = React.createClass({
 	render: function() {
 		return (
 			<tr>
-				<td><button onClick={this.play}>&#x25b6;</button> {this.props.Info.Title}</td>
+				<td><button className="btn btn-default" onClick={this.play}>&#x25b6;</button> {this.props.Info.Title}</td>
 				<td>{this.props.Info.Artist}</td>
 				<td>{this.props.Info.Album}</td>
 			</tr>
@@ -311,19 +311,12 @@ var Player = React.createClass({
 		};
 	},
 	render: function() {
-		var player = (
-			<div>
-				<button onClick={this.cmd('prev')}>prev</button>
-				<button onClick={this.cmd('pause')}>play/pause</button>
-				<button onClick={this.cmd('next')}>next</button>
-			</div>
-		);
 		var status;
 		if (!this.state.status) {
 			status = <div>unknown</div>;
 		} else {
 			status = (
-				<ul>
+				<ul className="list-inline">
 					<li>cache: {this.state.cache}</li>
 					<li>pl: {this.state.status.Playlist}</li>
 					<li>state: {this.state.status.State}</li>
@@ -333,7 +326,14 @@ var Player = React.createClass({
 				</ul>
 			);
 		};
-		return <div>{player}</div>;
+		return (
+			<ul className="list-inline">
+				<li><button className="btn btn-default" onClick={this.cmd('prev')}>prev</button></li>
+				<li><button className="btn btn-default" onClick={this.cmd('pause')}>play/pause</button></li>
+				<li><button className="btn btn-default" onClick={this.cmd('next')}>next</button></li>
+				<li>{status}</li>
+			</ul>
+		);
 	}
 });
 
