@@ -40,24 +40,35 @@ var Track = React.createClass({
 	}
 });
 
+var songCache = {};
+function getSongCache() {
+	var p = $.get('/api/list');
+	p.done(function(result) {
+		var sc = {};
+		result.forEach(function(t) {
+			var uid = t.ID.Protocol + "|" + t.ID.Key + "|" + t.ID.ID;
+			sc[uid] = t;
+		});
+		songCache = sc;
+	});
+	return p;
+}
+
 var TrackList = React.createClass({
 	getInitialState: function() {
 		return {
-			tracks: []
+			tracks: {},
 		};
 	},
 	componentDidMount: function() {
-		$.get('/api/list', function(result) {
-			result.forEach(function(t) {
-				t.ID.uid = t.ID.Protocol + "|" + t.ID.Key + "|" + t.ID.ID;
-			});
-			this.setState({tracks: result});
+		getSongCache().done(function() {
+			this.setState({tracks: songCache});
 		}.bind(this));
 	},
 	render: function() {
-		var tracks = this.state.tracks.map(function (t) {
-			return <Track key={t.ID.uid} {...t} />;
-		});
+		var tracks = _.map(this.state.tracks, (function (t, key) {
+			return <Track key={key} {...t} />;
+		}));
 		return (
 			<table className="table">
 				<thead>
@@ -279,32 +290,9 @@ function router() {
 }
 router();
 
-var songCache = {};
-function getSong(cached, id, cb) {
-	var lookup = songCache[id];
-	if (lookup) {
-		if (lookup != cached) {
-			cb({cache: lookup});
-		}
-		return;
-	}
-	$.get('/api/song/info?song=' + encodeURIComponent(JSON.stringify(id)))
-		.success(function(data) {
-			songCache[id] = data[0].Title;
-			if (songCache[id] != cached) {
-				cb({cache: songCache[id]});
-			}
-		});
-}
-
 var Player = React.createClass({
 	getInitialState: function() {
 		return {};
-	},
-	componentDidUpdate: function(props, state) {
-		if (state.status && state.status.Song && state.status.Song.ID) {
-			getSong(this.state.cache, state.status.Song, this.setState.bind(this));
-		}
 	},
 	startWS: function() {
 		var ws = new WebSocket('ws://' + window.location.host + '/ws/');
@@ -333,7 +321,6 @@ var Player = React.createClass({
 		} else {
 			status = (
 				<ul className="list-inline">
-					<li>cache: {this.state.cache}</li>
 					<li>pl: {this.state.status.Playlist}</li>
 					<li>state: {this.state.status.State}</li>
 					<li>song: {this.state.status.Song}</li>

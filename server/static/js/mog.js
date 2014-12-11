@@ -41,24 +41,35 @@ var Track = React.createClass({displayName: 'Track',
 	}
 });
 
+var songCache = {};
+function getSongCache() {
+	var p = $.get('/api/list');
+	p.done(function(result) {
+		var sc = {};
+		result.forEach(function(t) {
+			var uid = t.ID.Protocol + "|" + t.ID.Key + "|" + t.ID.ID;
+			sc[uid] = t;
+		});
+		songCache = sc;
+	});
+	return p;
+}
+
 var TrackList = React.createClass({displayName: 'TrackList',
 	getInitialState: function() {
 		return {
-			tracks: []
+			tracks: {},
 		};
 	},
 	componentDidMount: function() {
-		$.get('/api/list', function(result) {
-			result.forEach(function(t) {
-				t.ID.uid = t.ID.Protocol + "|" + t.ID.Key + "|" + t.ID.ID;
-			});
-			this.setState({tracks: result});
+		getSongCache().done(function() {
+			this.setState({tracks: songCache});
 		}.bind(this));
 	},
 	render: function() {
-		var tracks = this.state.tracks.map(function (t) {
-			return React.createElement(Track, React.__spread({key: t.ID.uid},  t));
-		});
+		var tracks = _.map(this.state.tracks, (function (t, key) {
+			return React.createElement(Track, React.__spread({key: key},  t));
+		}));
 		return (
 			React.createElement("table", {className: "table"}, 
 				React.createElement("thead", null, 
@@ -280,32 +291,9 @@ function router() {
 }
 router();
 
-var songCache = {};
-function getSong(cached, id, cb) {
-	var lookup = songCache[id];
-	if (lookup) {
-		if (lookup != cached) {
-			cb({cache: lookup});
-		}
-		return;
-	}
-	$.get('/api/song/info?song=' + encodeURIComponent(JSON.stringify(id)))
-		.success(function(data) {
-			songCache[id] = data[0].Title;
-			if (songCache[id] != cached) {
-				cb({cache: songCache[id]});
-			}
-		});
-}
-
 var Player = React.createClass({displayName: 'Player',
 	getInitialState: function() {
 		return {};
-	},
-	componentDidUpdate: function(props, state) {
-		if (state.status && state.status.Song && state.status.Song.ID) {
-			getSong(this.state.cache, state.status.Song, this.setState.bind(this));
-		}
 	},
 	startWS: function() {
 		var ws = new WebSocket('ws://' + window.location.host + '/ws/');
@@ -334,7 +322,6 @@ var Player = React.createClass({displayName: 'Player',
 		} else {
 			status = (
 				React.createElement("ul", {className: "list-inline"}, 
-					React.createElement("li", null, "cache: ", this.state.cache), 
 					React.createElement("li", null, "pl: ", this.state.status.Playlist), 
 					React.createElement("li", null, "state: ", this.state.status.State), 
 					React.createElement("li", null, "song: ", this.state.status.Song), 
