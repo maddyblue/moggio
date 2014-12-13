@@ -15,12 +15,11 @@ import (
 	"sync"
 	"time"
 
-	"code.google.com/p/go.net/websocket"
-
 	"github.com/julienschmidt/httprouter"
 	"github.com/mjibson/mog/codec"
 	"github.com/mjibson/mog/output"
 	"github.com/mjibson/mog/protocol"
+	"golang.org/x/net/websocket"
 )
 
 func ListenAndServe(stateFile, addr string) error {
