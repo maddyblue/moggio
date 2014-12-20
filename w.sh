@@ -3,7 +3,7 @@
 set -e
 
 escape () {
-	esc -o server/static.go -pkg server -prefix server server/static/index.html server/static/css server/static/fonts server/static/js
+	go generate
 }
 
 while true; do
