@@ -1,6 +1,24 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 /** @jsx React.DOM */
 
+var Actions = Reflux.createActions([
+	'protocols',
+	'status',
+	'tracks',
+]);
+
+var Stores = {};
+
+_.each(Actions, function(action, name) {
+	Stores[name] = Reflux.createStore({
+		init: function() {
+			this.listenTo(action, this.trigger);
+		}
+	});
+});
+
+// tracklist
+
 var TrackListRow = React.createClass({displayName: 'TrackListRow',
 	render: function() {
 		return (React.createElement("tr", null, React.createElement("td", null, this.props.protocol), React.createElement("td", null, this.props.id)));
@@ -41,30 +59,20 @@ var Track = React.createClass({displayName: 'Track',
 	}
 });
 
-var songCache = {};
-function getSongCache() {
-	var p = $.get('/api/list');
-	p.done(function(result) {
-		var sc = {};
-		result.forEach(function(t) {
-			var uid = t.ID.Protocol + "|" + t.ID.Key + "|" + t.ID.ID;
-			sc[uid] = t;
-		});
-		songCache = sc;
-	});
-	return p;
-}
-
 var TrackList = React.createClass({displayName: 'TrackList',
+	mixins: [Reflux.listenTo(Stores.tracks, 'setTracks')],
 	getInitialState: function() {
 		return {
 			tracks: {},
 		};
 	},
-	componentDidMount: function() {
-		getSongCache().done(function() {
-			this.setState({tracks: songCache});
-		}.bind(this));
+	setTracks: function(tracks) {
+		var sc = {};
+		tracks.forEach(function(t) {
+			var uid = t.ID.Protocol + "|" + t.ID.Key + "|" + t.ID.ID;
+			sc[uid] = t;
+		});
+		this.setState({tracks: sc});
 	},
 	render: function() {
 		var tracks = _.map(this.state.tracks, (function (t, key) {
@@ -82,6 +90,43 @@ var TrackList = React.createClass({displayName: 'TrackList',
 				), 
 				React.createElement("tbody", null, tracks)
 			)
+		);
+	}
+});
+
+// protocols
+
+var Protocols = React.createClass({displayName: 'Protocols',
+	mixins: [Reflux.listenTo(Stores.protocols, 'setState')],
+	getInitialState: function() {
+		return {
+			Available: {},
+			Current: {},
+			Selected: 'file',
+		};
+	},
+	render: function() {
+		var keys = Object.keys(this.state.Available) || [];
+		keys.sort();
+		var options = keys.map(function(protocol) {
+			return React.createElement("option", {key: protocol}, protocol);
+		}.bind(this));
+		var protocols = [];
+		_.each(this.state.Current, function(instances, protocol) {
+			_.each(instances, function(inst, key) {
+				protocols.push(React.createElement(Protocol, {key: 'current-' + protocol + '-' + key, protocol: protocol, params: this.state.Available[protocol], instance: inst, name: key}));
+			}, this);
+		}, this);
+		var selected;
+		if (this.state.Selected) {
+			selected = React.createElement(Protocol, {key: 'selected-' + this.state.Selected, protocol: this.state.Selected, params: this.state.Available[this.state.Selected]});
+		}
+		return React.createElement("div", null, 
+			React.createElement("h2", null, "New Protocol"), 
+			React.createElement("select", {onChange: this.handleChange, value: this.state.Selected}, options), 
+			selected, 
+			React.createElement("h2", null, "Existing Protocols"), 
+			protocols
 		);
 	}
 });
@@ -203,51 +248,6 @@ var Protocol = React.createClass({displayName: 'Protocol',
 	}
 });
 
-var Protocols = React.createClass({displayName: 'Protocols',
-	getInitialState: function() {
-		return {
-			available: {},
-			current: {},
-			selected: 'file',
-		};
-	},
-	componentDidMount: function() {
-		$.get('/api/protocol/get', function(result) {
-			this.setState({available: result});
-		}.bind(this));
-		$.get('/api/protocol/list', function(result) {
-			this.setState({current: result});
-		}.bind(this));
-	},
-	handleChange: function(event) {
-		this.setState({selected: event.target.value});
-	},
-	render: function() {
-		var keys = Object.keys(this.state.available) || [];
-		keys.sort();
-		var options = keys.map(function(protocol) {
-			return React.createElement("option", {key: protocol}, protocol);
-		}.bind(this));
-		var protocols = [];
-		_.each(this.state.current, function(instances, protocol) {
-			_.each(instances, function(inst, key) {
-				protocols.push(React.createElement(Protocol, {key: 'current-' + protocol + '-' + key, protocol: protocol, params: this.state.available[protocol], instance: inst, name: key}));
-			}, this);
-		}, this);
-		var selected;
-		if (this.state.selected) {
-			selected = React.createElement(Protocol, {key: 'selected-' + this.state.selected, protocol: this.state.selected, params: this.state.available[this.state.selected]});
-		}
-		return React.createElement("div", null, 
-			React.createElement("h2", null, "New Protocol"), 
-			React.createElement("select", {onChange: this.handleChange, value: this.state.selected}, options), 
-			selected, 
-			React.createElement("h2", null, "Existing Protocols"), 
-			protocols
-		);
-	}
-});
-
 var routes = {};
 
 var Link = React.createClass({displayName: 'Link',
@@ -268,6 +268,26 @@ var Link = React.createClass({displayName: 'Link',
 });
 
 var Navigation = React.createClass({displayName: 'Navigation',
+	componentDidMount: function() {
+		this.startWS();
+	},
+	startWS: function() {
+		var ws = new WebSocket('ws://' + window.location.host + '/ws/');
+		ws.onmessage = function(e) {
+			var d = JSON.parse(e.data);
+			if (d.Type != 'status') {
+				console.log(d.Type);
+			}
+			if (Actions[d.Type]) {
+				Actions[d.Type](d.Data);
+			} else {
+				console.log("missing action", d.Type);
+			}
+		}.bind(this);
+		ws.onclose = function() {
+			setTimeout(this.startWS, 1000);
+		}.bind(this);
+	},
 	render: function() {
 		return (
 			React.createElement("ul", {className: "nav navbar-nav"}, 
@@ -292,21 +312,7 @@ function router() {
 router();
 
 var Player = React.createClass({displayName: 'Player',
-	getInitialState: function() {
-		return {};
-	},
-	startWS: function() {
-		var ws = new WebSocket('ws://' + window.location.host + '/ws/');
-		ws.onmessage = function(e) {
-			this.setState({status: JSON.parse(e.data)});
-		}.bind(this);
-		ws.onclose = function() {
-			setTimeout(this.startWS, 1000);
-		}.bind(this);
-	},
-	componentDidMount: function() {
-		this.startWS();
-	},
+	mixins: [Reflux.listenTo(Stores.status, 'setState')],
 	cmd: function(cmd) {
 		return function() {
 			$.get('/api/cmd/' + cmd)
@@ -317,16 +323,16 @@ var Player = React.createClass({displayName: 'Player',
 	},
 	render: function() {
 		var status;
-		if (!this.state.status) {
+		if (!this.status) {
 			status = React.createElement("div", null, "unknown");
 		} else {
 			status = (
 				React.createElement("ul", {className: "list-inline"}, 
-					React.createElement("li", null, "pl: ", this.state.status.Playlist), 
-					React.createElement("li", null, "state: ", this.state.status.State), 
-					React.createElement("li", null, "song: ", this.state.status.Song), 
-					React.createElement("li", null, "elapsed: ", React.createElement(Time, {time: this.state.status.Elapsed})), 
-					React.createElement("li", null, "time: ", React.createElement(Time, {time: this.state.status.Time}))
+					React.createElement("li", null, "pl: ", this.status.Playlist), 
+					React.createElement("li", null, "state: ", this.status.State), 
+					React.createElement("li", null, "song: ", this.status.Song), 
+					React.createElement("li", null, "elapsed: ", React.createElement(Time, {time: this.status.Elapsed})), 
+					React.createElement("li", null, "time: ", React.createElement(Time, {time: this.status.Time}))
 				)
 			);
 		};
@@ -343,5 +349,4 @@ var Player = React.createClass({displayName: 'Player',
 
 var player = React.createElement(Player, null);
 React.render(player, document.getElementById('player'));
-
 },{}]},{},[1]);

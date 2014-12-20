@@ -1,5 +1,23 @@
 /** @jsx React.DOM */
 
+var Actions = Reflux.createActions([
+	'protocols',
+	'status',
+	'tracks',
+]);
+
+var Stores = {};
+
+_.each(Actions, function(action, name) {
+	Stores[name] = Reflux.createStore({
+		init: function() {
+			this.listenTo(action, this.trigger);
+		}
+	});
+});
+
+// tracklist
+
 var TrackListRow = React.createClass({
 	render: function() {
 		return (<tr><td>{this.props.protocol}</td><td>{this.props.id}</td></tr>);
@@ -40,30 +58,20 @@ var Track = React.createClass({
 	}
 });
 
-var songCache = {};
-function getSongCache() {
-	var p = $.get('/api/list');
-	p.done(function(result) {
-		var sc = {};
-		result.forEach(function(t) {
-			var uid = t.ID.Protocol + "|" + t.ID.Key + "|" + t.ID.ID;
-			sc[uid] = t;
-		});
-		songCache = sc;
-	});
-	return p;
-}
-
 var TrackList = React.createClass({
+	mixins: [Reflux.listenTo(Stores.tracks, 'setTracks')],
 	getInitialState: function() {
 		return {
 			tracks: {},
 		};
 	},
-	componentDidMount: function() {
-		getSongCache().done(function() {
-			this.setState({tracks: songCache});
-		}.bind(this));
+	setTracks: function(tracks) {
+		var sc = {};
+		tracks.forEach(function(t) {
+			var uid = t.ID.Protocol + "|" + t.ID.Key + "|" + t.ID.ID;
+			sc[uid] = t;
+		});
+		this.setState({tracks: sc});
 	},
 	render: function() {
 		var tracks = _.map(this.state.tracks, (function (t, key) {
@@ -82,6 +90,43 @@ var TrackList = React.createClass({
 				<tbody>{tracks}</tbody>
 			</table>
 		);
+	}
+});
+
+// protocols
+
+var Protocols = React.createClass({
+	mixins: [Reflux.listenTo(Stores.protocols, 'setState')],
+	getInitialState: function() {
+		return {
+			Available: {},
+			Current: {},
+			Selected: 'file',
+		};
+	},
+	render: function() {
+		var keys = Object.keys(this.state.Available) || [];
+		keys.sort();
+		var options = keys.map(function(protocol) {
+			return <option key={protocol}>{protocol}</option>;
+		}.bind(this));
+		var protocols = [];
+		_.each(this.state.Current, function(instances, protocol) {
+			_.each(instances, function(inst, key) {
+				protocols.push(<Protocol key={'current-' + protocol + '-' + key} protocol={protocol} params={this.state.Available[protocol]} instance={inst} name={key} />);
+			}, this);
+		}, this);
+		var selected;
+		if (this.state.Selected) {
+			selected = <Protocol key={'selected-' + this.state.Selected} protocol={this.state.Selected} params={this.state.Available[this.state.Selected]} />;
+		}
+		return <div>
+			<h2>New Protocol</h2>
+			<select onChange={this.handleChange} value={this.state.Selected}>{options}</select>
+			{selected}
+			<h2>Existing Protocols</h2>
+			{protocols}
+		</div>;
 	}
 });
 
@@ -202,51 +247,6 @@ var Protocol = React.createClass({
 	}
 });
 
-var Protocols = React.createClass({
-	getInitialState: function() {
-		return {
-			available: {},
-			current: {},
-			selected: 'file',
-		};
-	},
-	componentDidMount: function() {
-		$.get('/api/protocol/get', function(result) {
-			this.setState({available: result});
-		}.bind(this));
-		$.get('/api/protocol/list', function(result) {
-			this.setState({current: result});
-		}.bind(this));
-	},
-	handleChange: function(event) {
-		this.setState({selected: event.target.value});
-	},
-	render: function() {
-		var keys = Object.keys(this.state.available) || [];
-		keys.sort();
-		var options = keys.map(function(protocol) {
-			return <option key={protocol}>{protocol}</option>;
-		}.bind(this));
-		var protocols = [];
-		_.each(this.state.current, function(instances, protocol) {
-			_.each(instances, function(inst, key) {
-				protocols.push(<Protocol key={'current-' + protocol + '-' + key} protocol={protocol} params={this.state.available[protocol]} instance={inst} name={key} />);
-			}, this);
-		}, this);
-		var selected;
-		if (this.state.selected) {
-			selected = <Protocol key={'selected-' + this.state.selected} protocol={this.state.selected} params={this.state.available[this.state.selected]} />;
-		}
-		return <div>
-			<h2>New Protocol</h2>
-			<select onChange={this.handleChange} value={this.state.selected}>{options}</select>
-			{selected}
-			<h2>Existing Protocols</h2>
-			{protocols}
-		</div>;
-	}
-});
-
 var routes = {};
 
 var Link = React.createClass({
@@ -267,6 +267,26 @@ var Link = React.createClass({
 });
 
 var Navigation = React.createClass({
+	componentDidMount: function() {
+		this.startWS();
+	},
+	startWS: function() {
+		var ws = new WebSocket('ws://' + window.location.host + '/ws/');
+		ws.onmessage = function(e) {
+			var d = JSON.parse(e.data);
+			if (d.Type != 'status') {
+				console.log(d.Type);
+			}
+			if (Actions[d.Type]) {
+				Actions[d.Type](d.Data);
+			} else {
+				console.log("missing action", d.Type);
+			}
+		}.bind(this);
+		ws.onclose = function() {
+			setTimeout(this.startWS, 1000);
+		}.bind(this);
+	},
 	render: function() {
 		return (
 			<ul className="nav navbar-nav">
@@ -291,21 +311,7 @@ function router() {
 router();
 
 var Player = React.createClass({
-	getInitialState: function() {
-		return {};
-	},
-	startWS: function() {
-		var ws = new WebSocket('ws://' + window.location.host + '/ws/');
-		ws.onmessage = function(e) {
-			this.setState({status: JSON.parse(e.data)});
-		}.bind(this);
-		ws.onclose = function() {
-			setTimeout(this.startWS, 1000);
-		}.bind(this);
-	},
-	componentDidMount: function() {
-		this.startWS();
-	},
+	mixins: [Reflux.listenTo(Stores.status, 'setState')],
 	cmd: function(cmd) {
 		return function() {
 			$.get('/api/cmd/' + cmd)
@@ -316,16 +322,16 @@ var Player = React.createClass({
 	},
 	render: function() {
 		var status;
-		if (!this.state.status) {
+		if (!this.status) {
 			status = <div>unknown</div>;
 		} else {
 			status = (
 				<ul className="list-inline">
-					<li>pl: {this.state.status.Playlist}</li>
-					<li>state: {this.state.status.State}</li>
-					<li>song: {this.state.status.Song}</li>
-					<li>elapsed: <Time time={this.state.status.Elapsed} /></li>
-					<li>time: <Time time={this.state.status.Time} /></li>
+					<li>pl: {this.status.Playlist}</li>
+					<li>state: {this.status.State}</li>
+					<li>song: {this.status.Song}</li>
+					<li>elapsed: <Time time={this.status.Elapsed} /></li>
+					<li>time: <Time time={this.status.Time} /></li>
 				</ul>
 			);
 		};

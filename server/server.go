@@ -85,7 +85,7 @@ type Server struct {
 	elapsed       time.Duration
 
 	ch          chan command
-	waitch      chan struct{}
+	waitch      chan *waitData
 	lock        sync.Locker
 	state       State
 	songs       map[SongID]*codec.SongInfo
@@ -93,23 +93,68 @@ type Server struct {
 	savePending bool
 }
 
-func (srv *Server) wait() {
-	srv.lock.Lock()
-	if srv.waitch == nil {
-		srv.waitch = make(chan struct{})
-	}
-	srv.lock.Unlock()
-	<-srv.waitch
+type waitData struct {
+	Type waitType
+	Data interface{}
 }
 
-func (srv *Server) broadcast() {
+type waitType string
+
+const (
+	waitStatus    waitType = "status"
+	waitProtocols          = "protocols"
+	waitTracks             = "tracks"
+)
+
+func (srv *Server) wait() *waitData {
+	// This lock also prevents wait() attaching to waitch a possible second time
+	// before an existing broadcast() has completed because it holds the lock until
+	// all waitch receivers have been populated.
+	srv.lock.Lock()
+	if srv.waitch == nil {
+		srv.waitch = make(chan *waitData)
+	}
+	srv.lock.Unlock()
+	return <-srv.waitch
+}
+
+func (srv *Server) makeWaitData(wt waitType) *waitData {
+	var data interface{}
+	switch wt {
+	case waitProtocols:
+		data = struct {
+			Available interface{}
+			Current   interface{}
+		}{
+			protocol.Get(),
+			srv.Protocols,
+		}
+	case waitStatus:
+		data = srv.status()
+	case waitTracks:
+		data, _ = srv.List(nil, nil)
+	default:
+		panic("bad wait type")
+	}
+	return &waitData{
+		Type: wt,
+		Data: data,
+	}
+}
+
+func (srv *Server) broadcast(wt waitType) {
+	wd := srv.makeWaitData(wt)
 	srv.lock.Lock()
 	defer srv.lock.Unlock()
-	if srv.waitch == nil {
-		return
+Loop:
+	for {
+		select {
+		case srv.waitch <- wd:
+			// sent
+		default:
+			break Loop
+		}
 	}
-	close(srv.waitch)
-	srv.waitch = nil
 }
 
 var dir = filepath.Join("server")
@@ -149,8 +194,8 @@ func New(stateFile string) (*Server, error) {
 	}
 	go srv.audio()
 	go func() {
-		for _ = range time.Tick(time.Millisecond * 250) {
-			srv.broadcast()
+		for range time.Tick(time.Millisecond * 250) {
+			//srv.broadcast(waitStatus)
 		}
 	}()
 	return &srv, nil
@@ -237,11 +282,22 @@ func (srv *Server) ListenAndServe(addr string) error {
 }
 
 func (srv *Server) WebSocket(ws *websocket.Conn) {
-	for {
-		srv.wait()
-		if err := websocket.JSON.Send(ws, srv.status()); err != nil {
+	inits := []waitType{
+		waitProtocols,
+		waitStatus,
+		waitTracks,
+	}
+	for _, wt := range inits {
+		if err := websocket.JSON.Send(ws, srv.makeWaitData(wt)); err != nil {
 			log.Println(err)
-			break
+			return
+		}
+	}
+	for {
+		d := srv.wait()
+		if err := websocket.JSON.Send(ws, d); err != nil {
+			log.Println(err)
+			return
 		}
 	}
 }
@@ -524,6 +580,8 @@ func (srv *Server) protocolRefresh(protocol, key string) error {
 		}] = s
 	}
 	srv.Save()
+	srv.broadcast(waitTracks)
+	srv.broadcast(waitProtocols)
 	return err
 }
 
@@ -543,8 +601,12 @@ func (srv *Server) ProtocolAdd(form url.Values, ps httprouter.Params) (interface
 	if err != nil {
 		return nil, err
 	}
+	err = srv.protocolRefresh(p, inst.Key())
+	if err != nil {
+		return nil, err
+	}
 	srv.Protocols[p][inst.Key()] = inst
-	return nil, srv.protocolRefresh(p, inst.Key())
+	return nil, nil
 }
 
 func (srv *Server) ProtocolRemove(form url.Values, ps httprouter.Params) (interface{}, error) {
@@ -561,6 +623,8 @@ func (srv *Server) ProtocolRemove(form url.Values, ps httprouter.Params) (interf
 		}
 	}
 	srv.Save()
+	srv.broadcast(waitTracks)
+	srv.broadcast(waitProtocols)
 	return nil, nil
 }
 
