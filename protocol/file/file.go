@@ -22,6 +22,11 @@ func New(params []string, token *oauth2.Token) (protocol.Instance, error) {
 	if len(params) != 1 {
 		return nil, fmt.Errorf("expected one parameter")
 	}
+	f, err := os.Open(params[0])
+	if err != nil {
+		return nil, err
+	}
+	f.Close()
 	return &File{
 		Path:  params[0],
 		Songs: make(protocol.SongList),
