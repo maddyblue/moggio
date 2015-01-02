@@ -195,7 +195,7 @@ func New(stateFile string) (*Server, error) {
 	go srv.audio()
 	go func() {
 		for range time.Tick(time.Millisecond * 250) {
-			//srv.broadcast(waitStatus)
+			srv.broadcast(waitStatus)
 		}
 	}()
 	return &srv, nil
@@ -431,6 +431,7 @@ func (srv *Server) audio() {
 			default:
 				panic("unknown command")
 			}
+			srv.broadcast(waitStatus)
 		}
 	}
 }
@@ -601,11 +602,12 @@ func (srv *Server) ProtocolAdd(form url.Values, ps httprouter.Params) (interface
 	if err != nil {
 		return nil, err
 	}
+	srv.Protocols[p][inst.Key()] = inst
 	err = srv.protocolRefresh(p, inst.Key())
 	if err != nil {
+		delete(srv.Protocols[p], inst.Key())
 		return nil, err
 	}
-	srv.Protocols[p][inst.Key()] = inst
 	return nil, nil
 }
 

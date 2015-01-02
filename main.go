@@ -1,13 +1,13 @@
 package main
 
 import (
+	"bytes"
 	"flag"
 	"io"
 	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"sort"
 	"strings"
 	"time"
 
@@ -39,14 +39,8 @@ func main() {
 		watch(".", "*.go", quit)
 		base := filepath.Join("server", "static")
 		src := filepath.Join(base, "src")
-		scripts := filepath.Join(base, "js")
-		args, _ := filepath.Glob(filepath.Join(src, "*.js"))
-		sort.Strings(args)
-		args = append(args, "-o", filepath.Join(scripts, "mog.js"))
-		args = append([]string{"-t", "reactify"}, args...)
-		browserify := run("browserify", args...)
-		watch(src, "*.js", browserify)
-		go browserify()
+		watch(src, "*.js", jsx)
+		go jsx()
 	}
 	redir := DefaultAddr
 	if strings.HasPrefix(redir, ":") {
@@ -81,6 +75,48 @@ const DefaultAddr = ":6601"
 
 func quit() {
 	os.Exit(0)
+}
+
+func jsx() {
+	base := filepath.Join("server", "static")
+	src := filepath.Join(base, "src")
+	js := filepath.Join(base, "js")
+	log.Println("running jsx")
+	var rs []io.Reader
+	files := []string{
+		"mog.js",
+
+		"list.js",
+		"protocol.js",
+
+		"nav.js",
+	}
+	for _, name := range files {
+		f, err := os.Open(filepath.Join(src, name))
+		if err != nil {
+			panic(err)
+		}
+		defer f.Close()
+		rs = append(rs, f)
+	}
+	of, err := os.Create(filepath.Join(js, "mog.js"))
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer of.Close()
+	c := exec.Command("jsx")
+	c.Stdin = io.MultiReader(rs...)
+	c.Stdout = of
+	buf := new(bytes.Buffer)
+	c.Stderr = buf
+	if err := c.Start(); err != nil {
+		log.Fatal(err)
+	}
+	if err := c.Wait(); err != nil {
+		log.Println(buf.String())
+		log.Printf("jsx error: %v", err)
+	}
+	log.Println("jsx complete")
 }
 
 func run(name string, arg ...string) func() {

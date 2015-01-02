@@ -1,4 +1,3 @@
-(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 /** @jsx React.DOM */
 
 var Actions = Reflux.createActions([
@@ -16,9 +15,6 @@ _.each(Actions, function(action, name) {
 		}
 	});
 });
-
-// tracklist
-
 var TrackListRow = React.createClass({displayName: 'TrackListRow',
 	render: function() {
 		return (React.createElement("tr", null, React.createElement("td", null, this.props.protocol), React.createElement("td", null, this.props.id)));
@@ -93,9 +89,6 @@ var TrackList = React.createClass({displayName: 'TrackList',
 		);
 	}
 });
-
-// protocols
-
 var Protocols = React.createClass({displayName: 'Protocols',
 	mixins: [Reflux.listenTo(Stores.protocols, 'setState')],
 	getInitialState: function() {
@@ -209,7 +202,7 @@ var Protocol = React.createClass({displayName: 'Protocol',
 				this.setState({save: false});
 			}.bind(this))
 			.error(function(result) {
-				alert(result.responseText);
+				console.log(result.responseText);
 			});
 	},
 	remove: function() {
@@ -247,7 +240,6 @@ var Protocol = React.createClass({displayName: 'Protocol',
 			);
 	}
 });
-
 var routes = {};
 
 var Link = React.createClass({displayName: 'Link',
@@ -321,27 +313,30 @@ var Player = React.createClass({displayName: 'Player',
 				});
 		};
 	},
+	getInitialState: function() {
+		return {};
+	},
 	render: function() {
 		var status;
-		if (!this.status) {
-			status = React.createElement("div", null, "unknown");
+		if (!this.state.status) {
+			status = React.createElement("span", null, "unknown");
 		} else {
 			status = (
-				React.createElement("ul", {className: "list-inline"}, 
-					React.createElement("li", null, "pl: ", this.status.Playlist), 
-					React.createElement("li", null, "state: ", this.status.State), 
-					React.createElement("li", null, "song: ", this.status.Song), 
-					React.createElement("li", null, "elapsed: ", React.createElement(Time, {time: this.status.Elapsed})), 
-					React.createElement("li", null, "time: ", React.createElement(Time, {time: this.status.Time}))
+				React.createElement("span", null, 
+					React.createElement("span", null, "pl: ", this.state.status.Playlist), 
+					React.createElement("span", null, "state: ", this.state.status.State), 
+					React.createElement("span", null, "song: ", this.state.status.Song), 
+					React.createElement("span", null, "elapsed: ", React.createElement(Time, {time: this.state.status.Elapsed})), 
+					React.createElement("span", null, "time: ", React.createElement(Time, {time: this.state.status.Time}))
 				)
 			);
 		};
 		return (
-			React.createElement("ul", {className: "list-inline"}, 
-				React.createElement("li", null, React.createElement("button", {className: "btn btn-default", onClick: this.cmd('prev')}, "prev")), 
-				React.createElement("li", null, React.createElement("button", {className: "btn btn-default", onClick: this.cmd('pause')}, "play/pause")), 
-				React.createElement("li", null, React.createElement("button", {className: "btn btn-default", onClick: this.cmd('next')}, "next")), 
-				React.createElement("li", null, status)
+			React.createElement("div", null, 
+				React.createElement("span", null, React.createElement("button", {onClick: this.cmd('prev')}, "prev")), 
+				React.createElement("span", null, React.createElement("button", {onClick: this.cmd('pause')}, "play/pause")), 
+				React.createElement("span", null, React.createElement("button", {onClick: this.cmd('next')}, "next")), 
+				React.createElement("span", null, status)
 			)
 		);
 	}
@@ -349,4 +344,3 @@ var Player = React.createClass({displayName: 'Player',
 
 var player = React.createElement(Player, null);
 React.render(player, document.getElementById('player'));
-},{}]},{},[1]);
