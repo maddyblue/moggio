@@ -8,7 +8,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/golang/oauth2"
+	"golang.org/x/oauth2"
 	"github.com/mjibson/mog/codec"
 	"github.com/mjibson/mog/protocol"
 )

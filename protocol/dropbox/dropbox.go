@@ -4,13 +4,11 @@ import (
 	"encoding/gob"
 	"fmt"
 	"io"
-	"log"
-	"net/http"
 
-	"github.com/golang/oauth2"
 	"github.com/mjibson/mog/codec"
 	"github.com/mjibson/mog/protocol"
 	"github.com/mjibson/mog/protocol/dropbox/dropbox"
+	"golang.org/x/oauth2"
 )
 
 var config *oauth2.Config
@@ -20,27 +18,20 @@ func init() {
 }
 
 func Init(clientID, clientSecret, redirect string) {
-	c, err := oauth2.NewConfig(
-		&oauth2.Options{
-			ClientID:     clientID,
-			ClientSecret: clientSecret,
-			RedirectURL:  redirect + "dropbox",
+	config := &oauth2.Config{
+		ClientID:     clientID,
+		ClientSecret: clientSecret,
+		RedirectURL:  redirect + "dropbox",
+		Endpoint: oauth2.Endpoint{
+			AuthURL:  "https://www.dropbox.com/1/oauth2/authorize",
+			TokenURL: "https://api.dropbox.com/1/oauth2/token",
 		},
-		"https://www.dropbox.com/1/oauth2/authorize",
-		"https://api.dropbox.com/1/oauth2/token",
-	)
-	if err != nil {
-		log.Fatal(err)
 	}
-	config = c
 	protocol.RegisterOAuth("dropbox", config, New)
 }
 
 func (d *Dropbox) getService() (*dropbox.Service, error) {
-	t := config.NewTransport()
-	t.SetToken(d.Token)
-	c := &http.Client{Transport: t}
-	s, err := dropbox.New(c)
+	s, err := dropbox.New(config.Client(oauth2.NoContext, d.Token))
 	return s, err
 }
 

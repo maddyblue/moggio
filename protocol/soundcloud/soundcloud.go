@@ -4,18 +4,17 @@ import (
 	"encoding/gob"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"strconv"
 	"time"
 
 	"code.google.com/p/google-api-go-client/googleapi"
 
-	"github.com/golang/oauth2"
 	"github.com/mjibson/mog/codec"
 	"github.com/mjibson/mog/codec/mpa"
 	"github.com/mjibson/mog/protocol"
 	"github.com/mjibson/mog/protocol/soundcloud/soundcloud"
+	"golang.org/x/oauth2"
 )
 
 var config *oauth2.Config
@@ -26,28 +25,22 @@ func init() {
 }
 
 func Init(clientID, clientSecret, redirect string) {
-	c, err := oauth2.NewConfig(
-		&oauth2.Options{
-			ClientID:     clientID,
-			ClientSecret: clientSecret,
-			RedirectURL:  redirect + "soundcloud",
-			Scopes:       []string{"non-expiring"},
+	config := &oauth2.Config{
+		ClientID:     clientID,
+		ClientSecret: clientSecret,
+		RedirectURL:  redirect + "soundcloud",
+		Scopes:       []string{"non-expiring"},
+		Endpoint: oauth2.Endpoint{
+			AuthURL:  "https://soundcloud.com/connect",
+			TokenURL: "https://api.soundcloud.com/oauth2/token",
 		},
-		"https://soundcloud.com/connect",
-		"https://api.soundcloud.com/oauth2/token",
-	)
-	if err != nil {
-		log.Fatal(err)
 	}
-	config = c
 	oauthClientID = clientID
 	protocol.RegisterOAuth("soundcloud", config, New)
 }
 
 func (s *Soundcloud) getService() (*soundcloud.Service, *http.Client, error) {
-	t := config.NewTransport()
-	t.SetToken(s.Token)
-	c := &http.Client{Transport: t}
+	c := config.Client(oauth2.NoContext, s.Token)
 	svc, err := soundcloud.New(c, s.Token)
 	return svc, c, err
 }

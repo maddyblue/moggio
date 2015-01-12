@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/golang/oauth2"
+	"golang.org/x/oauth2"
 
 	"code.google.com/p/google-api-go-client/googleapi"
 )

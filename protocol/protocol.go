@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/golang/oauth2"
+	"golang.org/x/oauth2"
 	"github.com/mjibson/mog/codec"
 )
 
@@ -53,7 +53,7 @@ func Register(name string, params []string, newInstance func([]string, *oauth2.T
 func RegisterOAuth(name string, config *oauth2.Config, newInstance func([]string, *oauth2.Token) (Instance, error)) {
 	protocols[name] = &Protocol{
 		Params: &Params{
-			OAuthURL: config.AuthCodeURL("", "", ""),
+			OAuthURL: config.AuthCodeURL(""),
 		},
 		OAuth:       config,
 		newInstance: newInstance,

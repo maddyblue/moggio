@@ -20,6 +20,7 @@ import (
 	"github.com/mjibson/mog/output"
 	"github.com/mjibson/mog/protocol"
 	"golang.org/x/net/websocket"
+	"golang.org/x/oauth2"
 )
 
 func ListenAndServe(stateFile, addr string) error {
@@ -482,7 +483,7 @@ func (srv *Server) OAuth(w http.ResponseWriter, r *http.Request, ps httprouter.P
 		serveError(w, fmt.Errorf("bad protocol"))
 		return
 	}
-	t, err := prot.OAuth.Exchange(r.FormValue("code"))
+	t, err := prot.OAuth.Exchange(oauth2.NoContext, r.FormValue("code"))
 	if err != nil {
 		serveError(w, err)
 		return
