@@ -11,7 +11,11 @@ var Stores = {};
 _.each(Actions, function(action, name) {
 	Stores[name] = Reflux.createStore({
 		init: function() {
-			this.listenTo(action, this.trigger);
+			this.listenTo(action, this.update);
+		},
+		update: function(data) {
+			this.data = data;
+			this.trigger.apply(this, arguments);
 		}
 	});
 });

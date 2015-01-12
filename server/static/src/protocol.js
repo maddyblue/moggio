@@ -1,11 +1,12 @@
 var Protocols = React.createClass({
 	mixins: [Reflux.listenTo(Stores.protocols, 'setState')],
 	getInitialState: function() {
-		return {
+		var d = {
 			Available: {},
 			Current: {},
 			Selected: 'file',
 		};
+		return _.extend(d, Stores.protocols.data);
 	},
 	render: function() {
 		var keys = Object.keys(this.state.Available) || [];

@@ -42,7 +42,7 @@ var TrackList = React.createClass({
 	mixins: [Reflux.listenTo(Stores.tracks, 'setTracks')],
 	getInitialState: function() {
 		return {
-			tracks: {},
+			tracks: Stores.tracks.data
 		};
 	},
 	setTracks: function(tracks) {
