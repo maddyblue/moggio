@@ -103,6 +103,9 @@ var Protocols = React.createClass({displayName: "Protocols",
 		};
 		return _.extend(d, Stores.protocols.data);
 	},
+	handleChange: function(event) {
+		this.setState({Selected: event.target.value});
+	},
 	render: function() {
 		var keys = Object.keys(this.state.Available) || [];
 		keys.sort();
