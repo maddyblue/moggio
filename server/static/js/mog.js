@@ -11,17 +11,21 @@ var Stores = {};
 _.each(Actions, function(action, name) {
 	Stores[name] = Reflux.createStore({
 		init: function() {
-			this.listenTo(action, this.trigger);
+			this.listenTo(action, this.update);
+		},
+		update: function(data) {
+			this.data = data;
+			this.trigger.apply(this, arguments);
 		}
 	});
 });
-var TrackListRow = React.createClass({displayName: 'TrackListRow',
+var TrackListRow = React.createClass({displayName: "TrackListRow",
 	render: function() {
 		return (React.createElement("tr", null, React.createElement("td", null, this.props.protocol), React.createElement("td", null, this.props.id)));
 	}
 });
 
-var Time = React.createClass({displayName: 'Time',
+var Time = React.createClass({displayName: "Time",
 	render: function() {
 		var t = moment.duration(this.props.time / 1e6);
 		var s = t.seconds().toString();
@@ -32,7 +36,7 @@ var Time = React.createClass({displayName: 'Time',
 	}
 });
 
-var Track = React.createClass({displayName: 'Track',
+var Track = React.createClass({displayName: "Track",
 	play: function() {
 		var params = {
 			"clear": true,
@@ -55,11 +59,11 @@ var Track = React.createClass({displayName: 'Track',
 	}
 });
 
-var TrackList = React.createClass({displayName: 'TrackList',
+var TrackList = React.createClass({displayName: "TrackList",
 	mixins: [Reflux.listenTo(Stores.tracks, 'setTracks')],
 	getInitialState: function() {
 		return {
-			tracks: {},
+			tracks: Stores.tracks.data
 		};
 	},
 	setTracks: function(tracks) {
@@ -89,14 +93,15 @@ var TrackList = React.createClass({displayName: 'TrackList',
 		);
 	}
 });
-var Protocols = React.createClass({displayName: 'Protocols',
+var Protocols = React.createClass({displayName: "Protocols",
 	mixins: [Reflux.listenTo(Stores.protocols, 'setState')],
 	getInitialState: function() {
-		return {
+		var d = {
 			Available: {},
 			Current: {},
 			Selected: 'file',
 		};
+		return _.extend(d, Stores.protocols.data);
 	},
 	render: function() {
 		var keys = Object.keys(this.state.Available) || [];
@@ -124,7 +129,7 @@ var Protocols = React.createClass({displayName: 'Protocols',
 	}
 });
 
-var ProtocolParam = React.createClass({displayName: 'ProtocolParam',
+var ProtocolParam = React.createClass({displayName: "ProtocolParam",
 	getInitialState: function() {
 		return {
 			value: '',
@@ -155,7 +160,7 @@ var ProtocolParam = React.createClass({displayName: 'ProtocolParam',
 	}
 });
 
-var ProtocolOAuth = React.createClass({displayName: 'ProtocolOAuth',
+var ProtocolOAuth = React.createClass({displayName: "ProtocolOAuth",
 	render: function() {
 		var token;
 		if (this.props.token) {
@@ -170,7 +175,7 @@ var ProtocolOAuth = React.createClass({displayName: 'ProtocolOAuth',
 	}
 });
 
-var Protocol = React.createClass({displayName: 'Protocol',
+var Protocol = React.createClass({displayName: "Protocol",
 	getInitialState: function() {
 		return {
 			save: false,
@@ -242,7 +247,7 @@ var Protocol = React.createClass({displayName: 'Protocol',
 });
 var routes = {};
 
-var Link = React.createClass({displayName: 'Link',
+var Link = React.createClass({displayName: "Link",
 	componentDidMount: function() {
 		routes[this.props.href] = this.props.handler;
 		if (this.props.index) {
@@ -259,7 +264,7 @@ var Link = React.createClass({displayName: 'Link',
 	}
 });
 
-var Navigation = React.createClass({displayName: 'Navigation',
+var Navigation = React.createClass({displayName: "Navigation",
 	componentDidMount: function() {
 		this.startWS();
 	},
@@ -303,7 +308,7 @@ function router() {
 }
 router();
 
-var Player = React.createClass({displayName: 'Player',
+var Player = React.createClass({displayName: "Player",
 	mixins: [Reflux.listenTo(Stores.status, 'setState')],
 	cmd: function(cmd) {
 		return function() {
