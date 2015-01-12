@@ -115,12 +115,12 @@ var Protocols = React.createClass({displayName: "Protocols",
 		var protocols = [];
 		_.each(this.state.Current, function(instances, protocol) {
 			_.each(instances, function(inst, key) {
-				protocols.push(React.createElement(Protocol, {key: 'current-' + protocol + '-' + key, protocol: protocol, params: this.state.Available[protocol], instance: inst, name: key}));
+				protocols.push(React.createElement(Protocol, {key: key, protocol: protocol, params: this.state.Available[protocol], instance: inst, name: key}));
 			}, this);
 		}, this);
 		var selected;
 		if (this.state.Selected) {
-			selected = React.createElement(Protocol, {key: 'selected-' + this.state.Selected, protocol: this.state.Selected, params: this.state.Available[this.state.Selected]});
+			selected = React.createElement(Protocol, {protocol: this.state.Selected, params: this.state.Available[this.state.Selected]});
 		}
 		return React.createElement("div", null, 
 			React.createElement("h2", null, "New Protocol"), 
@@ -157,7 +157,7 @@ var ProtocolParam = React.createClass({displayName: "ProtocolParam",
 	render: function() {
 		return (
 			React.createElement("li", null, 
-				this.props.key, " ", React.createElement("input", {type: "text", onChange: this.paramChange, value: this.state.value || this.props.value, disabled: this.props.disabled ? 'disabled' : ''})
+				this.props.name, " ", React.createElement("input", {type: "text", onChange: this.paramChange, value: this.state.value || this.props.value, disabled: this.props.disabled ? 'disabled' : ''})
 			)
 		);
 	}
@@ -225,11 +225,11 @@ var Protocol = React.createClass({displayName: "Protocol",
 		if (this.props.params.Params) {
 			params = this.props.params.Params.map(function(param, idx) {
 				var current = this.props.instance.Params || [];
-				return React.createElement(ProtocolParam, {key: param, ref: idx, value: current[idx], change: this.setSave, disabled: disabled});
+				return React.createElement(ProtocolParam, {key: param, name: param, ref: idx, value: current[idx], change: this.setSave, disabled: disabled});
 			}.bind(this));
 		}
 		if (this.props.params.OAuthURL) {
-			params.push(React.createElement(ProtocolOAuth, {key: 'oauth-' + this.props.key, url: this.props.params.OAuthURL, token: this.props.instance.OAuthToken, disabled: disabled}));
+			params.push(React.createElement(ProtocolOAuth, {key: 'oauth', url: this.props.params.OAuthURL, token: this.props.instance.OAuthToken, disabled: disabled}));
 		}
 		var save;
 		if (this.state.save) {

@@ -20,12 +20,12 @@ var Protocols = React.createClass({
 		var protocols = [];
 		_.each(this.state.Current, function(instances, protocol) {
 			_.each(instances, function(inst, key) {
-				protocols.push(<Protocol key={'current-' + protocol + '-' + key} protocol={protocol} params={this.state.Available[protocol]} instance={inst} name={key} />);
+				protocols.push(<Protocol key={key} protocol={protocol} params={this.state.Available[protocol]} instance={inst} name={key} />);
 			}, this);
 		}, this);
 		var selected;
 		if (this.state.Selected) {
-			selected = <Protocol key={'selected-' + this.state.Selected} protocol={this.state.Selected} params={this.state.Available[this.state.Selected]} />;
+			selected = <Protocol protocol={this.state.Selected} params={this.state.Available[this.state.Selected]} />;
 		}
 		return <div>
 			<h2>New Protocol</h2>
@@ -62,7 +62,7 @@ var ProtocolParam = React.createClass({
 	render: function() {
 		return (
 			<li>
-				{this.props.key} <input type="text" onChange={this.paramChange} value={this.state.value || this.props.value} disabled={this.props.disabled ? 'disabled' : ''} />
+				{this.props.name} <input type="text" onChange={this.paramChange} value={this.state.value || this.props.value} disabled={this.props.disabled ? 'disabled' : ''} />
 			</li>
 		);
 	}
@@ -130,11 +130,11 @@ var Protocol = React.createClass({
 		if (this.props.params.Params) {
 			params = this.props.params.Params.map(function(param, idx) {
 				var current = this.props.instance.Params || [];
-				return <ProtocolParam key={param} ref={idx} value={current[idx]} change={this.setSave} disabled={disabled} />;
+				return <ProtocolParam key={param} name={param} ref={idx} value={current[idx]} change={this.setSave} disabled={disabled} />;
 			}.bind(this));
 		}
 		if (this.props.params.OAuthURL) {
-			params.push(<ProtocolOAuth key={'oauth-' + this.props.key} url={this.props.params.OAuthURL} token={this.props.instance.OAuthToken} disabled={disabled} />);
+			params.push(<ProtocolOAuth key={'oauth'} url={this.props.params.OAuthURL} token={this.props.instance.OAuthToken} disabled={disabled} />);
 		}
 		var save;
 		if (this.state.save) {
