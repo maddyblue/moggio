@@ -6,12 +6,13 @@ var TrackListRow = React.createClass({
 
 var Time = React.createClass({
 	render: function() {
-		var t = moment.duration(this.props.time / 1e6);
-		var s = t.seconds().toString();
+		var t = this.props.time / 1e9;
+		var m = (t / 60).toFixed();
+		var s = ((t - Math.floor(t)) * 100 / 60).toFixed();
 		if (s.length == 1) {
 			s = "0" + s;
 		}
-		return <span>{t.minutes()}:{s}</span>;
+		return <span>{m}:{s}</span>;
 	}
 });
 

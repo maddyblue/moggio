@@ -27,12 +27,13 @@ var TrackListRow = React.createClass({displayName: "TrackListRow",
 
 var Time = React.createClass({displayName: "Time",
 	render: function() {
-		var t = moment.duration(this.props.time / 1e6);
-		var s = t.seconds().toString();
+		var t = this.props.time / 1e9;
+		var m = (t / 60).toFixed();
+		var s = ((t - Math.floor(t)) * 100 / 60).toFixed();
 		if (s.length == 1) {
 			s = "0" + s;
 		}
-		return React.createElement("span", null, t.minutes(), ":", s);
+		return React.createElement("span", null, m, ":", s);
 	}
 });
 
