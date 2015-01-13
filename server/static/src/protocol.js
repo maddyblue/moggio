@@ -101,9 +101,11 @@ var Protocol = React.createClass({
 	save: function() {
 		var params = Object.keys(this.refs).sort();
 		params = params.map(function(ref) {
+			var v = this.refs[ref].state.value;
+			this.refs[ref].state.value = '';
 			return {
 				name: 'params',
-				value: this.refs[ref].state.value,
+				value: v,
 			};
 		}, this);
 		params.push({
