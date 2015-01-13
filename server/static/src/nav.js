@@ -25,9 +25,6 @@ var Navigation = React.createClass({
 		var ws = new WebSocket('ws://' + window.location.host + '/ws/');
 		ws.onmessage = function(e) {
 			var d = JSON.parse(e.data);
-			if (d.Type != 'status') {
-				console.log(d.Type);
-			}
 			if (Actions[d.Type]) {
 				Actions[d.Type](d.Data);
 			} else {
