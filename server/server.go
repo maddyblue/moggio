@@ -86,7 +86,7 @@ type Server struct {
 	elapsed       time.Duration
 
 	ch          chan command
-	waitch      chan *waitData
+	waiters     map[chan *waitData]struct{}
 	lock        sync.Locker
 	state       State
 	songs       map[SongID]*codec.SongInfo
@@ -106,18 +106,6 @@ const (
 	waitProtocols          = "protocols"
 	waitTracks             = "tracks"
 )
-
-func (srv *Server) wait() *waitData {
-	// This lock also prevents wait() attaching to waitch a possible second time
-	// before an existing broadcast() has completed because it holds the lock until
-	// all waitch receivers have been populated.
-	srv.lock.Lock()
-	if srv.waitch == nil {
-		srv.waitch = make(chan *waitData)
-	}
-	srv.lock.Unlock()
-	return <-srv.waitch
-}
 
 func (srv *Server) makeWaitData(wt waitType) *waitData {
 	var data interface{}
@@ -147,14 +135,10 @@ func (srv *Server) broadcast(wt waitType) {
 	wd := srv.makeWaitData(wt)
 	srv.lock.Lock()
 	defer srv.lock.Unlock()
-Loop:
-	for {
-		select {
-		case srv.waitch <- wd:
-			// sent
-		default:
-			break Loop
-		}
+	for w := range srv.waiters {
+		go func(w chan *waitData) {
+			w <- wd
+		}(w)
 	}
 }
 
@@ -166,6 +150,7 @@ func New(stateFile string) (*Server, error) {
 		lock:      new(sync.Mutex),
 		songs:     make(map[SongID]*codec.SongInfo),
 		Protocols: make(map[string]map[string]protocol.Instance),
+		waiters:   make(map[chan *waitData]struct{}),
 	}
 	for name := range protocol.Get() {
 		srv.Protocols[name] = make(map[string]protocol.Instance)
@@ -294,12 +279,19 @@ func (srv *Server) WebSocket(ws *websocket.Conn) {
 			return
 		}
 	}
-	for {
-		d := srv.wait()
-		if err := websocket.JSON.Send(ws, d); err != nil {
-			log.Println(err)
-			return
-		}
+	c := make(chan *waitData)
+	srv.lock.Lock()
+	srv.waiters[c] = struct{}{}
+	srv.lock.Unlock()
+	for d := range c {
+		go func(d *waitData) {
+			if err := websocket.JSON.Send(ws, d); err != nil {
+				srv.lock.Lock()
+				delete(srv.waiters, c)
+				close(c)
+				srv.lock.Unlock()
+			}
+		}(d)
 	}
 }
 
