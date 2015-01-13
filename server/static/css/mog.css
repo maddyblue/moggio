@@ -26,7 +26,6 @@
 }
 
 body {
-	margin: 20px;
 	margin-bottom: 70px;
 }
 
@@ -42,4 +41,8 @@ body {
 	padding-top: 10px;
 	padding-right: 15px;
 	padding-left: 15px;
+}
+
+.footer .container span {
+	margin-right: 10px;
 }
