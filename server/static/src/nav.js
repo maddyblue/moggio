@@ -62,7 +62,7 @@ var Player = React.createClass({
 	mixins: [Reflux.listenTo(Stores.status, 'setState')],
 	cmd: function(cmd) {
 		return function() {
-			$.get('/api/cmd/' + cmd)
+			$.post('/api/cmd/' + cmd)
 				.error(function(err) {
 					console.log(err.responseText);
 				});

@@ -43,9 +43,9 @@ var Track = React.createClass({displayName: "Track",
 			"clear": true,
 			"add": JSON.stringify(this.props.ID)
 		};
-		$.get('/api/playlist/change?' + $.param(params))
+		$.post('/api/playlist/change', params)
 			.success(function() {
-				$.get('/api/cmd/play');
+				$.post('/api/cmd/play');
 			});
 	},
 	render: function() {
@@ -208,7 +208,7 @@ var Protocol = React.createClass({displayName: "Protocol",
 			name: 'protocol',
 			value: this.props.protocol,
 		});
-		$.get('/api/protocol/add?' + $.param(params))
+		$.post('/api/protocol/add', params)
 			.success(function() {
 				this.setState({save: false});
 			}.bind(this))
@@ -217,10 +217,10 @@ var Protocol = React.createClass({displayName: "Protocol",
 			});
 	},
 	remove: function() {
-		$.get('/api/protocol/remove?' + $.param({
+		$.post('/api/protocol/remove', {
 			protocol: this.props.protocol,
 			key: this.props.name,
-		}));
+		});
 	},
 	render: function() {
 		var params = [];
@@ -315,7 +315,7 @@ var Player = React.createClass({displayName: "Player",
 	mixins: [Reflux.listenTo(Stores.status, 'setState')],
 	cmd: function(cmd) {
 		return function() {
-			$.get('/api/cmd/' + cmd)
+			$.post('/api/cmd/' + cmd)
 				.error(function(err) {
 					console.log(err.responseText);
 				});

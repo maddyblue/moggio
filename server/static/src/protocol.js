@@ -112,7 +112,7 @@ var Protocol = React.createClass({
 			name: 'protocol',
 			value: this.props.protocol,
 		});
-		$.get('/api/protocol/add?' + $.param(params))
+		$.post('/api/protocol/add', params)
 			.success(function() {
 				this.setState({save: false});
 			}.bind(this))
@@ -121,10 +121,10 @@ var Protocol = React.createClass({
 			});
 	},
 	remove: function() {
-		$.get('/api/protocol/remove?' + $.param({
+		$.post('/api/protocol/remove', {
 			protocol: this.props.protocol,
 			key: this.props.name,
-		}));
+		});
 	},
 	render: function() {
 		var params = [];
