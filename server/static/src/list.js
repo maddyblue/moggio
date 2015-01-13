@@ -22,9 +22,8 @@ var Track = React.createClass({
 			"clear": true,
 			"add": JSON.stringify(this.props.ID)
 		};
-		$.post('/api/playlist/change', params)
-			.success(function() {
-				$.post('/api/cmd/play');
+		POST('/api/playlist/change', params, function() {
+				POST('/api/cmd/play');
 			});
 	},
 	render: function() {

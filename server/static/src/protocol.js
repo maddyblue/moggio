@@ -112,16 +112,12 @@ var Protocol = React.createClass({
 			name: 'protocol',
 			value: this.props.protocol,
 		});
-		$.post('/api/protocol/add', params)
-			.success(function() {
+		POST('/api/protocol/add', params, function() {
 				this.setState({save: false});
-			}.bind(this))
-			.error(function(result) {
-				console.log(result.responseText);
-			});
+			}.bind(this));
 	},
 	remove: function() {
-		$.post('/api/protocol/remove', {
+		POST('/api/protocol/remove', {
 			protocol: this.props.protocol,
 			key: this.props.name,
 		});

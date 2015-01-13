@@ -19,6 +19,28 @@ _.each(Actions, function(action, name) {
 		}
 	});
 });
+
+function POST(path, params, success) {
+	var data;
+	if (_.isArray(params)) {
+		data = _.map(params, function(v) {
+			return encodeURIComponent(v.name) + '=' + encodeURIComponent(v.value);
+		}).join('&');
+	} else if (_.isObject(params)) {
+		data = _.map(params, function(v, k) {
+			return encodeURIComponent(k) + '=' + encodeURIComponent(v);
+		}).join('&');
+	} else {
+		data = params;
+	}
+	var xhr = new XMLHttpRequest();
+	xhr.open('POST', path, true);
+	xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded; charset=UTF-8');
+	if (success) {
+		xhr.onload = success;
+	}
+	xhr.send(data);
+}
 var TrackListRow = React.createClass({displayName: "TrackListRow",
 	render: function() {
 		return (React.createElement("tr", null, React.createElement("td", null, this.props.protocol), React.createElement("td", null, this.props.id)));
@@ -43,9 +65,8 @@ var Track = React.createClass({displayName: "Track",
 			"clear": true,
 			"add": JSON.stringify(this.props.ID)
 		};
-		$.post('/api/playlist/change', params)
-			.success(function() {
-				$.post('/api/cmd/play');
+		POST('/api/playlist/change', params, function() {
+				POST('/api/cmd/play');
 			});
 	},
 	render: function() {
@@ -208,16 +229,12 @@ var Protocol = React.createClass({displayName: "Protocol",
 			name: 'protocol',
 			value: this.props.protocol,
 		});
-		$.post('/api/protocol/add', params)
-			.success(function() {
+		POST('/api/protocol/add', params, function() {
 				this.setState({save: false});
-			}.bind(this))
-			.error(function(result) {
-				console.log(result.responseText);
-			});
+			}.bind(this));
 	},
 	remove: function() {
-		$.post('/api/protocol/remove', {
+		POST('/api/protocol/remove', {
 			protocol: this.props.protocol,
 			key: this.props.name,
 		});
@@ -315,10 +332,7 @@ var Player = React.createClass({displayName: "Player",
 	mixins: [Reflux.listenTo(Stores.status, 'setState')],
 	cmd: function(cmd) {
 		return function() {
-			$.post('/api/cmd/' + cmd)
-				.error(function(err) {
-					console.log(err.responseText);
-				});
+			POST('/api/cmd/' + cmd);
 		};
 	},
 	getInitialState: function() {
