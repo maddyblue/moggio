@@ -4,18 +4,6 @@ var TrackListRow = React.createClass({
 	}
 });
 
-var Time = React.createClass({
-	render: function() {
-		var t = this.props.time / 1e9;
-		var m = (t / 60).toFixed();
-		var s = ((t - Math.floor(t)) * 100 / 60).toFixed();
-		if (s.length == 1) {
-			s = "0" + s;
-		}
-		return <span>{m}:{s}</span>;
-	}
-});
-
 var Track = React.createClass({
 	play: function() {
 		var params = {
