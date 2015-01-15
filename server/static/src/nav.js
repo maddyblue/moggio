@@ -70,20 +70,30 @@ var Player = React.createClass({
 	},
 	render: function() {
 		var status;
-		if (!this.state.status) {
+		if (!this.state.Song) {
 			status = <span>unknown</span>;
 		} else {
 			status = (
 				<span>
-					<span>pl: {this.state.status.Playlist}</span>
-					<span>state: {this.state.status.State}</span>
-					<span>song: {this.state.status.Song}</span>
-					<span>elapsed: <Time time={this.state.status.Elapsed} /></span>
-					<span>time: <Time time={this.state.status.Time} /></span>
+					<span>pl: {this.state.Playlist}</span>
+					<span>state: {this.state.State}</span>
+					<span>elapsed: <Time time={this.state.Elapsed} /></span>
+					<span>time: <Time time={this.state.Time} /></span>
+					<span>song: {this.state.Song}</span>
 				</span>
 			);
 		};
-		var play = '▐▐ | \u25b6';
+
+		var play;
+		switch(this.state.State) {
+			case 0:
+				play = '▐▐';
+				break;
+			case 2:
+			default:
+				play = '\u25b6';
+				break;
+		}
 		return (
 			<div>
 				<span><button onClick={this.cmd('prev')}>⇤</button></span>

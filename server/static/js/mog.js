@@ -41,11 +41,6 @@ function POST(path, params, success) {
 	}
 	xhr.send(data);
 }
-var TrackListRow = React.createClass({displayName: "TrackListRow",
-	render: function() {
-		return (React.createElement("tr", null, React.createElement("td", null, this.props.protocol), React.createElement("td", null, this.props.id)));
-	}
-});
 
 var Time = React.createClass({displayName: "Time",
 	render: function() {
@@ -56,6 +51,11 @@ var Time = React.createClass({displayName: "Time",
 			s = "0" + s;
 		}
 		return React.createElement("span", null, m, ":", s);
+	}
+});
+var TrackListRow = React.createClass({displayName: "TrackListRow",
+	render: function() {
+		return (React.createElement("tr", null, React.createElement("td", null, this.props.protocol), React.createElement("td", null, this.props.id)));
 	}
 });
 
@@ -340,20 +340,30 @@ var Player = React.createClass({displayName: "Player",
 	},
 	render: function() {
 		var status;
-		if (!this.state.status) {
+		if (!this.state.Song) {
 			status = React.createElement("span", null, "unknown");
 		} else {
 			status = (
 				React.createElement("span", null, 
-					React.createElement("span", null, "pl: ", this.state.status.Playlist), 
-					React.createElement("span", null, "state: ", this.state.status.State), 
-					React.createElement("span", null, "song: ", this.state.status.Song), 
-					React.createElement("span", null, "elapsed: ", React.createElement(Time, {time: this.state.status.Elapsed})), 
-					React.createElement("span", null, "time: ", React.createElement(Time, {time: this.state.status.Time}))
+					React.createElement("span", null, "pl: ", this.state.Playlist), 
+					React.createElement("span", null, "state: ", this.state.State), 
+					React.createElement("span", null, "elapsed: ", React.createElement(Time, {time: this.state.Elapsed})), 
+					React.createElement("span", null, "time: ", React.createElement(Time, {time: this.state.Time})), 
+					React.createElement("span", null, "song: ", this.state.Song)
 				)
 			);
 		};
-		var play = '▐▐ | \u25b6';
+
+		var play;
+		switch(this.state.State) {
+			case 0:
+				play = '▐▐';
+				break;
+			case 2:
+			default:
+				play = '\u25b6';
+				break;
+		}
 		return (
 			React.createElement("div", null, 
 				React.createElement("span", null, React.createElement("button", {onClick: this.cmd('prev')}, "⇤")), 
