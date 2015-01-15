@@ -1,3 +1,5 @@
+// +build darwin
+
 package output
 
 import "code.google.com/p/portaudio-go/portaudio"
