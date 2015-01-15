@@ -353,11 +353,12 @@ var Player = React.createClass({displayName: "Player",
 				)
 			);
 		};
+		var play = '▐▐ | \u25b6';
 		return (
 			React.createElement("div", null, 
-				React.createElement("span", null, React.createElement("button", {onClick: this.cmd('prev')}, "prev")), 
-				React.createElement("span", null, React.createElement("button", {onClick: this.cmd('pause')}, "play/pause")), 
-				React.createElement("span", null, React.createElement("button", {onClick: this.cmd('next')}, "next")), 
+				React.createElement("span", null, React.createElement("button", {onClick: this.cmd('prev')}, "⇤")), 
+				React.createElement("span", null, React.createElement("button", {onClick: this.cmd('pause')}, play)), 
+				React.createElement("span", null, React.createElement("button", {onClick: this.cmd('next')}, "⇥")), 
 				React.createElement("span", null, status)
 			)
 		);

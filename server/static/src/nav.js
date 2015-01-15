@@ -83,11 +83,12 @@ var Player = React.createClass({
 				</span>
 			);
 		};
+		var play = '▐▐ | \u25b6';
 		return (
 			<div>
-				<span><button onClick={this.cmd('prev')}>prev</button></span>
-				<span><button onClick={this.cmd('pause')}>play/pause</button></span>
-				<span><button onClick={this.cmd('next')}>next</button></span>
+				<span><button onClick={this.cmd('prev')}>⇤</button></span>
+				<span><button onClick={this.cmd('pause')}>{play}</button></span>
+				<span><button onClick={this.cmd('next')}>⇥</button></span>
 				<span>{status}</span>
 			</div>
 		);
