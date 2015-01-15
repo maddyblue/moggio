@@ -45,11 +45,12 @@ function POST(path, params, success) {
 var Time = React.createClass({displayName: "Time",
 	render: function() {
 		var t = this.props.time / 1e9;
-		var m = (t / 60).toFixed();
-		var s = (t % 60).toFixed();
-		if (s.length == 1) {
+		var m = Math.floor(t / 60);
+		var s = Math.floor(t % 60);
+		if (s < 10) {
 			s = "0" + s;
 		}
+		console.log(t, m, s);
 		return React.createElement("span", null, m, ":", s);
 	}
 });
