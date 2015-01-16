@@ -1,3 +1,5 @@
+// @flow
+
 var routes = {};
 
 var Link = React.createClass({

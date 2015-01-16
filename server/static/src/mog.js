@@ -1,4 +1,4 @@
-/** @jsx React.DOM */
+// @flow
 
 var Actions = Reflux.createActions([
 	'protocols',

@@ -1,3 +1,5 @@
+// @flow
+
 var Protocols = React.createClass({
 	mixins: [Reflux.listenTo(Stores.protocols, 'setState')],
 	getInitialState: function() {

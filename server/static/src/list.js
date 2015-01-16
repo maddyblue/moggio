@@ -1,3 +1,5 @@
+// @flow
+
 var TrackListRow = React.createClass({
 	render: function() {
 		return (<tr><td>{this.props.protocol}</td><td>{this.props.id}</td></tr>);

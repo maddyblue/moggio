@@ -1,4 +1,4 @@
-/** @jsx React.DOM */
+// @flow
 
 var Actions = Reflux.createActions([
 	'protocols',
@@ -54,6 +54,8 @@ var Time = React.createClass({displayName: "Time",
 		return React.createElement("span", null, m, ":", s);
 	}
 });
+// @flow
+
 var TrackListRow = React.createClass({displayName: "TrackListRow",
 	render: function() {
 		return (React.createElement("tr", null, React.createElement("td", null, this.props.protocol), React.createElement("td", null, this.props.id)));
@@ -116,6 +118,8 @@ var TrackList = React.createClass({displayName: "TrackList",
 		);
 	}
 });
+// @flow
+
 var Protocols = React.createClass({displayName: "Protocols",
 	mixins: [Reflux.listenTo(Stores.protocols, 'setState')],
 	getInitialState: function() {
@@ -269,6 +273,8 @@ var Protocol = React.createClass({displayName: "Protocol",
 			);
 	}
 });
+// @flow
+
 var routes = {};
 
 var Link = React.createClass({displayName: "Link",
