@@ -25,11 +25,25 @@
 	unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2212, U+2215, U+E0FF, U+EFFD, U+F000;
 }
 
-body {
-	margin-bottom: 70px;
+header {
+	position: absolute;
+	top: 10px;
+	left: 10px;
+	right: 220px;
+	bottom: 60px;
+	overflow-y: auto;
 }
 
-.footer {
+main {
+	position: absolute;
+	left: 225px;
+	top: 10px;
+	right: 0;
+	bottom: 60px;
+	overflow-y: auto;
+}
+
+footer {
 	position: fixed;
 	bottom: 0;
 	width: 100%;
@@ -37,12 +51,12 @@ body {
 	background-color: #f5f5f5;
 }
 
-.footer > .container {
+footer > div {
 	padding-top: 10px;
 	padding-right: 15px;
 	padding-left: 15px;
 }
 
-.footer .container span {
+footer span {
 	margin-right: 10px;
 }

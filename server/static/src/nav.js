@@ -1,25 +1,13 @@
 // @flow
 
-var routes = {};
+var Router = ReactRouter;
+var Route = Router.Route;
+var NotFoundRoute = Router.NotFoundRoute;
+var DefaultRoute = Router.DefaultRoute;
+var Link = Router.Link;
+var RouteHandler = Router.RouteHandler;
 
-var Link = React.createClass({
-	componentDidMount: function() {
-		routes[this.props.href] = this.props.handler;
-		if (this.props.index) {
-			routes['/'] = this.props.handler;
-		}
-	},
-	click: function(event) {
-		history.pushState(null, this.props.Name, this.props.href);
-		router();
-		event.preventDefault();
-	},
-	render: function() {
-		return <li><a href={this.props.href} onClick={this.click}>{this.props.name}</a></li>
-	}
-});
-
-var Navigation = React.createClass({
+var App = React.createClass({
 	componentDidMount: function() {
 		this.startWS();
 	},
@@ -32,33 +20,30 @@ var Navigation = React.createClass({
 			} else {
 				console.log("missing action", d.Type);
 			}
-		}.bind(this);
+		};
 		ws.onclose = function() {
 			setTimeout(this.startWS, 1000);
 		}.bind(this);
 	},
 	render: function() {
 		return (
-			<ul className="nav navbar-nav">
-				<Link href="/list" name="List" handler={TrackList} index={true} />
-				<Link href="/protocols" name="Protocols" handler={Protocols} />
-			</ul>
+			<div>
+				<header>
+					<ul>
+						<li><Link to="app">Music</Link></li>
+						<li><Link to="protocols">Sources</Link></li>
+					</ul>
+				</header>
+				<main>
+					<RouteHandler/>
+				</main>
+				<footer>
+					<Player/>
+				</footer>
+			</div>
 		);
 	}
 });
-
-var navigation = <Navigation />;
-React.render(navigation, document.getElementById('navbar'));
-
-function router() {
-	var component = routes[window.location.pathname];
-	if (!component) {
-		alert('unknown route');
-	} else {
-		React.render(React.createElement(component, {key: window.location.pathname}), document.getElementById('main'));
-	}
-}
-router();
 
 var Player = React.createClass({
 	mixins: [Reflux.listenTo(Stores.status, 'setState')],
@@ -107,5 +92,13 @@ var Player = React.createClass({
 	}
 });
 
-var player = <Player />;
-React.render(player, document.getElementById('player'));
+var routes = (
+	<Route name="app" path="/" handler={App}>
+		<DefaultRoute handler={TrackList}/>
+		<Route name="protocols" handler={Protocols}/>
+	</Route>
+);
+
+Router.run(routes, Router.HistoryLocation, function (Handler) {
+	React.render(<Handler/>, document.getElementById('main'));
+});
