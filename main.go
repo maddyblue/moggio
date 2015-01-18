@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"flag"
+	"fmt"
 	"io"
 	"log"
 	"os"
@@ -82,7 +83,7 @@ func jsx() {
 	src := filepath.Join(base, "src")
 	js := filepath.Join(base, "js")
 	log.Println("running jsx")
-	var rs []io.Reader
+	res := new(bytes.Buffer)
 	files := []string{
 		"mog.js",
 
@@ -92,31 +93,51 @@ func jsx() {
 		"nav.js",
 	}
 	for _, name := range files {
-		f, err := os.Open(filepath.Join(src, name))
+		fname := filepath.Join(src, name)
+		f, err := os.Open(fname)
 		if err != nil {
 			panic(err)
 		}
-		defer f.Close()
-		rs = append(rs, f)
+		c := exec.Command("jsx")
+		c.Stdin = io.MultiReader(f)
+		c.Stdout = res
+		buf := new(bytes.Buffer)
+		c.Stderr = buf
+		if err := c.Start(); err != nil {
+			log.Fatal(err)
+		}
+		if err := c.Wait(); err != nil {
+			log.Printf("jsx error: %v", fname)
+			fmt.Println(strip(buf.String()))
+		}
+		f.Close()
 	}
 	of, err := os.Create(filepath.Join(js, "mog.js"))
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer of.Close()
-	c := exec.Command("jsx")
-	c.Stdin = io.MultiReader(rs...)
-	c.Stdout = of
-	buf := new(bytes.Buffer)
-	c.Stderr = buf
-	if err := c.Start(); err != nil {
-		log.Fatal(err)
-	}
-	if err := c.Wait(); err != nil {
-		log.Println(buf.String())
-		log.Printf("jsx error: %v", err)
-	}
+	of.Write(res.Bytes())
+	of.Close()
 	log.Println("jsx complete")
+}
+
+// strip removes non-ASCII chars from s.
+func strip(s string) string {
+	b := new(bytes.Buffer)
+	ignore := false
+	for _, c := range s {
+		switch c {
+		case 27:
+			ignore = true
+		case 'm':
+			ignore = false
+		default:
+			if !ignore {
+				b.WriteRune(c)
+			}
+		}
+	}
+	return b.String()
 }
 
 func run(name string, arg ...string) func() {
