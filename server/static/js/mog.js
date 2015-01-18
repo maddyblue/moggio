@@ -50,7 +50,6 @@ var Time = React.createClass({displayName: "Time",
 		if (s < 10) {
 			s = "0" + s;
 		}
-		console.log(t, m, s);
 		return React.createElement("span", null, m, ":", s);
 	}
 });
@@ -275,26 +274,14 @@ var Protocol = React.createClass({displayName: "Protocol",
 });
 // @flow
 
-var routes = {};
+var Router = ReactRouter;
+var Route = Router.Route;
+var NotFoundRoute = Router.NotFoundRoute;
+var DefaultRoute = Router.DefaultRoute;
+var Link = Router.Link;
+var RouteHandler = Router.RouteHandler;
 
-var Link = React.createClass({displayName: "Link",
-	componentDidMount: function() {
-		routes[this.props.href] = this.props.handler;
-		if (this.props.index) {
-			routes['/'] = this.props.handler;
-		}
-	},
-	click: function(event) {
-		history.pushState(null, this.props.Name, this.props.href);
-		router();
-		event.preventDefault();
-	},
-	render: function() {
-		return React.createElement("li", null, React.createElement("a", {href: this.props.href, onClick: this.click}, this.props.name))
-	}
-});
-
-var Navigation = React.createClass({displayName: "Navigation",
+var App = React.createClass({displayName: "App",
 	componentDidMount: function() {
 		this.startWS();
 	},
@@ -307,33 +294,30 @@ var Navigation = React.createClass({displayName: "Navigation",
 			} else {
 				console.log("missing action", d.Type);
 			}
-		}.bind(this);
+		};
 		ws.onclose = function() {
 			setTimeout(this.startWS, 1000);
 		}.bind(this);
 	},
 	render: function() {
 		return (
-			React.createElement("ul", {className: "nav navbar-nav"}, 
-				React.createElement(Link, {href: "/list", name: "List", handler: TrackList, index: true}), 
-				React.createElement(Link, {href: "/protocols", name: "Protocols", handler: Protocols})
+			React.createElement("div", null, 
+				React.createElement("header", null, 
+					React.createElement("ul", null, 
+						React.createElement("li", null, React.createElement(Link, {to: "app"}, "Music")), 
+						React.createElement("li", null, React.createElement(Link, {to: "protocols"}, "Sources"))
+					)
+				), 
+				React.createElement("main", null, 
+					React.createElement(RouteHandler, null)
+				), 
+				React.createElement("footer", null, 
+					React.createElement(Player, null)
+				)
 			)
 		);
 	}
 });
-
-var navigation = React.createElement(Navigation, null);
-React.render(navigation, document.getElementById('navbar'));
-
-function router() {
-	var component = routes[window.location.pathname];
-	if (!component) {
-		alert('unknown route');
-	} else {
-		React.render(React.createElement(component, {key: window.location.pathname}), document.getElementById('main'));
-	}
-}
-router();
 
 var Player = React.createClass({displayName: "Player",
 	mixins: [Reflux.listenTo(Stores.status, 'setState')],
@@ -382,5 +366,13 @@ var Player = React.createClass({displayName: "Player",
 	}
 });
 
-var player = React.createElement(Player, null);
-React.render(player, document.getElementById('player'));
+var routes = (
+	React.createElement(Route, {name: "app", path: "/", handler: App}, 
+		React.createElement(DefaultRoute, {handler: TrackList}), 
+		React.createElement(Route, {name: "protocols", handler: Protocols})
+	)
+);
+
+Router.run(routes, Router.HistoryLocation, function (Handler) {
+	React.render(React.createElement(Handler, null), document.getElementById('main'));
+});
