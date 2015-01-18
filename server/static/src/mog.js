@@ -50,7 +50,6 @@ var Time = React.createClass({
 		if (s < 10) {
 			s = "0" + s;
 		}
-		console.log(t, m, s);
 		return <span>{m}:{s}</span>;
 	}
 });
