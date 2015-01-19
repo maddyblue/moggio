@@ -32,6 +32,7 @@ var App = React.createClass({
 					<ul>
 						<li><Link to="app">Music</Link></li>
 						<li><Link to="protocols">Sources</Link></li>
+						<li><Link to="playlist">Playlist</Link></li>
 					</ul>
 				</header>
 				<main>
@@ -57,15 +58,13 @@ var Player = React.createClass({
 	},
 	render: function() {
 		var status;
-		if (!this.state.Song) {
-			status = <span>unknown</span>;
-		} else {
+		if (this.state.Song && this.state.Song.ID) {
 			status = (
 				<span>
-					<span>pl: {this.state.Playlist}</span>
-					<span>state: {this.state.State}</span>
-					<span>elapsed: <Time time={this.state.Elapsed} /></span>
-					<span>time: <Time time={this.state.Time} /></span>
+					<span>
+						<Time time={this.state.Elapsed} /> /
+						<Time time={this.state.Time} />
+					</span>
 					<span>song: {this.state.Song}</span>
 				</span>
 			);
@@ -96,6 +95,7 @@ var routes = (
 	<Route name="app" path="/" handler={App}>
 		<DefaultRoute handler={TrackList}/>
 		<Route name="protocols" handler={Protocols}/>
+		<Route name="playlist" handler={Playlist}/>
 	</Route>
 );
 

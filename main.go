@@ -89,6 +89,7 @@ func jsx() {
 
 		"list.js",
 		"protocol.js",
+		"playlist.js",
 
 		"nav.js",
 	}

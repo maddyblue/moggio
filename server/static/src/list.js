@@ -1,51 +1,61 @@
 // @flow
 
-var TrackListRow = React.createClass({
-	render: function() {
-		return (<tr><td>{this.props.protocol}</td><td>{this.props.id}</td></tr>);
-	}
-});
-
 var Track = React.createClass({
+	mixins: [Reflux.listenTo(Stores.tracks, 'update')],
 	play: function() {
 		var params = {
 			"clear": true,
-			"add": JSON.stringify(this.props.ID)
+			"add": JSON.stringify(this.props.id)
 		};
 		POST('/api/playlist/change', params, function() {
 				POST('/api/cmd/play');
 			});
 	},
+	getInitialState: function() {
+		if (this.props.info) {
+			return {
+				info: this.props.info
+			};
+		}
+		var d = Lookup(this.props.id);
+		if (d) {
+			return {
+				info: d.Info
+			};
+		}
+		return {};
+	},
+	update: function() {
+		this.setState(this.getInitialState());
+	},
 	render: function() {
+		var info = this.state.info;
+		if (!info) {
+			return (
+				<tr>
+					<td>{this.props.id}</td>
+				</tr>
+			);
+		}
 		return (
 			<tr>
-				<td><button className="btn btn-default btn-sm" onClick={this.play}>&#x25b6;</button> {this.props.Info.Title}</td>
-				<td><Time time={this.props.Info.Time} /></td>
-				<td>{this.props.Info.Artist}</td>
-				<td>{this.props.Info.Album}</td>
+				<td><button className="btn btn-default btn-sm" onClick={this.play}>&#x25b6;</button> {info.Title}</td>
+				<td><Time time={info.Time} /></td>
+				<td>{info.Artist}</td>
+				<td>{info.Album}</td>
 			</tr>
 		);
 	}
 });
 
 var TrackList = React.createClass({
-	mixins: [Reflux.listenTo(Stores.tracks, 'setTracks')],
+	mixins: [Reflux.listenTo(Stores.tracks, 'setState')],
 	getInitialState: function() {
-		return {
-			tracks: Stores.tracks.data
-		};
-	},
-	setTracks: function(tracks) {
-		var sc = {};
-		tracks.forEach(function(t) {
-			var uid = t.ID.Protocol + "|" + t.ID.Key + "|" + t.ID.ID;
-			sc[uid] = t;
-		});
-		this.setState({tracks: sc});
+		return Stores.tracks.data || {};
 	},
 	render: function() {
-		var tracks = _.map(this.state.tracks, (function (t, key) {
-			return <Track key={key} {...t} />;
+		var tracks = _.map(this.state.Tracks, (function (t) {
+			return <Track key={t.UID} id={t.ID} info={t.Info} />;
 		}));
 		return (
 			<table className="table">

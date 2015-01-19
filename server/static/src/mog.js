@@ -1,6 +1,7 @@
 // @flow
 
 var Actions = Reflux.createActions([
+	'playlist',
 	'protocols',
 	'status',
 	'tracks',
@@ -19,6 +20,23 @@ _.each(Actions, function(action, name) {
 		}
 	});
 });
+
+// Lookup returns track data for song with given ID. null is returned if no
+// song with id found.
+function Lookup(id) {
+	var t = Stores.tracks.data;
+	if (!t || !t.Tracks) {
+		return null;
+	}
+	t = t.Tracks;
+	for (var i = 0; i < t.length; i++) {
+		var d = t[i];
+		if (_.isEqual(d.ID, id)) {
+			return d;
+		}
+	}
+	return null;
+}
 
 function POST(path, params, success) {
 	var data;

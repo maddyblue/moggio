@@ -71,14 +71,29 @@ func (s SongID) String() string {
 	return fmt.Sprintf("%s|%s|%s", s.Protocol, s.Key, s.ID)
 }
 
+func (s SongID) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		Protocol string
+		Key      string
+		ID       string
+		UID      string
+	}{
+		Protocol: s.Protocol,
+		Key:      s.Key,
+		ID:       s.ID,
+		UID:      s.String(),
+	})
+}
+
 type Server struct {
 	lock sync.Mutex
 
-	Playlist   Playlist
-	PlaylistID int
-	Repeat     bool
-	Random     bool
-	Protocols  map[string]map[string]protocol.Instance
+	Queue     Playlist
+	Playlists map[string]Playlist
+
+	Repeat    bool
+	Random    bool
+	Protocols map[string]map[string]protocol.Instance
 
 	// Current song data.
 	playlistIndex int
@@ -104,6 +119,7 @@ type waitType string
 
 const (
 	waitStatus    waitType = "status"
+	waitPlaylist           = "playlist"
 	waitProtocols          = "protocols"
 	waitTracks             = "tracks"
 )
@@ -122,7 +138,19 @@ func (srv *Server) makeWaitData(wt waitType) *waitData {
 	case waitStatus:
 		data = srv.status()
 	case waitTracks:
-		data = srv.list()
+		data = struct {
+			Tracks []listItem
+		}{
+			Tracks: srv.list(),
+		}
+	case waitPlaylist:
+		data = struct {
+			Queue     Playlist
+			Playlists map[string]Playlist
+		}{
+			Queue:     srv.Queue,
+			Playlists: srv.Playlists,
+		}
 	default:
 		panic("bad wait type")
 	}
@@ -150,6 +178,7 @@ func New(stateFile string) (*Server, error) {
 		ch:        make(chan command),
 		songs:     make(map[SongID]*codec.SongInfo),
 		Protocols: make(map[string]map[string]protocol.Instance),
+		Playlists: make(map[string]Playlist),
 		waiters:   make(map[chan *waitData]struct{}),
 	}
 	for name := range protocol.Get() {
@@ -262,6 +291,7 @@ func (srv *Server) ListenAndServe(addr string) error {
 
 func (srv *Server) WebSocket(ws *websocket.Conn) {
 	inits := []waitType{
+		waitPlaylist,
 		waitProtocols,
 		waitStatus,
 		waitTracks,
@@ -338,21 +368,21 @@ func (srv *Server) audio() {
 			stop()
 		}
 		if srv.song == nil {
-			if len(srv.Playlist) == 0 {
-				log.Println("empty playlist")
+			if len(srv.Queue) == 0 {
+				log.Println("empty queue")
 				stop()
 				return
-			} else if srv.playlistIndex >= len(srv.Playlist) {
+			} else if srv.playlistIndex >= len(srv.Queue) {
 				if srv.Repeat {
 					srv.playlistIndex = 0
 				} else {
-					log.Println("end of playlist")
+					log.Println("end of queue")
 					stop()
 					return
 				}
 			}
 
-			srv.songID = srv.Playlist[srv.playlistIndex]
+			srv.songID = srv.Queue[srv.playlistIndex]
 			sid := srv.songID
 			srv.playlistIndex++
 			song, err := srv.Protocols[sid.Protocol][sid.Key].GetSong(sid.ID)
@@ -393,7 +423,7 @@ func (srv *Server) audio() {
 	}
 	play = func() {
 		log.Println("play")
-		if srv.playlistIndex > len(srv.Playlist) {
+		if srv.playlistIndex > len(srv.Queue) {
 			srv.playlistIndex = 0
 		}
 		tick()
@@ -591,28 +621,25 @@ func (srv *Server) ProtocolRemove(form url.Values, ps httprouter.Params) (interf
 // * remove/add: song ids
 // Duplicate songs will not be added.
 func (srv *Server) PlaylistChange(form url.Values, ps httprouter.Params) (interface{}, error) {
-	srv.PlaylistID++
 	srv.playlistIndex = 0
-	t := PlaylistChange{
-		PlaylistId: srv.PlaylistID,
-	}
+	errs := make([]error, 0)
 	srv.lock.Lock()
 	if len(form["clear"]) > 0 {
-		srv.Playlist = nil
+		srv.Queue = nil
 		srv.ch <- cmdStop
 	}
 	m := make(map[SongID]int)
-	for i, id := range srv.Playlist {
+	for i, id := range srv.Queue {
 		m[id] = i
 	}
 	for _, rem := range form["remove"] {
 		id, err := ParseSongID(rem)
 		if err != nil {
-			t.Error(err.Error())
+			errs = append(errs, err)
 			continue
 		}
 		if s, ok := srv.songs[id]; !ok {
-			t.Error("unknown id: %v", rem)
+			errs = append(errs, fmt.Errorf("unknown id: %v", rem))
 		} else if *s == srv.info {
 			srv.ch <- cmdStop
 		}
@@ -621,30 +648,22 @@ func (srv *Server) PlaylistChange(form url.Values, ps httprouter.Params) (interf
 	for _, add := range form["add"] {
 		var id SongID
 		if err := json.Unmarshal([]byte(add), &id); err != nil {
-			t.Error(err.Error())
+			errs = append(errs, err)
 			continue
 		}
 		if _, ok := srv.songs[id]; !ok {
-			t.Error("unknown id: %v", add)
+			errs = append(errs, fmt.Errorf("unknown id: %v", add))
 		}
 		m[id] = len(m)
 	}
-	srv.Playlist = make(Playlist, len(m))
+	srv.Queue = make(Playlist, len(m))
 	for songid, index := range m {
-		srv.Playlist[index] = songid
+		srv.Queue[index] = songid
 	}
 	srv.lock.Unlock()
 	srv.Save()
-	return &t, nil
-}
-
-type PlaylistChange struct {
-	PlaylistId int
-	Errors     []string
-}
-
-func (p *PlaylistChange) Error(format string, a ...interface{}) {
-	p.Errors = append(p.Errors, fmt.Sprintf(format, a...))
+	srv.broadcast(waitPlaylist)
+	return errs, nil
 }
 
 type listItem struct {
@@ -669,11 +688,10 @@ func (srv *Server) list() []listItem {
 
 func (srv *Server) status() *Status {
 	return &Status{
-		Playlist: srv.PlaylistID,
-		State:    srv.state,
-		Song:     srv.songID,
-		Elapsed:  srv.elapsed,
-		Time:     srv.info.Time,
+		State:   srv.state,
+		Song:    srv.songID,
+		Elapsed: srv.elapsed,
+		Time:    srv.info.Time,
 	}
 }
 

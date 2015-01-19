@@ -1,6 +1,7 @@
 // @flow
 
 var Actions = Reflux.createActions([
+	'playlist',
 	'protocols',
 	'status',
 	'tracks',
@@ -19,6 +20,23 @@ _.each(Actions, function(action, name) {
 		}
 	});
 });
+
+// Lookup returns track data for song with given ID. null is returned if no
+// song with id found.
+function Lookup(id) {
+	var t = Stores.tracks.data;
+	if (!t || !t.Tracks) {
+		return null;
+	}
+	t = t.Tracks;
+	for (var i = 0; i < t.length; i++) {
+		var d = t[i];
+		if (_.isEqual(d.ID, id)) {
+			return d;
+		}
+	}
+	return null;
+}
 
 function POST(path, params, success) {
 	var data;
@@ -55,52 +73,62 @@ var Time = React.createClass({displayName: "Time",
 });
 // @flow
 
-var TrackListRow = React.createClass({displayName: "TrackListRow",
-	render: function() {
-		return (React.createElement("tr", null, React.createElement("td", null, this.props.protocol), React.createElement("td", null, this.props.id)));
-	}
-});
-
 var Track = React.createClass({displayName: "Track",
+	mixins: [Reflux.listenTo(Stores.tracks, 'update')],
 	play: function() {
 		var params = {
 			"clear": true,
-			"add": JSON.stringify(this.props.ID)
+			"add": JSON.stringify(this.props.id)
 		};
 		POST('/api/playlist/change', params, function() {
 				POST('/api/cmd/play');
 			});
 	},
+	getInitialState: function() {
+		if (this.props.info) {
+			return {
+				info: this.props.info
+			};
+		}
+		var d = Lookup(this.props.id);
+		if (d) {
+			return {
+				info: d.Info
+			};
+		}
+		return {};
+	},
+	update: function() {
+		this.setState(this.getInitialState());
+	},
 	render: function() {
+		var info = this.state.info;
+		if (!info) {
+			return (
+				React.createElement("tr", null, 
+					React.createElement("td", null, this.props.id)
+				)
+			);
+		}
 		return (
 			React.createElement("tr", null, 
-				React.createElement("td", null, React.createElement("button", {className: "btn btn-default btn-sm", onClick: this.play}, "▶"), " ", this.props.Info.Title), 
-				React.createElement("td", null, React.createElement(Time, {time: this.props.Info.Time})), 
-				React.createElement("td", null, this.props.Info.Artist), 
-				React.createElement("td", null, this.props.Info.Album)
+				React.createElement("td", null, React.createElement("button", {className: "btn btn-default btn-sm", onClick: this.play}, "▶"), " ", info.Title), 
+				React.createElement("td", null, React.createElement(Time, {time: info.Time})), 
+				React.createElement("td", null, info.Artist), 
+				React.createElement("td", null, info.Album)
 			)
 		);
 	}
 });
 
 var TrackList = React.createClass({displayName: "TrackList",
-	mixins: [Reflux.listenTo(Stores.tracks, 'setTracks')],
+	mixins: [Reflux.listenTo(Stores.tracks, 'setState')],
 	getInitialState: function() {
-		return {
-			tracks: Stores.tracks.data
-		};
-	},
-	setTracks: function(tracks) {
-		var sc = {};
-		tracks.forEach(function(t) {
-			var uid = t.ID.Protocol + "|" + t.ID.Key + "|" + t.ID.ID;
-			sc[uid] = t;
-		});
-		this.setState({tracks: sc});
+		return Stores.tracks.data || {};
 	},
 	render: function() {
-		var tracks = _.map(this.state.tracks, (function (t, key) {
-			return React.createElement(Track, React.__spread({key: key},  t));
+		var tracks = _.map(this.state.Tracks, (function (t) {
+			return React.createElement(Track, {key: t.UID, id: t.ID, info: t.Info});
 		}));
 		return (
 			React.createElement("table", {className: "table"}, 
@@ -274,6 +302,32 @@ var Protocol = React.createClass({displayName: "Protocol",
 });
 // @flow
 
+var Playlist = React.createClass({displayName: "Playlist",
+	mixins: [Reflux.listenTo(Stores.playlist, 'setState')],
+	getInitialState: function() {
+		return Stores.playlist.data || {};
+	},
+	render: function() {
+		var tracks = _.map(this.state.Queue, (function (id) {
+			return React.createElement(Track, {key: id.UID, id: id});
+		}));
+		return (
+			React.createElement("table", {className: "table"}, 
+				React.createElement("thead", null, 
+					React.createElement("tr", null, 
+						React.createElement("th", null, "Name"), 
+						React.createElement("th", null, "Time"), 
+						React.createElement("th", null, "Artist"), 
+						React.createElement("th", null, "Album")
+					)
+				), 
+				React.createElement("tbody", null, tracks)
+			)
+		);
+	}
+});
+// @flow
+
 var Router = ReactRouter;
 var Route = Router.Route;
 var NotFoundRoute = Router.NotFoundRoute;
@@ -305,7 +359,8 @@ var App = React.createClass({displayName: "App",
 				React.createElement("header", null, 
 					React.createElement("ul", null, 
 						React.createElement("li", null, React.createElement(Link, {to: "app"}, "Music")), 
-						React.createElement("li", null, React.createElement(Link, {to: "protocols"}, "Sources"))
+						React.createElement("li", null, React.createElement(Link, {to: "protocols"}, "Sources")), 
+						React.createElement("li", null, React.createElement(Link, {to: "playlist"}, "Playlist"))
 					)
 				), 
 				React.createElement("main", null, 
@@ -331,15 +386,13 @@ var Player = React.createClass({displayName: "Player",
 	},
 	render: function() {
 		var status;
-		if (!this.state.Song) {
-			status = React.createElement("span", null, "unknown");
-		} else {
+		if (this.state.Song && this.state.Song.ID) {
 			status = (
 				React.createElement("span", null, 
-					React.createElement("span", null, "pl: ", this.state.Playlist), 
-					React.createElement("span", null, "state: ", this.state.State), 
-					React.createElement("span", null, "elapsed: ", React.createElement(Time, {time: this.state.Elapsed})), 
-					React.createElement("span", null, "time: ", React.createElement(Time, {time: this.state.Time})), 
+					React.createElement("span", null, 
+						React.createElement(Time, {time: this.state.Elapsed}), " /", 
+						React.createElement(Time, {time: this.state.Time})
+					), 
 					React.createElement("span", null, "song: ", this.state.Song)
 				)
 			);
@@ -369,7 +422,8 @@ var Player = React.createClass({displayName: "Player",
 var routes = (
 	React.createElement(Route, {name: "app", path: "/", handler: App}, 
 		React.createElement(DefaultRoute, {handler: TrackList}), 
-		React.createElement(Route, {name: "protocols", handler: Protocols})
+		React.createElement(Route, {name: "protocols", handler: Protocols}), 
+		React.createElement(Route, {name: "playlist", handler: Playlist})
 	)
 );
 
