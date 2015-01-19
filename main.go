@@ -130,7 +130,11 @@ func strip(s string) string {
 		case 27:
 			ignore = true
 		case 'm':
-			ignore = false
+			if ignore {
+				ignore = false
+			} else {
+				b.WriteRune(c)
+			}
 		default:
 			if !ignore {
 				b.WriteRune(c)
