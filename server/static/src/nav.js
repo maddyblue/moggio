@@ -6,6 +6,7 @@ var NotFoundRoute = Router.NotFoundRoute;
 var DefaultRoute = Router.DefaultRoute;
 var Link = Router.Link;
 var RouteHandler = Router.RouteHandler;
+var Redirect = Router.Redirect;
 
 var App = React.createClass({
 	componentDidMount: function() {
@@ -36,7 +37,7 @@ var App = React.createClass({
 					</ul>
 				</header>
 				<main>
-					<RouteHandler/>
+					<RouteHandler {...this.props}/>
 				</main>
 				<footer>
 					<Player/>
@@ -105,9 +106,12 @@ var routes = (
 		<DefaultRoute handler={TrackList}/>
 		<Route name="protocols" handler={Protocols}/>
 		<Route name="playlist" handler={Playlist}/>
+		<Route name="album" path="/album/:Album" handler={Album}/>
+		<Route name="artist" path="/artist/:Artist" handler={Artist}/>
 	</Route>
 );
 
-Router.run(routes, Router.HistoryLocation, function (Handler) {
-	React.render(<Handler/>, document.getElementById('main'));
+Router.run(routes, Router.HistoryLocation, function (Handler, state) {
+	var params = state.params;
+	React.render(<Handler params={params}/>, document.getElementById('main'));
 });

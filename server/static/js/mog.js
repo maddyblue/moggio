@@ -123,29 +123,58 @@ var Track = React.createClass({displayName: "Track",
 			React.createElement("tr", null, 
 				React.createElement("td", null, React.createElement("button", {className: "btn btn-default btn-sm", onClick: this.play}, "▶"), " ", info.Title), 
 				React.createElement("td", null, React.createElement(Time, {time: info.Time})), 
-				React.createElement("td", null, info.Artist), 
-				React.createElement("td", null, info.Album)
+				React.createElement("td", null, React.createElement(Link, {to: "artist", params: info}, info.Artist)), 
+				React.createElement("td", null, React.createElement(Link, {to: "album", params: info}, info.Album))
 			)
 		);
 	}
 });
 
 var Tracks = React.createClass({displayName: "Tracks",
+	mkparams: function() {
+		return _.map(this.props.tracks, function(t) {
+			return 'add-' + t.ID.UID;
+		});
+	},
+	play: function() {
+		var params = this.mkparams();
+		params.unshift('clear');
+		POST('/api/queue/change', mkcmd(params), function() {
+			POST('/api/cmd/play');
+		});
+	},
+	add: function() {
+		var params = this.mkparams();
+		POST('/api/queue/change', mkcmd(params));
+	},
 	render: function() {
-		var tracks = _.map(this.props.tracks, (function (t) {
-			return React.createElement(Track, {key: t.ID.UID, id: t.ID, info: t.Info});
-		}));
+		var tracks = _.map(this.props.tracks, function(t, idx) {
+			return React.createElement(Track, {key: idx + '-' + t.ID.UID, id: t.ID, info: t.Info});
+		});
+		var queue;
+		if (this.props.queuer) {
+			queue = (
+				React.createElement("div", null, 
+					React.createElement("button", {onClick: this.play}, "play"), 
+					React.createElement("button", {onClick: this.add}, "add")
+				)
+			);
+		};
 		return (
-			React.createElement("table", {className: "table"}, 
-				React.createElement("thead", null, 
-					React.createElement("tr", null, 
-						React.createElement("th", null, "Name"), 
-						React.createElement("th", null, "Time"), 
-						React.createElement("th", null, "Artist"), 
-						React.createElement("th", null, "Album")
-					)
-				), 
-				React.createElement("tbody", null, tracks)
+			React.createElement("div", null, 
+				queue, 
+				React.createElement("table", {className: "table"}, 
+					React.createElement("thead", null, 
+						React.createElement("tr", null, 
+							React.createElement("th", null, "Name"), 
+							React.createElement("th", null, "Time"), 
+							React.createElement("th", null, "Artist"), 
+							React.createElement("th", null, "Album")
+						)
+					), 
+					React.createElement("tbody", null, tracks)
+				)
+
 			)
 		);
 	}
@@ -157,9 +186,31 @@ var TrackList = React.createClass({displayName: "TrackList",
 		return Stores.tracks.data || {};
 	},
 	render: function() {
-		return React.createElement(Tracks, {tracks: this.state.Tracks});
+		return React.createElement(Tracks, {tracks: this.state.Tracks, queuer: true});
 	}
 });
+
+function searchClass(field) {
+	return React.createClass({
+		mixins: [Reflux.listenTo(Stores.tracks, 'setState')],
+		render: function() {
+			if (!Stores.tracks.data) {
+				return null;
+			}
+			var tracks = [];
+			var prop = this.props.params[field];
+			_.each(Stores.tracks.data.Tracks, function(val) {
+				if (val.Info[field] == prop) {
+					tracks.push(val);
+				}
+			});
+			return React.createElement(Tracks, {tracks: tracks, queuer: true});
+		}
+	});
+}
+
+var Artist = searchClass('Artist');
+var Album = searchClass('Album');
 // @flow
 
 var Protocols = React.createClass({displayName: "Protocols",
@@ -350,6 +401,7 @@ var NotFoundRoute = Router.NotFoundRoute;
 var DefaultRoute = Router.DefaultRoute;
 var Link = Router.Link;
 var RouteHandler = Router.RouteHandler;
+var Redirect = Router.Redirect;
 
 var App = React.createClass({displayName: "App",
 	componentDidMount: function() {
@@ -380,7 +432,7 @@ var App = React.createClass({displayName: "App",
 					)
 				), 
 				React.createElement("main", null, 
-					React.createElement(RouteHandler, null)
+					React.createElement(RouteHandler, React.__spread({},  this.props))
 				), 
 				React.createElement("footer", null, 
 					React.createElement(Player, null)
@@ -448,10 +500,13 @@ var routes = (
 	React.createElement(Route, {name: "app", path: "/", handler: App}, 
 		React.createElement(DefaultRoute, {handler: TrackList}), 
 		React.createElement(Route, {name: "protocols", handler: Protocols}), 
-		React.createElement(Route, {name: "playlist", handler: Playlist})
+		React.createElement(Route, {name: "playlist", handler: Playlist}), 
+		React.createElement(Route, {name: "album", path: "/album/:Album", handler: Album}), 
+		React.createElement(Route, {name: "artist", path: "/artist/:Artist", handler: Artist})
 	)
 );
 
-Router.run(routes, Router.HistoryLocation, function (Handler) {
-	React.render(React.createElement(Handler, null), document.getElementById('main'));
+Router.run(routes, Router.HistoryLocation, function (Handler, state) {
+	var params = state.params;
+	React.render(React.createElement(Handler, {params: params}), document.getElementById('main'));
 });

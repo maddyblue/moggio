@@ -633,6 +633,7 @@ func (srv *Server) ProtocolRemove(form url.Values, ps httprouter.Params) (interf
 func (srv *Server) playlistChange(p Playlist, form url.Values, isq bool) (Playlist, error) {
 	m := make([]*SongID, len(p))
 	for i, v := range p {
+		v := v
 		m[i] = &v
 	}
 	for _, c := range form["c"] {
@@ -661,19 +662,6 @@ func (srv *Server) playlistChange(p Playlist, form url.Values, isq bool) (Playli
 				return nil, err
 			}
 			m = append(m, &id)
-		case "set":
-			i, err := strconv.Atoi(sp[1])
-			if err != nil {
-				return nil, err
-			}
-			if len(m) <= i {
-				return nil, fmt.Errorf("unknown index: %v", i)
-			}
-			id, err := ParseSongID(sp[2])
-			if err != nil {
-				return nil, err
-			}
-			m[i] = &id
 		default:
 			return nil, fmt.Errorf("unknown command: %v", sp[0])
 		}
@@ -694,7 +682,6 @@ func (srv *Server) QueueChange(form url.Values, ps httprouter.Params) (interface
 		return nil, err
 	}
 	srv.Queue = n
-	fmt.Println("QUEUE CHANGE", srv.Queue)
 	srv.lock.Unlock()
 	srv.Save()
 	srv.broadcast(waitPlaylist)
