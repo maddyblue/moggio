@@ -89,10 +89,8 @@ var Track = React.createClass({displayName: "Track",
 			'clear',
 			'add-' + this.props.id.UID
 		]);
-		POST('/api/cmd/stop', null, function() {
-			POST('/api/queue/change', params, function() {
-				POST('/api/cmd/play');
-			});
+		POST('/api/queue/change', params, function() {
+			POST('/api/cmd/play');
 		});
 	},
 	getInitialState: function() {
@@ -132,13 +130,9 @@ var Track = React.createClass({displayName: "Track",
 	}
 });
 
-var TrackList = React.createClass({displayName: "TrackList",
-	mixins: [Reflux.listenTo(Stores.tracks, 'setState')],
-	getInitialState: function() {
-		return Stores.tracks.data || {};
-	},
+var Tracks = React.createClass({displayName: "Tracks",
 	render: function() {
-		var tracks = _.map(this.state.Tracks, (function (t) {
+		var tracks = _.map(this.props.tracks, (function (t) {
 			return React.createElement(Track, {key: t.ID.UID, id: t.ID, info: t.Info});
 		}));
 		return (
@@ -154,6 +148,16 @@ var TrackList = React.createClass({displayName: "TrackList",
 				React.createElement("tbody", null, tracks)
 			)
 		);
+	}
+});
+
+var TrackList = React.createClass({displayName: "TrackList",
+	mixins: [Reflux.listenTo(Stores.tracks, 'setState')],
+	getInitialState: function() {
+		return Stores.tracks.data || {};
+	},
+	render: function() {
+		return React.createElement(Tracks, {tracks: this.state.Tracks});
 	}
 });
 // @flow
@@ -318,21 +322,22 @@ var Playlist = React.createClass({displayName: "Playlist",
 	getInitialState: function() {
 		return Stores.playlist.data || {};
 	},
+	clear: function() {
+		var params = mkcmd([
+			'clear',
+		]);
+		POST('/api/queue/change', params);
+	},
 	render: function() {
-		var tracks = _.map(this.state.Queue, (function (id) {
-			return React.createElement(Track, {key: id.UID, id: id});
-		}));
+		var q = _.map(this.state.Queue, function(val) {
+			return {
+				ID: val
+			};
+		});
 		return (
-			React.createElement("table", {className: "table"}, 
-				React.createElement("thead", null, 
-					React.createElement("tr", null, 
-						React.createElement("th", null, "Name"), 
-						React.createElement("th", null, "Time"), 
-						React.createElement("th", null, "Artist"), 
-						React.createElement("th", null, "Album")
-					)
-				), 
-				React.createElement("tbody", null, tracks)
+			React.createElement("div", null, 
+				React.createElement("button", {onClick: this.clear}, "clear"), 
+				React.createElement(Tracks, {tracks: q})
 			)
 		);
 	}

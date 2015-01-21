@@ -5,22 +5,23 @@ var Playlist = React.createClass({
 	getInitialState: function() {
 		return Stores.playlist.data || {};
 	},
+	clear: function() {
+		var params = mkcmd([
+			'clear',
+		]);
+		POST('/api/queue/change', params);
+	},
 	render: function() {
-		var tracks = _.map(this.state.Queue, (function (id) {
-			return <Track key={id.UID} id={id}/>;
-		}));
+		var q = _.map(this.state.Queue, function(val) {
+			return {
+				ID: val
+			};
+		});
 		return (
-			<table className="table">
-				<thead>
-					<tr>
-						<th>Name</th>
-						<th>Time</th>
-						<th>Artist</th>
-						<th>Album</th>
-					</tr>
-				</thead>
-				<tbody>{tracks}</tbody>
-			</table>
+			<div>
+				<button onClick={this.clear}>clear</button>
+				<Tracks tracks={q} />
+			</div>
 		);
 	}
 });

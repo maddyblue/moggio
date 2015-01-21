@@ -7,10 +7,8 @@ var Track = React.createClass({
 			'clear',
 			'add-' + this.props.id.UID
 		]);
-		POST('/api/cmd/stop', null, function() {
-			POST('/api/queue/change', params, function() {
-				POST('/api/cmd/play');
-			});
+		POST('/api/queue/change', params, function() {
+			POST('/api/cmd/play');
 		});
 	},
 	getInitialState: function() {
@@ -50,13 +48,9 @@ var Track = React.createClass({
 	}
 });
 
-var TrackList = React.createClass({
-	mixins: [Reflux.listenTo(Stores.tracks, 'setState')],
-	getInitialState: function() {
-		return Stores.tracks.data || {};
-	},
+var Tracks = React.createClass({
 	render: function() {
-		var tracks = _.map(this.state.Tracks, (function (t) {
+		var tracks = _.map(this.props.tracks, (function (t) {
 			return <Track key={t.ID.UID} id={t.ID} info={t.Info} />;
 		}));
 		return (
@@ -72,5 +66,15 @@ var TrackList = React.createClass({
 				<tbody>{tracks}</tbody>
 			</table>
 		);
+	}
+});
+
+var TrackList = React.createClass({
+	mixins: [Reflux.listenTo(Stores.tracks, 'setState')],
+	getInitialState: function() {
+		return Stores.tracks.data || {};
+	},
+	render: function() {
+		return <Tracks tracks={this.state.Tracks} />;
 	}
 });
