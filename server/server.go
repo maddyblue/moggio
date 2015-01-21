@@ -7,10 +7,12 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"math/rand"
 	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -270,7 +272,8 @@ func (srv *Server) GetMux(devMode bool) *http.ServeMux {
 	router := httprouter.New()
 	router.GET("/api/oauth/:protocol", srv.OAuth)
 	router.POST("/api/cmd/:cmd", JSON(srv.Cmd))
-	router.POST("/api/playlist/change", JSON(srv.PlaylistChange))
+	router.POST("/api/queue/change", JSON(srv.QueueChange))
+	router.POST("/api/playlist/change/:playlist", JSON(srv.PlaylistChange))
 	router.POST("/api/protocol/add", JSON(srv.ProtocolAdd))
 	router.POST("/api/protocol/remove", JSON(srv.ProtocolRemove))
 	mux := http.NewServeMux()
@@ -360,6 +363,17 @@ func (srv *Server) audio() {
 		log.Println("stop")
 		srv.state = stateStop
 		t = nil
+		if srv.song != nil {
+			if srv.Random && len(srv.Queue) > 1 {
+				n := srv.playlistIndex
+				for n != srv.playlistIndex {
+					n = rand.Intn(len(srv.Queue))
+				}
+				srv.playlistIndex = n
+			} else {
+				srv.playlistIndex++
+			}
+		}
 		srv.song = nil
 	}
 	tick = func() {
@@ -372,11 +386,12 @@ func (srv *Server) audio() {
 				log.Println("empty queue")
 				stop()
 				return
-			} else if srv.playlistIndex >= len(srv.Queue) {
+			}
+			if srv.playlistIndex >= len(srv.Queue) {
 				if srv.Repeat {
 					srv.playlistIndex = 0
 				} else {
-					log.Println("end of queue")
+					log.Println("end of queue", srv.playlistIndex, len(srv.Queue))
 					stop()
 					return
 				}
@@ -384,7 +399,6 @@ func (srv *Server) audio() {
 
 			srv.songID = srv.Queue[srv.playlistIndex]
 			sid := srv.songID
-			srv.playlistIndex++
 			song, err := srv.Protocols[sid.Protocol][sid.Key].GetSong(sid.ID)
 			if err != nil {
 				panic(err)
@@ -616,54 +630,93 @@ func (srv *Server) ProtocolRemove(form url.Values, ps httprouter.Params) (interf
 	return nil, nil
 }
 
-// Takes form values:
-// * clear: if set to anything will clear playlist
-// * remove/add: song ids
-// Duplicate songs will not be added.
-func (srv *Server) PlaylistChange(form url.Values, ps httprouter.Params) (interface{}, error) {
-	srv.playlistIndex = 0
-	errs := make([]error, 0)
+func (srv *Server) playlistChange(p Playlist, form url.Values, isq bool) (Playlist, error) {
+	m := make([]*SongID, len(p))
+	for i, v := range p {
+		m[i] = &v
+	}
+	for _, c := range form["c"] {
+		sp := strings.SplitN(c, "-", 2)
+		switch sp[0] {
+		case "clear":
+			for i := range m {
+				m[i] = nil
+			}
+			if isq {
+				srv.ch <- cmdStop
+				srv.playlistIndex = 0
+			}
+		case "rem":
+			i, err := strconv.Atoi(sp[1])
+			if err != nil {
+				return nil, err
+			}
+			if len(m) <= i {
+				return nil, fmt.Errorf("unknown index: %v", i)
+			}
+			m[i] = nil
+		case "add":
+			id, err := ParseSongID(sp[1])
+			if err != nil {
+				return nil, err
+			}
+			m = append(m, &id)
+		case "set":
+			i, err := strconv.Atoi(sp[1])
+			if err != nil {
+				return nil, err
+			}
+			if len(m) <= i {
+				return nil, fmt.Errorf("unknown index: %v", i)
+			}
+			id, err := ParseSongID(sp[2])
+			if err != nil {
+				return nil, err
+			}
+			m[i] = &id
+		default:
+			return nil, fmt.Errorf("unknown command: %v", sp[0])
+		}
+	}
+	var pl Playlist
+	for _, id := range m {
+		if id != nil {
+			pl = append(pl, *id)
+		}
+	}
+	return pl, nil
+}
+
+func (srv *Server) QueueChange(form url.Values, ps httprouter.Params) (interface{}, error) {
 	srv.lock.Lock()
-	if len(form["clear"]) > 0 {
-		srv.Queue = nil
-		srv.ch <- cmdStop
+	n, err := srv.playlistChange(srv.Queue, form, true)
+	if err != nil {
+		return nil, err
 	}
-	m := make(map[SongID]int)
-	for i, id := range srv.Queue {
-		m[id] = i
-	}
-	for _, rem := range form["remove"] {
-		id, err := ParseSongID(rem)
-		if err != nil {
-			errs = append(errs, err)
-			continue
-		}
-		if s, ok := srv.songs[id]; !ok {
-			errs = append(errs, fmt.Errorf("unknown id: %v", rem))
-		} else if *s == srv.info {
-			srv.ch <- cmdStop
-		}
-		delete(m, id)
-	}
-	for _, add := range form["add"] {
-		var id SongID
-		if err := json.Unmarshal([]byte(add), &id); err != nil {
-			errs = append(errs, err)
-			continue
-		}
-		if _, ok := srv.songs[id]; !ok {
-			errs = append(errs, fmt.Errorf("unknown id: %v", add))
-		}
-		m[id] = len(m)
-	}
-	srv.Queue = make(Playlist, len(m))
-	for songid, index := range m {
-		srv.Queue[index] = songid
-	}
+	srv.Queue = n
+	fmt.Println("QUEUE CHANGE", srv.Queue)
 	srv.lock.Unlock()
 	srv.Save()
 	srv.broadcast(waitPlaylist)
-	return errs, nil
+	return nil, nil
+}
+
+func (srv *Server) PlaylistChange(form url.Values, ps httprouter.Params) (interface{}, error) {
+	name := ps.ByName("playlist")
+	p, ok := srv.Playlists[name]
+	if !ok {
+		return nil, fmt.Errorf("playlist %v not found", name)
+	}
+	srv.lock.Lock()
+	n, err := srv.playlistChange(p, form, false)
+	if err != nil {
+		return nil, err
+	}
+	srv.Playlists[name] = n
+	srv.lock.Unlock()
+	srv.Save()
+	srv.broadcast(waitPlaylist)
+	return nil, nil
 }
 
 type listItem struct {

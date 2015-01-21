@@ -3,13 +3,15 @@
 var Track = React.createClass({
 	mixins: [Reflux.listenTo(Stores.tracks, 'update')],
 	play: function() {
-		var params = {
-			"clear": true,
-			"add": JSON.stringify(this.props.id)
-		};
-		POST('/api/playlist/change', params, function() {
+		var params = mkcmd([
+			'clear',
+			'add-' + this.props.id.UID
+		]);
+		POST('/api/cmd/stop', null, function() {
+			POST('/api/queue/change', params, function() {
 				POST('/api/cmd/play');
 			});
+		});
 	},
 	getInitialState: function() {
 		if (this.props.info) {
@@ -55,7 +57,7 @@ var TrackList = React.createClass({
 	},
 	render: function() {
 		var tracks = _.map(this.state.Tracks, (function (t) {
-			return <Track key={t.UID} id={t.ID} info={t.Info} />;
+			return <Track key={t.ID.UID} id={t.ID} info={t.Info} />;
 		}));
 		return (
 			<table className="table">

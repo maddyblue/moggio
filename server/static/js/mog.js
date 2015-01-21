@@ -60,6 +60,15 @@ function POST(path, params, success) {
 	xhr.send(data);
 }
 
+function mkcmd(cmds) {
+	return _.map(cmds, function(val) {
+		return {
+			"name": "c",
+			"value": val
+		};
+	});
+}
+
 var Time = React.createClass({displayName: "Time",
 	render: function() {
 		var t = this.props.time / 1e9;
@@ -76,13 +85,15 @@ var Time = React.createClass({displayName: "Time",
 var Track = React.createClass({displayName: "Track",
 	mixins: [Reflux.listenTo(Stores.tracks, 'update')],
 	play: function() {
-		var params = {
-			"clear": true,
-			"add": JSON.stringify(this.props.id)
-		};
-		POST('/api/playlist/change', params, function() {
+		var params = mkcmd([
+			'clear',
+			'add-' + this.props.id.UID
+		]);
+		POST('/api/cmd/stop', null, function() {
+			POST('/api/queue/change', params, function() {
 				POST('/api/cmd/play');
 			});
+		});
 	},
 	getInitialState: function() {
 		if (this.props.info) {
@@ -128,7 +139,7 @@ var TrackList = React.createClass({displayName: "TrackList",
 	},
 	render: function() {
 		var tracks = _.map(this.state.Tracks, (function (t) {
-			return React.createElement(Track, {key: t.UID, id: t.ID, info: t.Info});
+			return React.createElement(Track, {key: t.ID.UID, id: t.ID, info: t.Info});
 		}));
 		return (
 			React.createElement("table", {className: "table"}, 

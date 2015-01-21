@@ -60,6 +60,15 @@ function POST(path, params, success) {
 	xhr.send(data);
 }
 
+function mkcmd(cmds) {
+	return _.map(cmds, function(val) {
+		return {
+			"name": "c",
+			"value": val
+		};
+	});
+}
+
 var Time = React.createClass({
 	render: function() {
 		var t = this.props.time / 1e9;
