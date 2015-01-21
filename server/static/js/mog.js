@@ -403,13 +403,22 @@ var Player = React.createClass({displayName: "Player",
 	render: function() {
 		var status;
 		if (this.state.Song && this.state.Song.ID) {
+			var info = Lookup(this.state.Song);
+			var song = this.state.Song.UID;
+			if (info) {
+				song = (
+					React.createElement("span", null, 
+						info.Info.Title, " - ", info.Info.Album, " - ", info.Info.Artist
+					)
+				);
+			}
 			status = (
 				React.createElement("span", null, 
 					React.createElement("span", null, 
 						React.createElement(Time, {time: this.state.Elapsed}), " /", 
 						React.createElement(Time, {time: this.state.Time})
 					), 
-					React.createElement("span", null, "song: ", this.state.Song)
+					song
 				)
 			);
 		};

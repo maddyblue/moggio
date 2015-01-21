@@ -59,13 +59,22 @@ var Player = React.createClass({
 	render: function() {
 		var status;
 		if (this.state.Song && this.state.Song.ID) {
+			var info = Lookup(this.state.Song);
+			var song = this.state.Song.UID;
+			if (info) {
+				song = (
+					<span>
+						{info.Info.Title} - {info.Info.Album} - {info.Info.Artist}
+					</span>
+				);
+			}
 			status = (
 				<span>
 					<span>
 						<Time time={this.state.Elapsed} /> /
 						<Time time={this.state.Time} />
 					</span>
-					<span>song: {this.state.Song}</span>
+					{song}
 				</span>
 			);
 		};
