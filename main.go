@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 
@@ -36,6 +37,7 @@ var (
 
 func main() {
 	flag.Parse()
+	runtime.GOMAXPROCS(runtime.NumCPU())
 	if *flagWatch {
 		watch(".", "*.go", quit)
 		base := filepath.Join("server", "static")
