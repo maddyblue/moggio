@@ -22,6 +22,7 @@ An audio player written in Go.
 - When run, can play your MP3 and NSF files from Dropbox, Google Drive, Soundcloud, local hard drive, and Google Music.
 - UI is improving but usable enough.
 - Connect to [http://localhost:6601](http://localhost:6601) to see the UI.
+- Dropbox, Google Drive, and Soundcloud use my API keys by default, but can be changed on the command line. Their oauth redirects go to `localhost:6601`.
 
 # todo
 
