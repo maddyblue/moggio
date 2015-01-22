@@ -667,8 +667,10 @@ func (srv *Server) playlistChange(p Playlist, form url.Values, isq bool) (Playli
 				m[i] = nil
 			}
 			if isq {
-				srv.ch <- cmdStop
-				srv.PlaylistIndex = 0
+				go func() {
+					srv.ch <- cmdStop
+					srv.PlaylistIndex = 0
+				}()
 			}
 		case "rem":
 			i, err := strconv.Atoi(sp[1])
