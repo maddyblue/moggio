@@ -28,4 +28,4 @@ An audio player written in Go.
 
 - NSF codec working but needs improvement: bandpass filter on output; square wave 1 needs slightly tweaked behavior wrt square wave 2; needs more tests, especially some timing tests
 - google music can login, fetch playlists and request an MP3 stream; needs to support the non-android protocol to download the device IDs, not sure how the auth works for it
-- MP3 support is working but needs ID3 support≈
+- MP3 support is working but needs ID3 support
