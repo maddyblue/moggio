@@ -164,6 +164,7 @@ var Track = React.createClass({displayName: "Track",
 			);
 		}
 		var control;
+		var track;
 		if (this.state.over) {
 			if (this.props.isqueue) {
 				control = (
@@ -178,11 +179,15 @@ var Track = React.createClass({displayName: "Track",
 					)
 				);
 			}
+			track = React.createElement("button", {onClick: this.play}, "▶");
+		} else {
+			track = info.Track || '';
 		}
 		return (
 			React.createElement("tr", {onMouseEnter: this.over, onMouseLeave: this.out}, 
-				React.createElement("td", null, React.createElement("button", {className: "btn btn-default btn-sm", onClick: this.play}, "▶"), " ", info.Title), 
-				React.createElement("td", {style: {width: '70px'}}, control), 
+				React.createElement("td", {className: "control"}, track), 
+				React.createElement("td", null, info.Title), 
+				React.createElement("td", {className: "control"}, control), 
 				React.createElement("td", null, React.createElement(Time, {time: info.Time})), 
 				React.createElement("td", null, React.createElement(Link, {to: "artist", params: info}, info.Artist)), 
 				React.createElement("td", null, React.createElement(Link, {to: "album", params: info}, info.Album))
@@ -224,9 +229,10 @@ var Tracks = React.createClass({displayName: "Tracks",
 		return (
 			React.createElement("div", null, 
 				queue, 
-				React.createElement("table", {className: "table"}, 
+				React.createElement("table", {className: "u-full-width tracks"}, 
 					React.createElement("thead", null, 
 						React.createElement("tr", null, 
+							React.createElement("th", null, "#"), 
 							React.createElement("th", null, "Name"), 
 							React.createElement("th", null), 
 							React.createElement("th", null, "Time"), 

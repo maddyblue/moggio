@@ -60,6 +60,7 @@ var Track = React.createClass({
 			);
 		}
 		var control;
+		var track;
 		if (this.state.over) {
 			if (this.props.isqueue) {
 				control = (
@@ -74,11 +75,15 @@ var Track = React.createClass({
 					</div>
 				);
 			}
+			track = <button onClick={this.play}>&#x25b6;</button>;
+		} else {
+			track = info.Track || '';
 		}
 		return (
 			<tr onMouseEnter={this.over} onMouseLeave={this.out}>
-				<td><button className="btn btn-default btn-sm" onClick={this.play}>&#x25b6;</button> {info.Title}</td>
-				<td style={{width: '70px'}}>{control}</td>
+				<td className="control">{track}</td>
+				<td>{info.Title}</td>
+				<td className="control">{control}</td>
 				<td><Time time={info.Time} /></td>
 				<td><Link to="artist" params={info}>{info.Artist}</Link></td>
 				<td><Link to="album" params={info}>{info.Album}</Link></td>
@@ -120,9 +125,10 @@ var Tracks = React.createClass({
 		return (
 			<div>
 				{queue}
-				<table className="table">
+				<table className="u-full-width tracks">
 					<thead>
 						<tr>
+							<th>#</th>
 							<th>Name</th>
 							<th></th>
 							<th>Time</th>

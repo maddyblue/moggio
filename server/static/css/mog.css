@@ -60,3 +60,19 @@ footer > div {
 footer span {
 	margin-right: 10px;
 }
+
+table.tracks tr {
+	height: 55px;
+}
+
+table.tracks td.control {
+	width: 75px;
+}
+
+table.tracks button {
+	margin: 0;
+	padding: 0 10px;
+	font-size: 20px;
+	line-height: 0;
+	height: 30px;
+}
