@@ -1,6 +1,6 @@
 # mog
 
-A modern audio player written in Go.
+An audio player written in Go.
 
 # goals
 
@@ -19,7 +19,12 @@ A modern audio player written in Go.
 
 # current status
 
+- When run, can play your MP3 and NSF files from Dropbox, Google Drive, Soundcloud, local hard drive, and Google Music.
+- UI is improving but usable enough.
+- Connect to [http://localhost:6601](http://localhost:6601) to see the UI.
+
+# todo
+
 - NSF codec working but needs improvement: bandpass filter on output; square wave 1 needs slightly tweaked behavior wrt square wave 2; needs more tests, especially some timing tests
 - google music can login, fetch playlists and request an MP3 stream; needs to support the non-android protocol to download the device IDs, not sure how the auth works for it
-- MP3 support is working but needs ID3 support
-- Initial server API can load a NSF/MP3 via JSON commands and play it on the host
+- MP3 support is working but needs ID3 support≈
