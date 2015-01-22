@@ -69,7 +69,10 @@ function mkcmd(cmds) {
 	});
 }
 
-document.addEventListener('keyup', function(e) {
+document.addEventListener('keypress', function(e) {
+	if (document.activeElement != document.body) {
+		return;
+	}
 	var cmd;
 	switch (e.keyCode) {
 	case 32: // space
@@ -85,6 +88,7 @@ document.addEventListener('keyup', function(e) {
 		return;
 	}
 	POST('/api/cmd/' + cmd);
+	e.preventDefault();
 });
 
 var Time = React.createClass({displayName: "Time",
