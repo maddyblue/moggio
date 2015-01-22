@@ -20,7 +20,7 @@ var Playlist = React.createClass({
 		return (
 			<div>
 				<button onClick={this.clear}>clear</button>
-				<Tracks tracks={q} />
+				<Tracks tracks={q} isqueue={true} />
 			</div>
 		);
 	}

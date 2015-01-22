@@ -98,13 +98,14 @@ type Server struct {
 	Protocols map[string]map[string]protocol.Instance
 
 	// Current song data.
-	playlistIndex int
+	PlaylistIndex int
 	songID        SongID
 	song          codec.Song
 	info          codec.SongInfo
 	elapsed       time.Duration
 
 	ch          chan command
+	chParam     chan interface{}
 	waiters     map[chan *waitData]struct{}
 	state       State
 	songs       map[SongID]*codec.SongInfo
@@ -178,6 +179,7 @@ var dir = filepath.Join("server")
 func New(stateFile string) (*Server, error) {
 	srv := Server{
 		ch:        make(chan command),
+		chParam:   make(chan interface{}),
 		songs:     make(map[SongID]*codec.SongInfo),
 		Protocols: make(map[string]map[string]protocol.Instance),
 		Playlists: make(map[string]Playlist),
@@ -210,11 +212,6 @@ func New(stateFile string) (*Server, error) {
 		srv.stateFile = stateFile
 	}
 	go srv.audio()
-	go func() {
-		for range time.Tick(time.Millisecond * 250) {
-			srv.broadcast(waitStatus)
-		}
-	}()
 	return &srv, nil
 }
 
@@ -331,11 +328,12 @@ func (srv *Server) audio() {
 	var dur time.Duration
 	srv.state = stateStop
 	var next, stop, tick, play, pause, prev func()
+	var timer <-chan time.Time
 	prev = func() {
 		log.Println("prev")
-		srv.playlistIndex--
+		srv.PlaylistIndex--
 		if srv.elapsed < time.Second*3 {
-			srv.playlistIndex--
+			srv.PlaylistIndex--
 		}
 		next()
 	}
@@ -365,13 +363,13 @@ func (srv *Server) audio() {
 		t = nil
 		if srv.song != nil {
 			if srv.Random && len(srv.Queue) > 1 {
-				n := srv.playlistIndex
-				for n != srv.playlistIndex {
+				n := srv.PlaylistIndex
+				for n != srv.PlaylistIndex {
 					n = rand.Intn(len(srv.Queue))
 				}
-				srv.playlistIndex = n
+				srv.PlaylistIndex = n
 			} else {
-				srv.playlistIndex++
+				srv.PlaylistIndex++
 			}
 		}
 		srv.song = nil
@@ -387,17 +385,17 @@ func (srv *Server) audio() {
 				stop()
 				return
 			}
-			if srv.playlistIndex >= len(srv.Queue) {
+			if srv.PlaylistIndex >= len(srv.Queue) {
 				if srv.Repeat {
-					srv.playlistIndex = 0
+					srv.PlaylistIndex = 0
 				} else {
-					log.Println("end of queue", srv.playlistIndex, len(srv.Queue))
+					log.Println("end of queue", srv.PlaylistIndex, len(srv.Queue))
 					stop()
 					return
 				}
 			}
 
-			srv.songID = srv.Queue[srv.playlistIndex]
+			srv.songID = srv.Queue[srv.PlaylistIndex]
 			sid := srv.songID
 			song, err := srv.Protocols[sid.Protocol][sid.Key].GetSong(sid.ID)
 			if err != nil {
@@ -429,16 +427,26 @@ func (srv *Server) audio() {
 			if len(next) > 0 {
 				o.Push(next)
 			}
+			select {
+			case <-timer:
+				srv.broadcast(waitStatus)
+				timer = nil
+			default:
+			}
+			if timer == nil {
+				timer = time.After(time.Millisecond * 500)
+			}
 		}
 		if len(next) < expected || err != nil {
 			log.Println("end of song", len(next), expected, err)
 			stop()
+			play()
 		}
 	}
 	play = func() {
 		log.Println("play")
-		if srv.playlistIndex > len(srv.Queue) {
-			srv.playlistIndex = 0
+		if srv.PlaylistIndex > len(srv.Queue) {
+			srv.PlaylistIndex = 0
 		}
 		tick()
 	}
@@ -458,10 +466,15 @@ func (srv *Server) audio() {
 				pause()
 			case cmdPrev:
 				prev()
+			case cmdPlayIdx:
+				stop()
+				srv.PlaylistIndex = (<-srv.chParam).(int)
+				play()
 			default:
 				panic("unknown command")
 			}
 			srv.broadcast(waitStatus)
+			srv.Save()
 		}
 	}
 }
@@ -474,6 +487,7 @@ const (
 	cmdNext
 	cmdPause
 	cmdPrev
+	cmdPlayIdx
 )
 
 func JSON(h func(url.Values, httprouter.Params) (interface{}, error)) httprouter.Handle {
@@ -543,6 +557,13 @@ func (srv *Server) Cmd(form url.Values, ps httprouter.Params) (interface{}, erro
 		srv.ch <- cmdPrev
 	case "pause":
 		srv.ch <- cmdPause
+	case "play_idx":
+		i, err := strconv.Atoi(form.Get("idx"))
+		if err != nil {
+			return nil, err
+		}
+		go func() { srv.chParam <- i }()
+		srv.ch <- cmdPlayIdx
 	default:
 		return nil, fmt.Errorf("unknown command: %v", cmd)
 	}
@@ -645,7 +666,7 @@ func (srv *Server) playlistChange(p Playlist, form url.Values, isq bool) (Playli
 			}
 			if isq {
 				srv.ch <- cmdStop
-				srv.playlistIndex = 0
+				srv.PlaylistIndex = 0
 			}
 		case "rem":
 			i, err := strconv.Atoi(sp[1])

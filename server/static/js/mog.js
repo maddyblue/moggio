@@ -85,13 +85,17 @@ var Time = React.createClass({displayName: "Time",
 var Track = React.createClass({displayName: "Track",
 	mixins: [Reflux.listenTo(Stores.tracks, 'update')],
 	play: function() {
-		var params = mkcmd([
-			'clear',
-			'add-' + this.props.id.UID
-		]);
-		POST('/api/queue/change', params, function() {
-			POST('/api/cmd/play');
-		});
+		if (this.props.isqueue) {
+			POST('/api/cmd/play_idx?idx=' + this.props.idx);
+		} else {
+			var params = mkcmd([
+				'clear',
+				'add-' + this.props.id.UID
+			]);
+			POST('/api/queue/change', params, function() {
+				POST('/api/cmd/play');
+			});
+		}
 	},
 	getInitialState: function() {
 		if (this.props.info) {
@@ -149,10 +153,10 @@ var Tracks = React.createClass({displayName: "Tracks",
 	},
 	render: function() {
 		var tracks = _.map(this.props.tracks, function(t, idx) {
-			return React.createElement(Track, {key: idx + '-' + t.ID.UID, id: t.ID, info: t.Info});
-		});
+			return React.createElement(Track, {key: idx + '-' + t.ID.UID, id: t.ID, info: t.Info, idx: idx, isqueue: this.props.isqueue});
+		}.bind(this));
 		var queue;
-		if (this.props.queuer) {
+		if (!this.props.isqueue) {
 			queue = (
 				React.createElement("div", null, 
 					React.createElement("button", {onClick: this.play}, "play"), 
@@ -186,7 +190,7 @@ var TrackList = React.createClass({displayName: "TrackList",
 		return Stores.tracks.data || {};
 	},
 	render: function() {
-		return React.createElement(Tracks, {tracks: this.state.Tracks, queuer: true});
+		return React.createElement(Tracks, {tracks: this.state.Tracks});
 	}
 });
 
@@ -204,7 +208,7 @@ function searchClass(field) {
 					tracks.push(val);
 				}
 			});
-			return React.createElement(Tracks, {tracks: tracks, queuer: true});
+			return React.createElement(Tracks, {tracks: tracks});
 		}
 	});
 }
@@ -388,7 +392,7 @@ var Playlist = React.createClass({displayName: "Playlist",
 		return (
 			React.createElement("div", null, 
 				React.createElement("button", {onClick: this.clear}, "clear"), 
-				React.createElement(Tracks, {tracks: q})
+				React.createElement(Tracks, {tracks: q, isqueue: true})
 			)
 		);
 	}

@@ -3,13 +3,17 @@
 var Track = React.createClass({
 	mixins: [Reflux.listenTo(Stores.tracks, 'update')],
 	play: function() {
-		var params = mkcmd([
-			'clear',
-			'add-' + this.props.id.UID
-		]);
-		POST('/api/queue/change', params, function() {
-			POST('/api/cmd/play');
-		});
+		if (this.props.isqueue) {
+			POST('/api/cmd/play_idx?idx=' + this.props.idx);
+		} else {
+			var params = mkcmd([
+				'clear',
+				'add-' + this.props.id.UID
+			]);
+			POST('/api/queue/change', params, function() {
+				POST('/api/cmd/play');
+			});
+		}
 	},
 	getInitialState: function() {
 		if (this.props.info) {
@@ -67,10 +71,10 @@ var Tracks = React.createClass({
 	},
 	render: function() {
 		var tracks = _.map(this.props.tracks, function(t, idx) {
-			return <Track key={idx + '-' + t.ID.UID} id={t.ID} info={t.Info} />;
-		});
+			return <Track key={idx + '-' + t.ID.UID} id={t.ID} info={t.Info} idx={idx} isqueue={this.props.isqueue} />;
+		}.bind(this));
 		var queue;
-		if (this.props.queuer) {
+		if (!this.props.isqueue) {
 			queue = (
 				<div>
 					<button onClick={this.play}>play</button>
@@ -104,7 +108,7 @@ var TrackList = React.createClass({
 		return Stores.tracks.data || {};
 	},
 	render: function() {
-		return <Tracks tracks={this.state.Tracks} queuer={true} />;
+		return <Tracks tracks={this.state.Tracks} />;
 	}
 });
 
@@ -122,7 +126,7 @@ function searchClass(field) {
 					tracks.push(val);
 				}
 			});
-			return <Tracks tracks={tracks} queuer={true} />;
+			return <Tracks tracks={tracks} />;
 		}
 	});
 }
