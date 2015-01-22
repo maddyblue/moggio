@@ -310,8 +310,10 @@ func (srv *Server) WebSocket(ws *websocket.Conn) {
 		go func(d *waitData) {
 			if err := websocket.JSON.Send(ws, d); err != nil {
 				srv.lock.Lock()
-				delete(srv.waiters, c)
-				close(c)
+				if _, ok := srv.waiters[c]; ok {
+					delete(srv.waiters, c)
+					close(c)
+				}
 				srv.lock.Unlock()
 			}
 		}(d)
