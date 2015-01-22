@@ -703,10 +703,11 @@ func (srv *Server) QueueChange(form url.Values, ps httprouter.Params) (interface
 	n, err := srv.playlistChange(srv.Queue, form, true)
 	if err != nil {
 		return nil, err
+	} else {
+		srv.Queue = n
+		srv.Save()
 	}
-	srv.Queue = n
 	srv.lock.Unlock()
-	srv.Save()
 	srv.broadcast(waitPlaylist)
 	return nil, nil
 }
@@ -721,10 +722,11 @@ func (srv *Server) PlaylistChange(form url.Values, ps httprouter.Params) (interf
 	n, err := srv.playlistChange(p, form, false)
 	if err != nil {
 		return nil, err
+	} else {
+		srv.Playlists[name] = n
+		srv.Save()
 	}
-	srv.Playlists[name] = n
 	srv.lock.Unlock()
-	srv.Save()
 	srv.broadcast(waitPlaylist)
 	return nil, nil
 }
