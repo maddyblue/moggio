@@ -179,7 +179,7 @@ var dir = filepath.Join("server")
 func New(stateFile string) (*Server, error) {
 	srv := Server{
 		ch:        make(chan command),
-		chParam:   make(chan interface{}),
+		chParam:   make(chan interface{}, 1),
 		songs:     make(map[SongID]*codec.SongInfo),
 		Protocols: make(map[string]map[string]protocol.Instance),
 		Playlists: make(map[string]Playlist),
@@ -562,7 +562,7 @@ func (srv *Server) Cmd(form url.Values, ps httprouter.Params) (interface{}, erro
 		if err != nil {
 			return nil, err
 		}
-		go func() { srv.chParam <- i }()
+		srv.chParam <- i
 		srv.ch <- cmdPlayIdx
 	default:
 		return nil, fmt.Errorf("unknown command: %v", cmd)
