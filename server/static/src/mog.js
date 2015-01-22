@@ -69,6 +69,24 @@ function mkcmd(cmds) {
 	});
 }
 
+document.addEventListener('keyup', function(e) {
+	var cmd;
+	switch (e.keyCode) {
+	case 32: // space
+		cmd = 'pause';
+		break;
+	case 37: // left
+		cmd = 'prev';
+		break;
+	case 39: // right
+		cmd = 'next';
+		break;
+	default:
+		return;
+	}
+	POST('/api/cmd/' + cmd);
+});
+
 var Time = React.createClass({
 	render: function() {
 		var t = this.props.time / 1e9;
