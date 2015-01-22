@@ -11,9 +11,14 @@ type config struct {
 }
 
 type port struct {
-	st   *portaudio.Stream
-	ch   chan []float32
-	over []float32
+	st      *portaudio.Stream
+	ch      chan []float32
+	over    []float32
+	started bool
+}
+
+func init() {
+	portaudio.Initialize()
 }
 
 func Get(sampleRate, channels int) (Output, error) {
@@ -21,23 +26,29 @@ func Get(sampleRate, channels int) (Output, error) {
 		sr: sampleRate,
 		ch: channels,
 	}
+	for k, v := range ports {
+		if c != k {
+			v.st.Stop()
+			v.started = false
+		}
+	}
 	o := ports[c]
 	if o == nil {
-		portaudio.Initialize()
 		o = &port{
 			ch: make(chan []float32),
 		}
 		var err error
 		o.st, err = portaudio.OpenDefaultStream(0, channels, float64(sampleRate), 1024, o.Fetch)
 		if err != nil {
-			portaudio.Terminate()
-			return nil, err
-		}
-		if err := o.st.Start(); err != nil {
-			portaudio.Terminate()
 			return nil, err
 		}
 		ports[c] = o
+	}
+	if !o.started {
+		if err := o.st.Start(); err != nil {
+			return nil, err
+		}
+		o.started = true
 	}
 	return o, nil
 }
@@ -53,12 +64,18 @@ func (p *port) Fetch(out []float32) {
 	i := copy(out, p.over)
 	p.over = p.over[i:]
 	for i < len(out) {
-		s := <-p.ch
-		n := copy(out[i:], s)
-		if n < len(s) {
-			// Save anything we didn't need this time.
-			p.over = s[n:]
+		select {
+		case s := <-p.ch:
+			n := copy(out[i:], s)
+			if n < len(s) {
+				// Save anything we didn't need this time.
+				p.over = s[n:]
+			}
+			i += n
+		default:
+			z := make([]float32, len(out)-i)
+			copy(out[i:], z)
+			return
 		}
-		i += n
 	}
 }
