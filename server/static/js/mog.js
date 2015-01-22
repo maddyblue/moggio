@@ -526,9 +526,20 @@ var Player = React.createClass({displayName: "Player",
 			var info = Lookup(this.state.Song);
 			var song = this.state.Song.UID;
 			if (info) {
+				info = info.Info;
+				var album;
+				if (info.Album) {
+					album = React.createElement("span", null, "- ", React.createElement(Link, {to: "album", params: info}, info.Album));
+				}
+				var artist;
+				if (info.Artist) {
+					artist = React.createElement("span", null, "- ", React.createElement(Link, {to: "artist", params: info}, info.Artist));
+				}
 				song = (
 					React.createElement("span", null, 
-						info.Info.Title, " - ", info.Info.Album, " - ", info.Info.Artist
+						info.Title, 
+						album, 
+						artist
 					)
 				);
 			}
