@@ -32,6 +32,24 @@ var Track = React.createClass({
 	update: function() {
 		this.setState(this.getInitialState());
 	},
+	over: function() {
+		this.setState({over: true});
+	},
+	out: function() {
+		this.setState({over: false});
+	},
+	dequeue: function() {
+		var params = mkcmd([
+			'rem-' + this.props.idx
+		]);
+		POST('/api/queue/change', params);
+	},
+	append: function() {
+		var params = mkcmd([
+			'add-' + this.props.id.UID
+		]);
+		POST('/api/queue/change', params);
+	},
 	render: function() {
 		var info = this.state.info;
 		if (!info) {
@@ -41,9 +59,26 @@ var Track = React.createClass({
 				</tr>
 			);
 		}
+		var control;
+		if (this.state.over) {
+			if (this.props.isqueue) {
+				control = (
+					<div>
+						<button onClick={this.dequeue}>x</button>
+					</div>
+				);
+			} else {
+				control = (
+					<div>
+						<button onClick={this.append}>+</button>
+					</div>
+				);
+			}
+		}
 		return (
-			<tr>
+			<tr onMouseEnter={this.over} onMouseLeave={this.out}>
 				<td><button className="btn btn-default btn-sm" onClick={this.play}>&#x25b6;</button> {info.Title}</td>
+				<td style={{width: '70px'}}>{control}</td>
 				<td><Time time={info.Time} /></td>
 				<td><Link to="artist" params={info}>{info.Artist}</Link></td>
 				<td><Link to="album" params={info}>{info.Album}</Link></td>
@@ -89,6 +124,7 @@ var Tracks = React.createClass({
 					<thead>
 						<tr>
 							<th>Name</th>
+							<th></th>
 							<th>Time</th>
 							<th>Artist</th>
 							<th>Album</th>

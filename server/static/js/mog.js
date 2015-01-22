@@ -136,6 +136,24 @@ var Track = React.createClass({displayName: "Track",
 	update: function() {
 		this.setState(this.getInitialState());
 	},
+	over: function() {
+		this.setState({over: true});
+	},
+	out: function() {
+		this.setState({over: false});
+	},
+	dequeue: function() {
+		var params = mkcmd([
+			'rem-' + this.props.idx
+		]);
+		POST('/api/queue/change', params);
+	},
+	append: function() {
+		var params = mkcmd([
+			'add-' + this.props.id.UID
+		]);
+		POST('/api/queue/change', params);
+	},
 	render: function() {
 		var info = this.state.info;
 		if (!info) {
@@ -145,9 +163,26 @@ var Track = React.createClass({displayName: "Track",
 				)
 			);
 		}
+		var control;
+		if (this.state.over) {
+			if (this.props.isqueue) {
+				control = (
+					React.createElement("div", null, 
+						React.createElement("button", {onClick: this.dequeue}, "x")
+					)
+				);
+			} else {
+				control = (
+					React.createElement("div", null, 
+						React.createElement("button", {onClick: this.append}, "+")
+					)
+				);
+			}
+		}
 		return (
-			React.createElement("tr", null, 
+			React.createElement("tr", {onMouseEnter: this.over, onMouseLeave: this.out}, 
 				React.createElement("td", null, React.createElement("button", {className: "btn btn-default btn-sm", onClick: this.play}, "▶"), " ", info.Title), 
+				React.createElement("td", {style: {width: '70px'}}, control), 
 				React.createElement("td", null, React.createElement(Time, {time: info.Time})), 
 				React.createElement("td", null, React.createElement(Link, {to: "artist", params: info}, info.Artist)), 
 				React.createElement("td", null, React.createElement(Link, {to: "album", params: info}, info.Album))
@@ -193,6 +228,7 @@ var Tracks = React.createClass({displayName: "Tracks",
 					React.createElement("thead", null, 
 						React.createElement("tr", null, 
 							React.createElement("th", null, "Name"), 
+							React.createElement("th", null), 
 							React.createElement("th", null, "Time"), 
 							React.createElement("th", null, "Artist"), 
 							React.createElement("th", null, "Album")
