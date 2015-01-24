@@ -76,3 +76,13 @@ table.tracks button {
 	line-height: 0;
 	height: 30px;
 }
+
+.sort-asc::after {
+	content: "▲";
+	padding-left: 5px;
+}
+
+.sort-desc::after {
+	content: "▼";
+	padding-left: 5px;
+}

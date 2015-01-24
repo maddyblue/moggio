@@ -93,6 +93,12 @@ var Track = React.createClass({
 });
 
 var Tracks = React.createClass({
+	getInitialState: function() {
+		return {
+			sort: 'Title',
+			asc: true,
+		};
+	},
 	mkparams: function() {
 		return _.map(this.props.tracks, function(t) {
 			return 'add-' + t.ID.UID;
@@ -109,8 +115,39 @@ var Tracks = React.createClass({
 		var params = this.mkparams();
 		POST('/api/queue/change', mkcmd(params));
 	},
+	sort: function(field) {
+		return function() {
+			if (this.state.sort == field) {
+				this.setState({asc: !this.state.asc});
+			} else {
+				this.setState({sort: field});
+			}
+		}.bind(this);
+	},
+	sortClass: function(field) {
+		if (this.props.isqueue || this.state.sort != field) {
+			return '';
+		}
+		return this.state.asc ? 'sort-asc' : 'sort-desc';
+	},
 	render: function() {
-		var tracks = _.map(this.props.tracks, function(t, idx) {
+		var sorted = this.props.tracks;
+		if (!this.props.isqueue) {
+			sorted = _.sortBy(this.props.tracks, function(v) {
+				if (!v.Info) {
+					return v.ID.UID;
+				}
+				var d = v.Info[this.state.sort];
+				if (_.isString(d)) {
+					d = d.toLocaleLowerCase();
+				}
+				return d;
+			}.bind(this));
+			if (!this.state.asc) {
+				sorted.reverse();
+			}
+		}
+		var tracks = _.map(sorted, function(t, idx) {
 			return <Track key={idx + '-' + t.ID.UID} id={t.ID} info={t.Info} idx={idx} isqueue={this.props.isqueue} />;
 		}.bind(this));
 		var queue;
@@ -122,18 +159,19 @@ var Tracks = React.createClass({
 				</div>
 			);
 		};
+		var track = this.props.isqueue ? <th></th> : <th className={this.sortClass('Track')} onClick={this.sort('Track')}>#</th>;
 		return (
 			<div>
 				{queue}
 				<table className="u-full-width tracks">
 					<thead>
 						<tr>
-							<th>#</th>
-							<th>Name</th>
+							{track}
+							<th className={this.sortClass('Title')} onClick={this.sort('Title')}>Name</th>
 							<th></th>
-							<th>Time</th>
-							<th>Artist</th>
-							<th>Album</th>
+							<th className={this.sortClass('Time')} onClick={this.sort('Time')}>Time</th>
+							<th className={this.sortClass('Artist')} onClick={this.sort('Artist')}>Artist</th>
+							<th className={this.sortClass('Album')} onClick={this.sort('Album')}>Album</th>
 						</tr>
 					</thead>
 					<tbody>{tracks}</tbody>

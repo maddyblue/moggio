@@ -197,6 +197,12 @@ var Track = React.createClass({displayName: "Track",
 });
 
 var Tracks = React.createClass({displayName: "Tracks",
+	getInitialState: function() {
+		return {
+			sort: 'Title',
+			asc: true,
+		};
+	},
 	mkparams: function() {
 		return _.map(this.props.tracks, function(t) {
 			return 'add-' + t.ID.UID;
@@ -213,8 +219,39 @@ var Tracks = React.createClass({displayName: "Tracks",
 		var params = this.mkparams();
 		POST('/api/queue/change', mkcmd(params));
 	},
+	sort: function(field) {
+		return function() {
+			if (this.state.sort == field) {
+				this.setState({asc: !this.state.asc});
+			} else {
+				this.setState({sort: field});
+			}
+		}.bind(this);
+	},
+	sortClass: function(field) {
+		if (this.props.isqueue || this.state.sort != field) {
+			return '';
+		}
+		return this.state.asc ? 'sort-asc' : 'sort-desc';
+	},
 	render: function() {
-		var tracks = _.map(this.props.tracks, function(t, idx) {
+		var sorted = this.props.tracks;
+		if (!this.props.isqueue) {
+			sorted = _.sortBy(this.props.tracks, function(v) {
+				if (!v.Info) {
+					return v.ID.UID;
+				}
+				var d = v.Info[this.state.sort];
+				if (_.isString(d)) {
+					d = d.toLocaleLowerCase();
+				}
+				return d;
+			}.bind(this));
+			if (!this.state.asc) {
+				sorted.reverse();
+			}
+		}
+		var tracks = _.map(sorted, function(t, idx) {
 			return React.createElement(Track, {key: idx + '-' + t.ID.UID, id: t.ID, info: t.Info, idx: idx, isqueue: this.props.isqueue});
 		}.bind(this));
 		var queue;
@@ -226,18 +263,19 @@ var Tracks = React.createClass({displayName: "Tracks",
 				)
 			);
 		};
+		var track = this.props.isqueue ? React.createElement("th", null) : React.createElement("th", {className: this.sortClass('Track'), onClick: this.sort('Track')}, "#");
 		return (
 			React.createElement("div", null, 
 				queue, 
 				React.createElement("table", {className: "u-full-width tracks"}, 
 					React.createElement("thead", null, 
 						React.createElement("tr", null, 
-							React.createElement("th", null, "#"), 
-							React.createElement("th", null, "Name"), 
+							track, 
+							React.createElement("th", {className: this.sortClass('Title'), onClick: this.sort('Title')}, "Name"), 
 							React.createElement("th", null), 
-							React.createElement("th", null, "Time"), 
-							React.createElement("th", null, "Artist"), 
-							React.createElement("th", null, "Album")
+							React.createElement("th", {className: this.sortClass('Time'), onClick: this.sort('Time')}, "Time"), 
+							React.createElement("th", {className: this.sortClass('Artist'), onClick: this.sort('Artist')}, "Artist"), 
+							React.createElement("th", {className: this.sortClass('Album'), onClick: this.sort('Album')}, "Album")
 						)
 					), 
 					React.createElement("tbody", null, tracks)
