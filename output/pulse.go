@@ -7,7 +7,6 @@ import (
 	"encoding/binary"
 	"log"
 
-	"code.google.com/p/portaudio-go/portaudio"
 	"github.com/mesilliac/pulse-simple"
 )
 
@@ -28,7 +27,6 @@ func Get(sampleRate, channels int) (Output, error) {
 	}
 	o := ports[c]
 	if o == nil {
-		portaudio.Initialize()
 		o = new(port)
 		var err error
 		ss := pulse.SampleSpec{pulse.SAMPLE_FLOAT32LE, uint32(sampleRate), uint8(channels)}
