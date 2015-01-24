@@ -244,6 +244,7 @@ func (srv *Server) save() {
 		log.Println(err)
 		return
 	}
+	f.Close()
 	if err := os.Rename(tmp, srv.stateFile); err != nil {
 		log.Println(err)
 		return
