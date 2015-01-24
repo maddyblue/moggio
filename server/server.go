@@ -267,6 +267,7 @@ func (srv *Server) GetMux(devMode bool) *http.ServeMux {
 		log.Fatal(err)
 	}
 	router := httprouter.New()
+	router.GET("/api/cmd/:cmd", JSON(srv.Cmd))
 	router.GET("/api/oauth/:protocol", srv.OAuth)
 	router.POST("/api/cmd/:cmd", JSON(srv.Cmd))
 	router.POST("/api/queue/change", JSON(srv.QueueChange))
