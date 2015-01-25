@@ -172,7 +172,7 @@ var Tracks = React.createClass({
 							{track}
 							<th className={this.sortClass('Title')} onClick={this.sort('Title')}>Name</th>
 							<th></th>
-							<th className={this.sortClass('Time')} onClick={this.sort('Time')}>Time</th>
+							<th className={this.sortClass('Time')} onClick={this.sort('Time')}>◷</th>
 							<th className={this.sortClass('Artist')} onClick={this.sort('Artist')}>Artist</th>
 							<th className={this.sortClass('Album')} onClick={this.sort('Album')}>Album</th>
 						</tr>

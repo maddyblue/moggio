@@ -568,6 +568,18 @@ func (srv *Server) Cmd(form url.Values, ps httprouter.Params) (interface{}, erro
 		}
 		srv.chParam <- i
 		srv.ch <- cmdPlayIdx
+	case "random":
+		srv.lock.Lock()
+		srv.Random = !srv.Random
+		srv.lock.Unlock()
+		srv.Save()
+		srv.broadcast(waitStatus)
+	case "repeat":
+		srv.lock.Lock()
+		srv.Repeat = !srv.Repeat
+		srv.lock.Unlock()
+		srv.Save()
+		srv.broadcast(waitStatus)
 	default:
 		return nil, fmt.Errorf("unknown command: %v", cmd)
 	}
@@ -762,12 +774,12 @@ func (srv *Server) status() *Status {
 		Song:    srv.songID,
 		Elapsed: srv.elapsed,
 		Time:    srv.info.Time,
+		Random:  srv.Random,
+		Repeat:  srv.Repeat,
 	}
 }
 
 type Status struct {
-	// Playlist ID.
-	Playlist int
 	// Playback state
 	State State
 	// Song ID.
@@ -775,7 +787,9 @@ type Status struct {
 	// Elapsed time of current song.
 	Elapsed time.Duration
 	// Duration of current song.
-	Time time.Duration
+	Time   time.Duration
+	Random bool
+	Repeat bool
 }
 
 func serveError(w http.ResponseWriter, err error) {

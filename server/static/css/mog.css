@@ -86,3 +86,7 @@ table.tracks button {
 	content: "▼";
 	padding-left: 5px;
 }
+
+button.highlight {
+	color: #33C3F0;
+}

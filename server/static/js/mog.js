@@ -276,7 +276,7 @@ var Tracks = React.createClass({displayName: "Tracks",
 							track, 
 							React.createElement("th", {className: this.sortClass('Title'), onClick: this.sort('Title')}, "Name"), 
 							React.createElement("th", null), 
-							React.createElement("th", {className: this.sortClass('Time'), onClick: this.sort('Time')}, "Time"), 
+							React.createElement("th", {className: this.sortClass('Time'), onClick: this.sort('Time')}, "◷"), 
 							React.createElement("th", {className: this.sortClass('Artist'), onClick: this.sort('Artist')}, "Artist"), 
 							React.createElement("th", {className: this.sortClass('Album'), onClick: this.sort('Album')}, "Album")
 						)
@@ -660,11 +660,15 @@ var Player = React.createClass({displayName: "Player",
 				play = '\u25b6';
 				break;
 		}
+		var repeat = this.state.Repeat ? 'highlight' : '';
+		var random = this.state.Random ? 'highlight' : '';
 		return (
 			React.createElement("div", null, 
+				React.createElement("span", null, React.createElement("button", {className: repeat, onClick: this.cmd('repeat')}, "↻")), 
 				React.createElement("span", null, React.createElement("button", {onClick: this.cmd('prev')}, "⇤")), 
 				React.createElement("span", null, React.createElement("button", {onClick: this.cmd('pause')}, play)), 
 				React.createElement("span", null, React.createElement("button", {onClick: this.cmd('next')}, "⇥")), 
+				React.createElement("span", null, React.createElement("button", {className: random, onClick: this.cmd('random')}, "⤮")), 
 				React.createElement("span", null, status)
 			)
 		);
