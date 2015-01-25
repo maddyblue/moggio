@@ -78,6 +78,9 @@ var Track = React.createClass({
 			track = <button onClick={this.play}>&#x25b6;</button>;
 		} else {
 			track = info.Track || '';
+			if (this.props.useIdxAsNum) {
+				track = this.props.idx + 1;
+			}
 		}
 		return (
 			<tr onMouseEnter={this.over} onMouseLeave={this.out}>
@@ -148,7 +151,7 @@ var Tracks = React.createClass({
 			}
 		}
 		var tracks = _.map(sorted, function(t, idx) {
-			return <Track key={idx + '-' + t.ID.UID} id={t.ID} info={t.Info} idx={idx} isqueue={this.props.isqueue} />;
+			return <Track key={idx + '-' + t.ID.UID} id={t.ID} info={t.Info} idx={idx} isqueue={this.props.isqueue} useIdxAsNum={this.props.useIdxAsNum} />;
 		}.bind(this));
 		var queue;
 		if (!this.props.isqueue) {

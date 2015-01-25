@@ -9,8 +9,12 @@ var RouteHandler = Router.RouteHandler;
 var Redirect = Router.Redirect;
 
 var App = React.createClass({
+	mixins: [Reflux.listenTo(Stores.playlist, 'setState')],
 	componentDidMount: function() {
 		this.startWS();
+	},
+	getInitialState: function() {
+		return {};
 	},
 	startWS: function() {
 		var ws = new WebSocket('ws://' + window.location.host + '/ws/');
@@ -27,14 +31,19 @@ var App = React.createClass({
 		}.bind(this);
 	},
 	render: function() {
+		var playlists = _.map(this.state.Playlists, function(_, key) {
+			return <li key={key}><Link to="playlist" params={{Playlist: key}}>{key}</Link></li>;
+		});
 		return (
 			<div>
 				<header>
 					<ul>
 						<li><Link to="app">Music</Link></li>
 						<li><Link to="protocols">Sources</Link></li>
-						<li><Link to="playlist">Playlist</Link></li>
+						<li><Link to="queue">Queue</Link></li>
 					</ul>
+					<h4>Playlists</h4>
+					<ul>{playlists}</ul>
 				</header>
 				<main>
 					<RouteHandler {...this.props}/>
@@ -114,11 +123,12 @@ var Player = React.createClass({
 
 var routes = (
 	<Route name="app" path="/" handler={App}>
-		<DefaultRoute handler={TrackList}/>
-		<Route name="protocols" handler={Protocols}/>
-		<Route name="playlist" handler={Playlist}/>
-		<Route name="album" path="/album/:Album" handler={Album}/>
-		<Route name="artist" path="/artist/:Artist" handler={Artist}/>
+		<DefaultRoute handler={TrackList} />
+		<Route name="album" path="/album/:Album" handler={Album} />
+		<Route name="artist" path="/artist/:Artist" handler={Artist} />
+		<Route name="playlist" path="/playlist/:Playlist" handler={Playlist} />
+		<Route name="protocols" handler={Protocols} />
+		<Route name="queue" handler={Queue} />
 	</Route>
 );
 

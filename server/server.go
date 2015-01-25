@@ -718,16 +718,17 @@ func (srv *Server) QueueChange(form url.Values, ps httprouter.Params) (interface
 
 func (srv *Server) PlaylistChange(form url.Values, ps httprouter.Params) (interface{}, error) {
 	name := ps.ByName("playlist")
-	p, ok := srv.Playlists[name]
-	if !ok {
-		return nil, fmt.Errorf("playlist %v not found", name)
-	}
+	p := srv.Playlists[name]
 	srv.lock.Lock()
 	n, err := srv.playlistChange(p, form, false)
 	if err != nil {
 		return nil, err
 	} else {
-		srv.Playlists[name] = n
+		if len(n) == 0 {
+			delete(srv.Playlists, name)
+		} else {
+			srv.Playlists[name] = n
+		}
 		srv.Save()
 	}
 	srv.lock.Unlock()

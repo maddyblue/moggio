@@ -182,6 +182,9 @@ var Track = React.createClass({displayName: "Track",
 			track = React.createElement("button", {onClick: this.play}, "▶");
 		} else {
 			track = info.Track || '';
+			if (this.props.useIdxAsNum) {
+				track = this.props.idx + 1;
+			}
 		}
 		return (
 			React.createElement("tr", {onMouseEnter: this.over, onMouseLeave: this.out}, 
@@ -252,7 +255,7 @@ var Tracks = React.createClass({displayName: "Tracks",
 			}
 		}
 		var tracks = _.map(sorted, function(t, idx) {
-			return React.createElement(Track, {key: idx + '-' + t.ID.UID, id: t.ID, info: t.Info, idx: idx, isqueue: this.props.isqueue});
+			return React.createElement(Track, {key: idx + '-' + t.ID.UID, id: t.ID, info: t.Info, idx: idx, isqueue: this.props.isqueue, useIdxAsNum: this.props.useIdxAsNum});
 		}.bind(this));
 		var queue;
 		if (!this.props.isqueue) {
@@ -474,7 +477,7 @@ var Protocol = React.createClass({displayName: "Protocol",
 });
 // @flow
 
-var Playlist = React.createClass({displayName: "Playlist",
+var Queue = React.createClass({displayName: "Queue",
 	mixins: [Reflux.listenTo(Stores.playlist, 'setState')],
 	getInitialState: function() {
 		return Stores.playlist.data || {};
@@ -485,6 +488,22 @@ var Playlist = React.createClass({displayName: "Playlist",
 		]);
 		POST('/api/queue/change', params);
 	},
+	save: function() {
+		var name = prompt("Playlist name:");
+		if (!name) {
+			return;
+		}
+		if (this.state.Playlists[name]) {
+			if (!window.confirm("Overwrite existing playlist?")) {
+				return;
+			}
+		}
+		var params = _.map(this.state.Queue, function(t) {
+			return 'add-' + t.UID;
+		});
+		params.unshift('clear');
+		POST('/api/playlist/change/' + name, mkcmd(params));
+	},
 	render: function() {
 		var q = _.map(this.state.Queue, function(val) {
 			return {
@@ -493,8 +512,38 @@ var Playlist = React.createClass({displayName: "Playlist",
 		});
 		return (
 			React.createElement("div", null, 
+				React.createElement("h4", null, "Queue"), 
 				React.createElement("button", {onClick: this.clear}, "clear"), 
+				React.createElement("button", {onClick: this.save}, "save"), 
 				React.createElement(Tracks, {tracks: q, isqueue: true})
+			)
+		);
+	}
+});
+
+var Playlist = React.createClass({displayName: "Playlist",
+	mixins: [Reflux.listenTo(Stores.playlist, 'setState')],
+	getInitialState: function() {
+		return Stores.playlist.data || {
+			Playlists: {}
+		};
+	},
+	clear: function() {
+		var params = mkcmd([
+			'clear',
+		]);
+		POST('/api/playlist/change/' + this.props.params.Playlist, params);
+	},
+	render: function() {
+		var q = _.map(this.state.Playlists[this.props.params.Playlist], function(val) {
+			return {
+				ID: val
+			};
+		});
+		return (
+			React.createElement("div", null, 
+				React.createElement("h4", null, this.props.params.Playlist), 
+				React.createElement(Tracks, {tracks: q, useIdxAsNum: true})
 			)
 		);
 	}
@@ -510,8 +559,12 @@ var RouteHandler = Router.RouteHandler;
 var Redirect = Router.Redirect;
 
 var App = React.createClass({displayName: "App",
+	mixins: [Reflux.listenTo(Stores.playlist, 'setState')],
 	componentDidMount: function() {
 		this.startWS();
+	},
+	getInitialState: function() {
+		return {};
 	},
 	startWS: function() {
 		var ws = new WebSocket('ws://' + window.location.host + '/ws/');
@@ -528,14 +581,19 @@ var App = React.createClass({displayName: "App",
 		}.bind(this);
 	},
 	render: function() {
+		var playlists = _.map(this.state.Playlists, function(_, key) {
+			return React.createElement("li", {key: key}, React.createElement(Link, {to: "playlist", params: {Playlist: key}}, key));
+		});
 		return (
 			React.createElement("div", null, 
 				React.createElement("header", null, 
 					React.createElement("ul", null, 
 						React.createElement("li", null, React.createElement(Link, {to: "app"}, "Music")), 
 						React.createElement("li", null, React.createElement(Link, {to: "protocols"}, "Sources")), 
-						React.createElement("li", null, React.createElement(Link, {to: "playlist"}, "Playlist"))
-					)
+						React.createElement("li", null, React.createElement(Link, {to: "queue"}, "Queue"))
+					), 
+					React.createElement("h4", null, "Playlists"), 
+					React.createElement("ul", null, playlists)
 				), 
 				React.createElement("main", null, 
 					React.createElement(RouteHandler, React.__spread({},  this.props))
@@ -616,10 +674,11 @@ var Player = React.createClass({displayName: "Player",
 var routes = (
 	React.createElement(Route, {name: "app", path: "/", handler: App}, 
 		React.createElement(DefaultRoute, {handler: TrackList}), 
-		React.createElement(Route, {name: "protocols", handler: Protocols}), 
-		React.createElement(Route, {name: "playlist", handler: Playlist}), 
 		React.createElement(Route, {name: "album", path: "/album/:Album", handler: Album}), 
-		React.createElement(Route, {name: "artist", path: "/artist/:Artist", handler: Artist})
+		React.createElement(Route, {name: "artist", path: "/artist/:Artist", handler: Artist}), 
+		React.createElement(Route, {name: "playlist", path: "/playlist/:Playlist", handler: Playlist}), 
+		React.createElement(Route, {name: "protocols", handler: Protocols}), 
+		React.createElement(Route, {name: "queue", handler: Queue})
 	)
 );
 
