@@ -4,51 +4,24 @@ package output
 
 import "code.google.com/p/portaudio-go/portaudio"
 
-var ports = make(map[config]*port)
-
-type config struct {
-	sr, ch int
-}
-
 type port struct {
-	st      *portaudio.Stream
-	ch      chan []float32
-	over    []float32
-	started bool
+	st   *portaudio.Stream
+	ch   chan []float32
+	over []float32
 }
 
 func init() {
 	portaudio.Initialize()
 }
 
-func Get(sampleRate, channels int) (Output, error) {
-	c := config{
-		sr: sampleRate,
-		ch: channels,
+func get(sampleRate, channels int) (Output, error) {
+	o := &port{
+		ch: make(chan []float32),
 	}
-	for k, v := range ports {
-		if c != k {
-			v.st.Stop()
-			v.started = false
-		}
-	}
-	o := ports[c]
-	if o == nil {
-		o = &port{
-			ch: make(chan []float32),
-		}
-		var err error
-		o.st, err = portaudio.OpenDefaultStream(0, channels, float64(sampleRate), 1024, o.Fetch)
-		if err != nil {
-			return nil, err
-		}
-		ports[c] = o
-	}
-	if !o.started {
-		if err := o.st.Start(); err != nil {
-			return nil, err
-		}
-		o.started = true
+	var err error
+	o.st, err = portaudio.OpenDefaultStream(0, channels, float64(sampleRate), 1024, o.Fetch)
+	if err != nil {
+		return nil, err
 	}
 	return o, nil
 }
@@ -78,4 +51,12 @@ func (p *port) Fetch(out []float32) {
 			return
 		}
 	}
+}
+
+func (p *port) Stop() {
+	p.st.Stop()
+}
+
+func (p *port) Start() {
+	p.st.Start()
 }
