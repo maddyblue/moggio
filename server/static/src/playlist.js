@@ -52,6 +52,9 @@ var Playlist = React.createClass({
 		};
 	},
 	clear: function() {
+		if (!confirm("Delete playlist?")) {
+			return;
+		}
 		var params = mkcmd([
 			'clear',
 		]);
@@ -66,6 +69,7 @@ var Playlist = React.createClass({
 		return (
 			<div>
 				<h4>{this.props.params.Playlist}</h4>
+				<button onClick={this.clear}>delete playlist</button>
 				<Tracks tracks={q} useIdxAsNum={true} />
 			</div>
 		);

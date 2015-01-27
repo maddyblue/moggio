@@ -529,6 +529,9 @@ var Playlist = React.createClass({displayName: "Playlist",
 		};
 	},
 	clear: function() {
+		if (!confirm("Delete playlist?")) {
+			return;
+		}
 		var params = mkcmd([
 			'clear',
 		]);
@@ -543,6 +546,7 @@ var Playlist = React.createClass({displayName: "Playlist",
 		return (
 			React.createElement("div", null, 
 				React.createElement("h4", null, this.props.params.Playlist), 
+				React.createElement("button", {onClick: this.clear}, "delete playlist"), 
 				React.createElement(Tracks, {tracks: q, useIdxAsNum: true})
 			)
 		);
