@@ -368,7 +368,7 @@ func (srv *Server) audio() {
 		if srv.song != nil {
 			if srv.Random && len(srv.Queue) > 1 {
 				n := srv.PlaylistIndex
-				for n != srv.PlaylistIndex {
+				for n == srv.PlaylistIndex {
 					n = rand.Intn(len(srv.Queue))
 				}
 				srv.PlaylistIndex = n
