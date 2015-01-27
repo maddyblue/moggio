@@ -87,6 +87,10 @@ table.tracks button {
 	padding-left: 5px;
 }
 
-button.highlight {
+.highlight {
 	color: #33C3F0;
+}
+
+.clickable:hover {
+	cursor: pointer;
 }

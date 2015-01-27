@@ -61,21 +61,14 @@ var Track = React.createClass({
 		}
 		var control;
 		var track;
+		var icon = "fa fa-border fa-lg clickable ";
 		if (this.state.over) {
 			if (this.props.isqueue) {
-				control = (
-					<div>
-						<button onClick={this.dequeue}>x</button>
-					</div>
-				);
+				control = <i className={icon + "fa-times"} onClick={this.dequeue} />;
 			} else {
-				control = (
-					<div>
-						<button onClick={this.append}>+</button>
-					</div>
-				);
+				control = <i className={icon + "fa-plus"} onClick={this.append} />;
 			}
-			track = <button onClick={this.play}>&#x25b6;</button>;
+			track = <i className={icon + "fa-play"} onClick={this.play} />;
 		} else {
 			track = info.Track || '';
 			if (this.props.useIdxAsNum) {
@@ -128,10 +121,14 @@ var Tracks = React.createClass({
 		}.bind(this);
 	},
 	sortClass: function(field) {
-		if (this.props.isqueue || this.state.sort != field) {
+		if (this.props.isqueue) {
 			return '';
 		}
-		return this.state.asc ? 'sort-asc' : 'sort-desc';
+		var name = 'clickable ';
+		if (this.state.sort == field) {
+			name += this.state.asc ? 'sort-asc' : 'sort-desc';
+		}
+		return name;
 	},
 	render: function() {
 		var sorted = this.props.tracks;
@@ -172,7 +169,7 @@ var Tracks = React.createClass({
 							{track}
 							<th className={this.sortClass('Title')} onClick={this.sort('Title')}>Name</th>
 							<th></th>
-							<th className={this.sortClass('Time')} onClick={this.sort('Time')}>◷</th>
+							<th className={this.sortClass('Time')} onClick={this.sort('Time')}><i className="fa fa-clock-o" /></th>
 							<th className={this.sortClass('Artist')} onClick={this.sort('Artist')}>Artist</th>
 							<th className={this.sortClass('Album')} onClick={this.sort('Album')}>Album</th>
 						</tr>

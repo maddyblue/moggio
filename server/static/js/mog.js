@@ -165,21 +165,14 @@ var Track = React.createClass({displayName: "Track",
 		}
 		var control;
 		var track;
+		var icon = "fa fa-border fa-lg clickable ";
 		if (this.state.over) {
 			if (this.props.isqueue) {
-				control = (
-					React.createElement("div", null, 
-						React.createElement("button", {onClick: this.dequeue}, "x")
-					)
-				);
+				control = React.createElement("i", {className: icon + "fa-times", onClick: this.dequeue});
 			} else {
-				control = (
-					React.createElement("div", null, 
-						React.createElement("button", {onClick: this.append}, "+")
-					)
-				);
+				control = React.createElement("i", {className: icon + "fa-plus", onClick: this.append});
 			}
-			track = React.createElement("button", {onClick: this.play}, "▶");
+			track = React.createElement("i", {className: icon + "fa-play", onClick: this.play});
 		} else {
 			track = info.Track || '';
 			if (this.props.useIdxAsNum) {
@@ -232,10 +225,14 @@ var Tracks = React.createClass({displayName: "Tracks",
 		}.bind(this);
 	},
 	sortClass: function(field) {
-		if (this.props.isqueue || this.state.sort != field) {
+		if (this.props.isqueue) {
 			return '';
 		}
-		return this.state.asc ? 'sort-asc' : 'sort-desc';
+		var name = 'clickable ';
+		if (this.state.sort == field) {
+			name += this.state.asc ? 'sort-asc' : 'sort-desc';
+		}
+		return name;
 	},
 	render: function() {
 		var sorted = this.props.tracks;
@@ -276,7 +273,7 @@ var Tracks = React.createClass({displayName: "Tracks",
 							track, 
 							React.createElement("th", {className: this.sortClass('Title'), onClick: this.sort('Title')}, "Name"), 
 							React.createElement("th", null), 
-							React.createElement("th", {className: this.sortClass('Time'), onClick: this.sort('Time')}, "◷"), 
+							React.createElement("th", {className: this.sortClass('Time'), onClick: this.sort('Time')}, React.createElement("i", {className: "fa fa-clock-o"})), 
 							React.createElement("th", {className: this.sortClass('Artist'), onClick: this.sort('Artist')}, "Artist"), 
 							React.createElement("th", {className: this.sortClass('Album'), onClick: this.sort('Album')}, "Album")
 						)
@@ -654,25 +651,26 @@ var Player = React.createClass({displayName: "Player",
 			);
 		};
 
-		var play;
+		var play = 'fa-stop';
 		switch(this.state.State) {
 			case 0:
-				play = '▐▐';
+				play = 'fa-pause';
 				break;
 			case 2:
 			default:
-				play = '\u25b6';
+				play = 'fa-play';
 				break;
 		}
-		var repeat = this.state.Repeat ? 'highlight' : '';
-		var random = this.state.Random ? 'highlight' : '';
+		var icon = 'fa fa-fw fa-border fa-2x clickable ';
+		var repeat = this.state.Repeat ? 'highlight ' : '';
+		var random = this.state.Random ? 'highlight ' : '';
 		return (
 			React.createElement("div", null, 
-				React.createElement("span", null, React.createElement("button", {className: repeat, onClick: this.cmd('repeat')}, "↻")), 
-				React.createElement("span", null, React.createElement("button", {onClick: this.cmd('prev')}, "⇤")), 
-				React.createElement("span", null, React.createElement("button", {onClick: this.cmd('pause')}, play)), 
-				React.createElement("span", null, React.createElement("button", {onClick: this.cmd('next')}, "⇥")), 
-				React.createElement("span", null, React.createElement("button", {className: random, onClick: this.cmd('random')}, "⤮")), 
+				React.createElement("span", null, React.createElement("i", {className: icon + repeat + 'fa-repeat', onClick: this.cmd('repeat')})), 
+				React.createElement("span", null, React.createElement("i", {className: icon + 'fa-fast-backward', onClick: this.cmd('prev')})), 
+				React.createElement("span", null, React.createElement("i", {className: icon + play, onClick: this.cmd('pause')})), 
+				React.createElement("span", null, React.createElement("i", {className: icon + 'fa-fast-forward', onClick: this.cmd('next')})), 
+				React.createElement("span", null, React.createElement("i", {className: icon + random + 'fa-random', onClick: this.cmd('random')})), 
 				React.createElement("span", null, status)
 			)
 		);

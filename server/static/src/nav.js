@@ -100,25 +100,26 @@ var Player = React.createClass({
 			);
 		};
 
-		var play;
+		var play = 'fa-stop';
 		switch(this.state.State) {
 			case 0:
-				play = '▐▐';
+				play = 'fa-pause';
 				break;
 			case 2:
 			default:
-				play = '\u25b6';
+				play = 'fa-play';
 				break;
 		}
-		var repeat = this.state.Repeat ? 'highlight' : '';
-		var random = this.state.Random ? 'highlight' : '';
+		var icon = 'fa fa-fw fa-border fa-2x clickable ';
+		var repeat = this.state.Repeat ? 'highlight ' : '';
+		var random = this.state.Random ? 'highlight ' : '';
 		return (
 			<div>
-				<span><button className={repeat} onClick={this.cmd('repeat')}>↻</button></span>
-				<span><button onClick={this.cmd('prev')}>⇤</button></span>
-				<span><button onClick={this.cmd('pause')}>{play}</button></span>
-				<span><button onClick={this.cmd('next')}>⇥</button></span>
-				<span><button className={random} onClick={this.cmd('random')}>⤮</button></span>
+				<span><i className={icon + repeat + 'fa-repeat'} onClick={this.cmd('repeat')} /></span>
+				<span><i className={icon + 'fa-fast-backward'} onClick={this.cmd('prev')} /></span>
+				<span><i className={icon + play} onClick={this.cmd('pause')} /></span>
+				<span><i className={icon + 'fa-fast-forward'} onClick={this.cmd('next')} /></span>
+				<span><i className={icon + random + 'fa-random'} onClick={this.cmd('random')} /></span>
 				<span>{status}</span>
 			</div>
 		);
