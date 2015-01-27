@@ -2,7 +2,6 @@ package nsf
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/mjibson/mog/codec"
 	"github.com/mjibson/nsf"
@@ -69,7 +68,7 @@ func (n *NSFSong) Close() {
 func (n *NSFSong) Info() (si codec.SongInfo, err error) {
 	if n.NSF != nil {
 		si = codec.SongInfo{
-			Time:   time.Minute * 2,
+			Time:   n.NSF.Limit,
 			Artist: n.NSF.Artist,
 			Album:  n.NSF.Song,
 			Track:  float64(n.Index),
@@ -87,7 +86,7 @@ func (n *NSFSong) Info() (si codec.SongInfo, err error) {
 		return
 	}
 	si = codec.SongInfo{
-		Time:   time.Minute * 2,
+		Time:   ns.Limit,
 		Artist: ns.Artist,
 		Album:  ns.Song,
 		Track:  float64(n.Index),
