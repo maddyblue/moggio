@@ -69,7 +69,7 @@ function mkcmd(cmds) {
 	});
 }
 
-document.addEventListener('keypress', function(e) {
+document.addEventListener('keydown', function(e) {
 	if (document.activeElement != document.body) {
 		return;
 	}
