@@ -1,6 +1,7 @@
 package gmusic
 
 import (
+	"bytes"
 	"crypto/hmac"
 	"crypto/sha1"
 	"encoding/base64"
@@ -8,24 +9,26 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/http/cookiejar"
 	"net/url"
 	"strings"
 	"time"
 )
 
 const (
-	clientLoginURL = "https://www.google.com/accounts/ClientLogin"
-	serviceName    = "sj"
-	sourceName     = "gmusicapi-3.1.1-dev"
-	sjURL          = "https://www.googleapis.com/sj/v1.1/"
+	clientLoginURL          = "https://www.google.com/accounts/ClientLogin"
+	googlePlayMusicEndpoint = "https://play.google.com/music"
+	serviceName             = "sj"
+	sourceName              = "mog"
+	sjURL                   = "https://www.googleapis.com/sj/v1.1/"
 )
 
 type GMusic struct {
 	DeviceID string
-	auth     string
+	Auth     string
 }
 
-func Login(un, pw, deviceID string) (*GMusic, error) {
+func Login(un, pw string) (*GMusic, error) {
 	values := url.Values{}
 	values.Add("accountType", "HOSTED_OR_GOOGLE")
 	values.Add("Email", un)
@@ -41,9 +44,7 @@ func Login(un, pw, deviceID string) (*GMusic, error) {
 	if err != nil {
 		return nil, err
 	}
-	gm := GMusic{
-		DeviceID: deviceID,
-	}
+	gm := GMusic{}
 	for _, line := range strings.Fields(string(b)) {
 		sp := strings.SplitN(line, "=", 2)
 		if len(sp) < 2 {
@@ -51,35 +52,129 @@ func Login(un, pw, deviceID string) (*GMusic, error) {
 		}
 		switch sp[0] {
 		case "Auth":
-			gm.auth = sp[1]
+			gm.Auth = sp[1]
 		case "Error":
 			return nil, fmt.Errorf("gmusic login: %s", sp[1])
 		}
 	}
-	if gm.auth == "" {
+	if gm.Auth == "" {
 		return nil, fmt.Errorf("gmusic: %s", resp.Status)
+	}
+	if err := gm.setDeviceID(); err != nil {
+		return nil, err
 	}
 	return &gm, nil
 }
 
-func (g *GMusic) Request(method, path string) (*http.Response, error) {
-	req, err := http.NewRequest(method, sjURL+path, nil)
+func (g *GMusic) request(method, url string, data interface{}, client *http.Client) (*http.Response, error) {
+	var buf *bytes.Buffer
+	if data != nil {
+		buf = new(bytes.Buffer)
+		if err := json.NewEncoder(buf).Encode(data); err != nil {
+			return nil, err
+		}
+	}
+	req, err := http.NewRequest(method, url, buf)
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Add("Authorization", fmt.Sprintf("GoogleLogin auth=%s", g.auth))
-	resp, err := http.DefaultClient.Do(req)
+	req.Header.Add("Authorization", fmt.Sprintf("GoogleLogin auth=%s", g.Auth))
+	req.Header.Add("Content-Type", "application/json")
+	if client == nil {
+		client = http.DefaultClient
+	}
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}
 	if resp.StatusCode != http.StatusOK {
+		resp.Body.Close()
 		return nil, fmt.Errorf("gmusic: %s", resp.Status)
 	}
 	return resp, nil
 }
 
+func (g *GMusic) Request(method, path string, data interface{}) (*http.Response, error) {
+	return g.request(method, sjURL+path, data, nil)
+}
+
+func (g *GMusic) setDeviceID() error {
+	req, err := http.NewRequest("HEAD", googlePlayMusicEndpoint+"/listen", nil)
+	if err != nil {
+		return err
+	}
+	req.Header.Add("Authorization", "GoogleLogin auth="+g.Auth)
+	jar, _ := cookiejar.New(nil)
+	client := &http.Client{
+		Jar: jar,
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	resp.Body.Close()
+	xt := make(url.Values)
+	u, _ := url.Parse(googlePlayMusicEndpoint)
+	for _, c := range jar.Cookies(u) {
+		if c.Name == "xt" {
+			xt.Set("xt", c.Value)
+		}
+	}
+	settings, err := g.settings(xt, client)
+	if err != nil {
+		return err
+	}
+	if len(settings.Devices) == 0 || len(settings.Devices[0].ID) < 2 {
+		return fmt.Errorf("no valid devices")
+	}
+	g.DeviceID = settings.Devices[0].ID[2:]
+	return nil
+}
+
+func (g *GMusic) settings(xtData url.Values, jarClient *http.Client) (*Settings, error) {
+	resp, err := g.request("POST", googlePlayMusicEndpoint+"/services/loadsettings?"+xtData.Encode(), nil, jarClient)
+	if err != nil {
+		return nil, err
+	}
+	var data SettingsData
+	defer resp.Body.Close()
+	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+		return nil, err
+	}
+	return &data.Settings, nil
+}
+
+type SettingsData struct {
+	Settings Settings `json:"settings"`
+}
+
+type Settings struct {
+	Devices []struct {
+		Carrier      string `json:"carrier"`
+		Date         int    `json:"date"`
+		ID           string `json:"id"`
+		LastUsedMs   int    `json:"lastUsedMs"`
+		Manufacturer string `json:"manufacturer"`
+		Model        string `json:"model"`
+		Name         string `json:"name"`
+		Type         string `json:"type"`
+	} `json:"devices"`
+	ExpirationMillis int  `json:"expirationMillis"`
+	IsCanceled       bool `json:"isCanceled"`
+	IsSubscription   bool `json:"isSubscription"`
+	IsTrial          bool `json:"isTrial"`
+	Labs             []struct {
+		Description string `json:"description"`
+		Enabled     bool   `json:"enabled"`
+		Name        string `json:"name"`
+		Title       string `json:"title"`
+	} `json:"labs"`
+	MaxTracks              int  `json:"maxTracks"`
+	SubscriptionNewsletter bool `json:"subscriptionNewsletter"`
+}
+
 func (g *GMusic) ListPlaylists() ([]*Playlist, error) {
-	r, err := g.Request("POST", "playlistfeed")
+	r, err := g.Request("POST", "playlistfeed", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -114,7 +209,7 @@ type Playlist struct {
 }
 
 func (g *GMusic) ListPlaylistEntries() ([]*PlaylistEntry, error) {
-	r, err := g.Request("POST", "plentryfeed")
+	r, err := g.Request("POST", "plentryfeed", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -148,16 +243,29 @@ type PlaylistEntry struct {
 }
 
 func (g *GMusic) ListTracks() ([]*Track, error) {
-	r, err := g.Request("POST", "trackfeed")
-	if err != nil {
-		return nil, err
+	var tracks []*Track
+	var next string
+	for {
+		r, err := g.Request("POST", "trackfeed", struct {
+			StartToken string `json:"start-token"`
+		}{
+			StartToken: next,
+		})
+		if err != nil {
+			return nil, err
+		}
+		var data ListTracks
+		defer r.Body.Close()
+		if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+			return nil, err
+		}
+		tracks = append(tracks, data.Data.Items...)
+		next = data.NextPageToken
+		if next == "" {
+			break
+		}
 	}
-	var data ListTracks
-	defer r.Body.Close()
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
-		return nil, err
-	}
-	return data.Data.Items, nil
+	return tracks, nil
 }
 
 type ListTracks struct {
@@ -222,7 +330,7 @@ func (g *GMusic) GetStream(songID string) (*http.Response, error) {
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Add("Authorization", fmt.Sprintf("GoogleLogin auth=%s", g.auth))
+	req.Header.Add("Authorization", fmt.Sprintf("GoogleLogin auth=%s", g.Auth))
 	req.Header.Add("X-Device-ID", g.DeviceID)
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {

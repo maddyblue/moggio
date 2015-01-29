@@ -17,14 +17,14 @@ import (
 
 func init() {
 	gob.Register(new(GMusic))
-	protocol.Register("gmusic", []string{"username", "password", "deviceid"}, New)
+	protocol.Register("gmusic", []string{"username", "password"}, New)
 }
 
 func New(params []string, token *oauth2.Token) (protocol.Instance, error) {
-	if len(params) != 3 {
+	if len(params) != 2 {
 		return nil, fmt.Errorf("gmusic: bad params")
 	}
-	g, err := gmusic.Login(params[0], params[1], params[2])
+	g, err := gmusic.Login(params[0], params[1])
 	if err != nil {
 		return nil, err
 	}
@@ -70,7 +70,6 @@ func (g *GMusic) GetSong(id string) (codec.Song, error) {
 			return nil, 0, err
 		}
 		size, _ := strconv.ParseInt(f.EstimatedSize, 10, 64)
-		fmt.Println("SIZE", size, f.EstimatedSize)
 		return r.Body, size, nil
 	})
 }
