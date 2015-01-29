@@ -124,6 +124,12 @@ var Protocol = React.createClass({
 			key: this.props.name,
 		});
 	},
+	refresh: function() {
+		POST('/api/protocol/refresh', {
+			protocol: this.props.protocol,
+			key: this.props.name,
+		});
+	},
 	render: function() {
 		var params = [];
 		var disabled = !!this.props.name;
@@ -143,7 +149,8 @@ var Protocol = React.createClass({
 		var title;
 		if (this.props.name) {
 			title = <h3>{this.props.protocol}: {this.props.name}
-					<small><button onClick={this.remove}>remove</button></small>
+					<button onClick={this.remove}>remove</button>
+					<button onClick={this.refresh}>refresh</button>
 				</h3>;
 		}
 		return <div>

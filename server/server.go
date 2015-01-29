@@ -210,7 +210,7 @@ func New(stateFile string) (*Server, error) {
 			for name, insts := range srv.Protocols {
 				for key := range insts {
 					go func(name, key string) {
-						if err := srv.protocolRefresh(name, key); err != nil {
+						if err := srv.protocolRefresh(name, key, true); err != nil {
 							log.Println(err)
 						}
 					}(name, key)
@@ -283,6 +283,7 @@ func (srv *Server) GetMux(devMode bool) *http.ServeMux {
 	router.POST("/api/playlist/change/:playlist", JSON(srv.PlaylistChange))
 	router.POST("/api/protocol/add", JSON(srv.ProtocolAdd))
 	router.POST("/api/protocol/remove", JSON(srv.ProtocolRemove))
+	router.POST("/api/protocol/refresh", JSON(srv.ProtocolRefresh))
 	mux := http.NewServeMux()
 	mux.Handle("/static/", http.FileServer(webFS))
 	mux.HandleFunc("/", Index)
@@ -558,7 +559,7 @@ func (srv *Server) OAuth(w http.ResponseWriter, r *http.Request, ps httprouter.P
 	}
 	prots[t.AccessToken] = instance
 	srv.Save()
-	go srv.protocolRefresh(name, instance.Key())
+	go srv.protocolRefresh(name, instance.Key(), false)
 	http.Redirect(w, r, "/", http.StatusFound)
 }
 
@@ -611,12 +612,16 @@ func (srv *Server) GetInstance(name, key string) (protocol.Instance, error) {
 	return inst, nil
 }
 
-func (srv *Server) protocolRefresh(protocol, key string) error {
+func (srv *Server) protocolRefresh(protocol, key string, list bool) error {
 	inst, err := srv.GetInstance(protocol, key)
 	if err != nil {
 		return err
 	}
-	songs, err := inst.List()
+	f := inst.Refresh
+	if list {
+		f = inst.List
+	}
+	songs, err := f()
 	if err != nil {
 		return err
 	}
@@ -640,6 +645,10 @@ func (srv *Server) protocolRefresh(protocol, key string) error {
 	return err
 }
 
+func (srv *Server) ProtocolRefresh(form url.Values, ps httprouter.Params) (interface{}, error) {
+	return nil, srv.protocolRefresh(form.Get("protocol"), form.Get("key"), false)
+}
+
 func (srv *Server) ProtocolAdd(form url.Values, ps httprouter.Params) (interface{}, error) {
 	p := form.Get("protocol")
 	prot, err := protocol.ByName(p)
@@ -651,7 +660,7 @@ func (srv *Server) ProtocolAdd(form url.Values, ps httprouter.Params) (interface
 		return nil, err
 	}
 	srv.Protocols[p][inst.Key()] = inst
-	err = srv.protocolRefresh(p, inst.Key())
+	err = srv.protocolRefresh(p, inst.Key(), false)
 	if err != nil {
 		delete(srv.Protocols[p], inst.Key())
 		return nil, err

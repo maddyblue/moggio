@@ -443,6 +443,12 @@ var Protocol = React.createClass({displayName: "Protocol",
 			key: this.props.name,
 		});
 	},
+	refresh: function() {
+		POST('/api/protocol/refresh', {
+			protocol: this.props.protocol,
+			key: this.props.name,
+		});
+	},
 	render: function() {
 		var params = [];
 		var disabled = !!this.props.name;
@@ -462,7 +468,8 @@ var Protocol = React.createClass({displayName: "Protocol",
 		var title;
 		if (this.props.name) {
 			title = React.createElement("h3", null, this.props.protocol, ": ", this.props.name, 
-					React.createElement("small", null, React.createElement("button", {onClick: this.remove}, "remove"))
+					React.createElement("button", {onClick: this.remove}, "remove"), 
+					React.createElement("button", {onClick: this.refresh}, "refresh")
 				);
 		}
 		return React.createElement("div", null, 
