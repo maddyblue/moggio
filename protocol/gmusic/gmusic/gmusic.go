@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/cookiejar"
@@ -67,14 +68,15 @@ func Login(un, pw string) (*GMusic, error) {
 }
 
 func (g *GMusic) request(method, url string, data interface{}, client *http.Client) (*http.Response, error) {
-	var buf *bytes.Buffer
+	var body io.Reader
 	if data != nil {
-		buf = new(bytes.Buffer)
+		buf := new(bytes.Buffer)
 		if err := json.NewEncoder(buf).Encode(data); err != nil {
 			return nil, err
 		}
+		body = buf
 	}
-	req, err := http.NewRequest(method, url, buf)
+	req, err := http.NewRequest(method, url, body)
 	if err != nil {
 		return nil, err
 	}
