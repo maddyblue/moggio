@@ -73,6 +73,8 @@ var Track = React.createClass({
 			track = info.Track || '';
 			if (this.props.useIdxAsNum) {
 				track = this.props.idx + 1;
+			} else if (this.props.noIdx) {
+				track = null;
 			}
 		}
 		return (
@@ -148,7 +150,7 @@ var Tracks = React.createClass({
 			}
 		}
 		var tracks = _.map(sorted, function(t, idx) {
-			return <Track key={idx + '-' + t.ID.UID} id={t.ID} info={t.Info} idx={idx} isqueue={this.props.isqueue} useIdxAsNum={this.props.useIdxAsNum} />;
+			return <Track key={idx + '-' + t.ID.UID} id={t.ID} info={t.Info} idx={idx} isqueue={this.props.isqueue} useIdxAsNum={this.props.useIdxAsNum} noIdx={this.props.noIdx} />;
 		}.bind(this));
 		var queue;
 		if (!this.props.isqueue) {

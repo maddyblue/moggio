@@ -177,6 +177,8 @@ var Track = React.createClass({displayName: "Track",
 			track = info.Track || '';
 			if (this.props.useIdxAsNum) {
 				track = this.props.idx + 1;
+			} else if (this.props.noIdx) {
+				track = null;
 			}
 		}
 		return (
@@ -252,7 +254,7 @@ var Tracks = React.createClass({displayName: "Tracks",
 			}
 		}
 		var tracks = _.map(sorted, function(t, idx) {
-			return React.createElement(Track, {key: idx + '-' + t.ID.UID, id: t.ID, info: t.Info, idx: idx, isqueue: this.props.isqueue, useIdxAsNum: this.props.useIdxAsNum});
+			return React.createElement(Track, {key: idx + '-' + t.ID.UID, id: t.ID, info: t.Info, idx: idx, isqueue: this.props.isqueue, useIdxAsNum: this.props.useIdxAsNum, noIdx: this.props.noIdx});
 		}.bind(this));
 		var queue;
 		if (!this.props.isqueue) {
@@ -524,7 +526,7 @@ var Queue = React.createClass({displayName: "Queue",
 				React.createElement("h4", null, "Queue"), 
 				React.createElement("button", {onClick: this.clear}, "clear"), 
 				React.createElement("button", {onClick: this.save}, "save"), 
-				React.createElement(Tracks, {tracks: q, isqueue: true})
+				React.createElement(Tracks, {tracks: q, noIdx: true, isqueue: true})
 			)
 		);
 	}
