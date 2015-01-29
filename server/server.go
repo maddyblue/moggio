@@ -139,12 +139,18 @@ func (srv *Server) makeWaitData(wt waitType) *waitData {
 	var data interface{}
 	switch wt {
 	case waitProtocols:
+		protos := make(map[string][]string)
+		for p, m := range srv.Protocols {
+			for key := range m {
+				protos[p] = append(protos[p], key)
+			}
+		}
 		data = struct {
-			Available interface{}
-			Current   interface{}
+			Available map[string]protocol.Params
+			Current   map[string][]string
 		}{
 			protocol.Get(),
-			srv.Protocols,
+			protos,
 		}
 	case waitStatus:
 		data = srv.status()

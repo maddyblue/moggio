@@ -340,8 +340,8 @@ var Protocols = React.createClass({displayName: "Protocols",
 		}.bind(this));
 		var protocols = [];
 		_.each(this.state.Current, function(instances, protocol) {
-			_.each(instances, function(inst, key) {
-				protocols.push(React.createElement(Protocol, {key: key, protocol: protocol, params: this.state.Available[protocol], instance: inst, name: key}));
+			_.each(instances, function(key) {
+				protocols.push(React.createElement(Protocol, {key: key, protocol: protocol, name: key}));
 			}, this);
 		}, this);
 		var selected;
@@ -353,7 +353,19 @@ var Protocols = React.createClass({displayName: "Protocols",
 			React.createElement("select", {onChange: this.handleChange, value: this.state.Selected}, options), 
 			selected, 
 			React.createElement("h2", null, "Existing Protocols"), 
-			protocols
+			React.createElement("table", null, 
+				React.createElement("thead", null, 
+					React.createElement("tr", null, 
+						React.createElement("th", null, "protocol"), 
+						React.createElement("th", null, "name"), 
+						React.createElement("th", null, "remove"), 
+						React.createElement("th", null, "refresh")
+					)
+				), 
+				React.createElement("tbody", null, 
+					protocols
+				)
+			)
 		);
 	}
 });
@@ -383,7 +395,7 @@ var ProtocolParam = React.createClass({displayName: "ProtocolParam",
 	render: function() {
 		return (
 			React.createElement("li", null, 
-				this.props.name, " ", React.createElement("input", {type: "text", onChange: this.paramChange, value: this.state.value || this.props.value, disabled: this.props.disabled ? 'disabled' : ''})
+				this.props.name, " ", React.createElement("input", {type: "text", onChange: this.paramChange, value: this.state.value || this.props.value})
 			)
 		);
 	}
@@ -391,16 +403,7 @@ var ProtocolParam = React.createClass({displayName: "ProtocolParam",
 
 var ProtocolOAuth = React.createClass({displayName: "ProtocolOAuth",
 	render: function() {
-		var token;
-		if (this.props.token) {
-			token = React.createElement("div", null, "Connected until ", this.props.token.expiry);
-		}
-		return (
-			React.createElement("li", null, 
-				token, 
-				React.createElement("a", {href: this.props.url}, "connect")
-			)
-		);
+		return React.createElement("li", null, React.createElement("a", {href: this.props.url}, "connect"));
 	}
 });
 
@@ -451,29 +454,31 @@ var Protocol = React.createClass({displayName: "Protocol",
 	},
 	render: function() {
 		var params = [];
-		var disabled = !!this.props.name;
 		if (this.props.params.Params) {
 			params = this.props.params.Params.map(function(param, idx) {
 				var current = this.props.instance.Params || [];
-				return React.createElement(ProtocolParam, {key: param, name: param, ref: idx, value: current[idx], change: this.setSave, disabled: disabled});
+				return React.createElement(ProtocolParam, {key: param, name: param, ref: idx, value: current[idx], change: this.setSave});
 			}.bind(this));
 		}
 		if (this.props.params.OAuthURL) {
-			params.push(React.createElement(ProtocolOAuth, {key: 'oauth', url: this.props.params.OAuthURL, token: this.props.instance.OAuthToken, disabled: disabled}));
+			params.push(React.createElement(ProtocolOAuth, {key: 'oauth', url: this.props.params.OAuthURL}));
+		}
+		if (this.props.name) {
+			var icon = 'fa fa-fw fa-border fa-2x clickable ';
+			return (
+				React.createElement("tr", null, 
+					React.createElement("td", null, this.props.protocol), 
+					React.createElement("td", null, this.props.name), 
+					React.createElement("td", null, React.createElement("i", {className: icon + 'fa-times', onClick: this.remove})), 
+					React.createElement("td", null, React.createElement("i", {className: icon + 'fa-repeat', onClick: this.refresh}))
+				)
+			);
 		}
 		var save;
 		if (this.state.save) {
 			save = React.createElement("button", {onClick: this.save}, "save");
 		}
-		var title;
-		if (this.props.name) {
-			title = React.createElement("h3", null, this.props.protocol, ": ", this.props.name, 
-					React.createElement("button", {onClick: this.remove}, "remove"), 
-					React.createElement("button", {onClick: this.refresh}, "refresh")
-				);
-		}
 		return React.createElement("div", null, 
-				title, 
 				React.createElement("ul", null, params), 
 				save
 			);

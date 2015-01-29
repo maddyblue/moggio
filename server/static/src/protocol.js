@@ -21,8 +21,8 @@ var Protocols = React.createClass({
 		}.bind(this));
 		var protocols = [];
 		_.each(this.state.Current, function(instances, protocol) {
-			_.each(instances, function(inst, key) {
-				protocols.push(<Protocol key={key} protocol={protocol} params={this.state.Available[protocol]} instance={inst} name={key} />);
+			_.each(instances, function(key) {
+				protocols.push(<Protocol key={key} protocol={protocol} name={key} />);
 			}, this);
 		}, this);
 		var selected;
@@ -34,7 +34,19 @@ var Protocols = React.createClass({
 			<select onChange={this.handleChange} value={this.state.Selected}>{options}</select>
 			{selected}
 			<h2>Existing Protocols</h2>
-			{protocols}
+			<table>
+				<thead>
+					<tr>
+						<th>protocol</th>
+						<th>name</th>
+						<th>remove</th>
+						<th>refresh</th>
+					</tr>
+				</thead>
+				<tbody>
+					{protocols}
+				</tbody>
+			</table>
 		</div>;
 	}
 });
@@ -64,7 +76,7 @@ var ProtocolParam = React.createClass({
 	render: function() {
 		return (
 			<li>
-				{this.props.name} <input type="text" onChange={this.paramChange} value={this.state.value || this.props.value} disabled={this.props.disabled ? 'disabled' : ''} />
+				{this.props.name} <input type="text" onChange={this.paramChange} value={this.state.value || this.props.value} />
 			</li>
 		);
 	}
@@ -72,16 +84,7 @@ var ProtocolParam = React.createClass({
 
 var ProtocolOAuth = React.createClass({
 	render: function() {
-		var token;
-		if (this.props.token) {
-			token = <div>Connected until {this.props.token.expiry}</div>;
-		}
-		return (
-			<li>
-				{token}
-				<a href={this.props.url}>connect</a>
-			</li>
-		);
+		return <li><a href={this.props.url}>connect</a></li>;
 	}
 });
 
@@ -132,29 +135,31 @@ var Protocol = React.createClass({
 	},
 	render: function() {
 		var params = [];
-		var disabled = !!this.props.name;
 		if (this.props.params.Params) {
 			params = this.props.params.Params.map(function(param, idx) {
 				var current = this.props.instance.Params || [];
-				return <ProtocolParam key={param} name={param} ref={idx} value={current[idx]} change={this.setSave} disabled={disabled} />;
+				return <ProtocolParam key={param} name={param} ref={idx} value={current[idx]} change={this.setSave} />;
 			}.bind(this));
 		}
 		if (this.props.params.OAuthURL) {
-			params.push(<ProtocolOAuth key={'oauth'} url={this.props.params.OAuthURL} token={this.props.instance.OAuthToken} disabled={disabled} />);
+			params.push(<ProtocolOAuth key={'oauth'} url={this.props.params.OAuthURL} />);
+		}
+		if (this.props.name) {
+			var icon = 'fa fa-fw fa-border fa-2x clickable ';
+			return (
+				<tr>
+					<td>{this.props.protocol}</td>
+					<td>{this.props.name}</td>
+					<td><i className={icon + 'fa-times'} onClick={this.remove} /></td>
+					<td><i className={icon + 'fa-repeat'} onClick={this.refresh} /></td>
+				</tr>
+			);
 		}
 		var save;
 		if (this.state.save) {
 			save = <button onClick={this.save}>save</button>;
 		}
-		var title;
-		if (this.props.name) {
-			title = <h3>{this.props.protocol}: {this.props.name}
-					<button onClick={this.remove}>remove</button>
-					<button onClick={this.refresh}>refresh</button>
-				</h3>;
-		}
 		return <div>
-				{title}
 				<ul>{params}</ul>
 				{save}
 			</div>;
