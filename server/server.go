@@ -12,6 +12,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -24,6 +25,13 @@ import (
 	"golang.org/x/net/websocket"
 	"golang.org/x/oauth2"
 )
+
+func printErr(e error) {
+	log.Println(e)
+	b := make([]byte, 4096)
+	runtime.Stack(b, false)
+	fmt.Println(string(b))
+}
 
 func ListenAndServe(stateFile, addr string) error {
 	server, err := New(stateFile)
@@ -403,18 +411,23 @@ func (srv *Server) audio() {
 			sid := srv.songID
 			song, err := srv.Protocols[sid.Protocol][sid.Key].GetSong(sid.ID)
 			if err != nil {
-				panic(err)
+				printErr(err)
+				next()
 				return
 			}
 			srv.song = song
 			sr, ch, err := srv.song.Init()
 			if err != nil {
 				srv.song.Close()
-				panic(err)
+				printErr(err)
+				next()
+				return
 			}
 			o, err = output.Get(sr, ch)
 			if err != nil {
-				panic(fmt.Errorf("mog: could not open audio (%v, %v): %v", sr, ch, err))
+				printErr(fmt.Errorf("mog: could not open audio (%v, %v): %v", sr, ch, err))
+				next()
+				return
 			}
 			srv.info = *srv.songs[sid]
 			srv.elapsed = 0
