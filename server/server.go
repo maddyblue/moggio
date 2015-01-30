@@ -5,6 +5,7 @@ import (
 	"encoding/gob"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"math/rand"
@@ -463,8 +464,16 @@ func (srv *Server) audio() {
 		}
 		if len(next) < expected || err != nil {
 			log.Println("end of song", len(next), expected, err)
-			stop()
-			play()
+			if err == io.ErrUnexpectedEOF {
+				log.Println("attempting to restart song")
+				n := srv.PlaylistIndex
+				stop()
+				srv.PlaylistIndex = n
+				play()
+			} else {
+				stop()
+				play()
+			}
 		}
 	}
 	play = func() {
