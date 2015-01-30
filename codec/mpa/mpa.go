@@ -46,9 +46,16 @@ func (s *Song) Init() (sampleRate, channels int, err error) {
 		}
 		s.decoder = &mpa.Decoder{Input: r}
 		s.r = r
-		if err := s.decoder.DecodeFrame(); err != nil {
-			r.Close()
-			return 0, 0, err
+		for {
+			if err := s.decoder.DecodeFrame(); err != nil {
+				switch err.(type) {
+				case mpa.MalformedStream:
+					continue
+				}
+				r.Close()
+				return 0, 0, err
+			}
+			break
 		}
 	}
 	return s.decoder.SamplingFrequency(), s.decoder.NChannels(), nil
@@ -61,7 +68,12 @@ func (s *Song) Info() (codec.SongInfo, error) {
 func (s *Song) Play(n int) (r []float32, err error) {
 	for len(r) < n {
 		if len(s.buff[0]) == 0 {
-			if err = s.decoder.DecodeFrame(); err != nil {
+			err = s.decoder.DecodeFrame()
+			if err != nil {
+				switch err.(type) {
+				case mpa.MalformedStream:
+					continue
+				}
 				return
 			}
 			for i := 0; i < 2; i++ {
