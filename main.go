@@ -26,6 +26,7 @@ import (
 	_ "github.com/mjibson/mog/protocol/file"
 	_ "github.com/mjibson/mog/protocol/gmusic"
 	"github.com/mjibson/mog/protocol/soundcloud"
+	_ "github.com/mjibson/mog/protocol/stream"
 )
 
 var (
