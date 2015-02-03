@@ -147,7 +147,7 @@ const (
 	waitTracks             = "tracks"
 )
 
-func (srv *Server) makeWaitData(wt waitType) *waitData {
+func (srv *Server) makeWaitData(wt waitType) (*waitData, error) {
 	var data interface{}
 	switch wt {
 	case waitProtocols:
@@ -185,12 +185,12 @@ func (srv *Server) makeWaitData(wt waitType) *waitData {
 		}
 		data = d
 	default:
-		panic("bad wait type")
+		return nil, fmt.Errorf("bad wait type: %s", wt)
 	}
 	return &waitData{
 		Type: wt,
 		Data: data,
-	}
+	}, nil
 }
 
 type PlaylistInfo []listItem
@@ -207,7 +207,11 @@ func (srv *Server) playlistInfo(p Playlist) PlaylistInfo {
 }
 
 func (srv *Server) broadcast(wt waitType) {
-	wd := srv.makeWaitData(wt)
+	wd, err := srv.makeWaitData(wt)
+	if err != nil {
+		log.Println(err)
+		return
+	}
 	srv.lock.Lock()
 	defer srv.lock.Unlock()
 	for w := range srv.waiters {
@@ -312,6 +316,7 @@ func (srv *Server) GetMux(devMode bool) *http.ServeMux {
 	}
 	router := httprouter.New()
 	router.GET("/api/cmd/:cmd", JSON(srv.Cmd))
+	router.GET("/api/data/:type", JSON(srv.Data))
 	router.GET("/api/oauth/:protocol", srv.OAuth)
 	router.POST("/api/cmd/:cmd", JSON(srv.Cmd))
 	router.POST("/api/queue/change", JSON(srv.QueueChange))
@@ -343,7 +348,12 @@ func (srv *Server) WebSocket(ws *websocket.Conn) {
 		waitTracks,
 	}
 	for _, wt := range inits {
-		if err := websocket.JSON.Send(ws, srv.makeWaitData(wt)); err != nil {
+		data, err := srv.makeWaitData(wt)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		if err := websocket.JSON.Send(ws, data); err != nil {
 			log.Println(err)
 			return
 		}
@@ -607,6 +617,10 @@ func (srv *Server) OAuth(w http.ResponseWriter, r *http.Request, ps httprouter.P
 	srv.Save()
 	go srv.protocolRefresh(name, instance.Key(), false)
 	http.Redirect(w, r, "/", http.StatusFound)
+}
+
+func (srv *Server) Data(form url.Values, ps httprouter.Params) (interface{}, error) {
+	return srv.makeWaitData(waitType(ps.ByName("type")))
 }
 
 func (srv *Server) Cmd(form url.Values, ps httprouter.Params) (interface{}, error) {
