@@ -3,7 +3,7 @@
 set -e
 
 while true; do
-	go run main.go -w
+	go run main.go -w -dev
 	if [ $? != 0 ] ; then
 		exit
 	fi

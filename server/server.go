@@ -45,12 +45,12 @@ func printErr(e error) {
 	fmt.Println(string(b))
 }
 
-func ListenAndServe(stateFile, addr string) error {
+func ListenAndServe(stateFile, addr string, devMode bool) error {
 	server, err := New(stateFile)
 	if err != nil {
 		return err
 	}
-	return server.ListenAndServe(addr)
+	return server.ListenAndServe(addr, devMode)
 }
 
 const (
@@ -334,8 +334,8 @@ func (srv *Server) GetMux(devMode bool) *http.ServeMux {
 
 // ListenAndServe listens on the TCP network address addr and then calls
 // Serve to handle requests on incoming connections.
-func (srv *Server) ListenAndServe(addr string) error {
-	mux := srv.GetMux(true)
+func (srv *Server) ListenAndServe(addr string, devMode bool) error {
+	mux := srv.GetMux(devMode)
 	log.Println("mog: listening on", addr)
 	return http.ListenAndServe(addr, mux)
 }

@@ -34,6 +34,7 @@ var (
 	flagDrive      = flag.String("drive", "256229448371-93bchgphf79q2vbik5aod4osvksce35p.apps.googleusercontent.com:zO5-2BqMb5Zl4EFKd3fVnavw", "Google Drive API credentials of the form ClientID:ClientSecret")
 	flagDropbox    = flag.String("dropbox", "rnhpqsbed2q2ezn:ldref688unj74ld", "Dropbox API credentials of the form ClientID:ClientSecret")
 	flagSoundcloud = flag.String("soundcloud", "ec28c2226a0838d01edc6ed0014e462e:a115e94029d698f541960c8dc8560978", "SoundCloud API credentials of the form ClientID:ClientSecret")
+	flagDev        = flag.Bool("dev", false, "enable dev mode")
 )
 
 func main() {
@@ -72,7 +73,7 @@ func main() {
 		}
 		soundcloud.Init(sp[0], sp[1], redir)
 	}
-	log.Fatal(server.ListenAndServe("mog.state", DefaultAddr))
+	log.Fatal(server.ListenAndServe("mog.state", DefaultAddr, *flagDev))
 }
 
 const DefaultAddr = ":6601"
