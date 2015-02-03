@@ -2,12 +2,15 @@
 package server
 
 import (
+	crand "crypto/rand"
 	"encoding/gob"
 	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
+	"math"
+	"math/big"
 	"math/rand"
 	"net/http"
 	"net/url"
@@ -26,6 +29,14 @@ import (
 	"golang.org/x/net/websocket"
 	"golang.org/x/oauth2"
 )
+
+func init() {
+	i, err := crand.Int(crand.Reader, big.NewInt(math.MaxInt64))
+	if err != nil {
+		return
+	}
+	rand.Seed(i.Int64())
+}
 
 func printErr(e error) {
 	log.Println(e)
