@@ -1,11 +1,14 @@
 package stream
 
 import (
+	"bytes"
 	"encoding/gob"
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"net/http"
+	"time"
 
 	"github.com/mjibson/mog/codec"
 	"github.com/mjibson/mog/codec/mpa"
@@ -37,7 +40,54 @@ type Stream struct {
 	URL string
 }
 
-var client = &http.Client{}
+type dialer struct {
+	*net.Dialer
+}
+
+type conn struct {
+	net.Conn
+	read bool
+}
+
+// Read modifies the first line of an ICY stream response,
+// if needed, to conform to Go's HTTP version requirements:
+// http://golang.org/pkg/net/http/#ParseHTTPVersion.
+func (c *conn) Read(b []byte) (n int, err error) {
+	if !c.read {
+		const headerICY = "ICY"
+		const headerHTTP = "HTTP/1.1"
+		// Hold 5 bytes because "HTTP/1.1" is 5 bytes longer than "ICY".
+		n, err := c.Conn.Read(b[:len(b)+len(headerICY)-len(headerHTTP)])
+		if bytes.HasPrefix(b, []byte(headerICY)) {
+			copy(b[len(headerHTTP):], b[len(headerICY):])
+			copy(b, []byte(headerHTTP))
+		}
+		c.read = true
+		return n, err
+	}
+	return c.Conn.Read(b)
+}
+
+func (d *dialer) Dial(network, address string) (net.Conn, error) {
+	c, err := d.Dialer.Dial(network, address)
+	cn := conn{
+		Conn: c,
+	}
+	return &cn, err
+}
+
+var client = &http.Client{
+	Transport: &http.Transport{
+		Proxy: http.ProxyFromEnvironment,
+		Dial: (&dialer{
+			Dialer: &net.Dialer{
+				Timeout:   30 * time.Second,
+				KeepAlive: 30 * time.Second,
+			},
+		}).Dial,
+		TLSHandshakeTimeout: 10 * time.Second,
+	},
+}
 
 func (s *Stream) get() (*http.Response, error) {
 	req, err := http.NewRequest("GET", s.URL, nil)
@@ -49,7 +99,6 @@ func (s *Stream) get() (*http.Response, error) {
 	log.Println("stream open", req.URL)
 	resp, err := client.Do(req)
 	if err != nil {
-		panic(err)
 		return nil, err
 	}
 	if resp.StatusCode != 200 {
