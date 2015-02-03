@@ -11,7 +11,7 @@ var Tracks = React.createClass({
 	},
 	getInitialState: function() {
 		var init = {
-			sort: 'Title',
+			sort: this.props.initSort || 'Title',
 			asc: true,
 			tracks: [],
 			search: '',
@@ -39,6 +39,38 @@ var Tracks = React.createClass({
 	add: function() {
 		var params = this.mkparams();
 		POST('/api/queue/change', mkcmd(params));
+	},
+	playTrack: function(index) {
+		return function() {
+			if (this.props.isqueue) {
+				var idx = this.getter(index).idx - 1;
+				POST('/api/cmd/play_idx?idx=' + idx);
+			} else {
+				var params = [
+					'clear',
+					'add-' + this.getter(index).ID.UID
+				];
+				POST('/api/queue/change', mkcmd(params), function() {
+					POST('/api/cmd/play');
+				});
+			}
+		}.bind(this);
+	},
+	appendTrack: function(index) {
+		return function() {
+			var params;
+			if (this.props.isqueue) {
+				var idx = this.getter(index).idx - 1;
+				params = [
+					'rem-' + idx
+				];
+			} else {
+				params = [
+					'add-' + this.getter(index).ID.UID
+				];
+			}
+			POST('/api/queue/change', mkcmd(params));
+		}.bind(this);
 	},
 	sort: function(field) {
 		return function() {
@@ -90,6 +122,9 @@ var Tracks = React.createClass({
 		}
 		var useIdx = (obj.sort == 'Track' && this.props.useIdxAsNum) || this.props.isqueue;
 		tracks = _.sortBy(tracks, function(v) {
+			return v.Info.Track;
+		});
+		tracks = _.sortBy(tracks, function(v) {
 			if (useIdx) {
 				return v.idx;
 			}
@@ -114,38 +149,8 @@ var Tracks = React.createClass({
 		return <div><Time time={data.Info.Time} /></div>;
 	},
 	timeHeader: function() {
-		return <div><i className={"fa fa-clock-o " + this.sortClass('Time')} onClick={this.sort('Time')} /></div>;
-	},
-	playTrack: function(index) {
 		return function() {
-			if (this.props.isqueue) {
-				var idx = this.getter(index).idx - 1;
-				POST('/api/cmd/play_idx?idx=' + idx);
-			} else {
-				var params = [
-					'clear',
-					'add-' + this.getter(index).ID.UID
-				];
-				POST('/api/queue/change', mkcmd(params), function() {
-					POST('/api/cmd/play');
-				});
-			}
-		}.bind(this);
-	},
-	appendTrack: function(index) {
-		return function() {
-			var params;
-			if (this.props.isqueue) {
-				var idx = this.getter(index).idx - 1;
-				params = [
-					'rem-' + idx
-				];
-			} else {
-				params = [
-					'add-' + this.getter(index).ID.UID
-				];
-			}
-			POST('/api/queue/change', mkcmd(params));
+			return <i className={"fa fa-clock-o " + this.sortClass('Time')} onClick={this.sort('Time')} />;
 		}.bind(this);
 	},
 	mkHeader: function(name, text) {
@@ -220,13 +225,11 @@ var Tracks = React.createClass({
 					overflowX={'hidden'}
 					>
 					<Column
-						label={this.props.isqueue ? '' : '#'}
 						width={50}
 						headerRenderer={this.mkHeader('Track', '#')}
 						cellRenderer={this.trackRenderer}
 					/>
 					<Column
-						label="Name"
 						width={200}
 						flexGrow={3}
 						cellClassName="nowrap"
@@ -234,13 +237,11 @@ var Tracks = React.createClass({
 						cellRenderer={this.titleCellRenderer}
 					/>
 					<Column
-						label="Time"
 						width={50}
 						cellRenderer={this.timeCellRenderer}
-						headerRenderer={this.timeHeaderRenderer}
+						headerRenderer={this.timeHeader()}
 					/>
 					<Column
-						label="Artist"
 						width={100}
 						flexGrow={1}
 						cellRenderer={this.artistCellRenderer}
@@ -248,7 +249,6 @@ var Tracks = React.createClass({
 						headerRenderer={this.mkHeader('Artist')}
 					/>
 					<Column
-						label="Album"
 						width={100}
 						flexGrow={1}
 						cellRenderer={this.albumCellRenderer}
@@ -276,7 +276,7 @@ var TrackList = React.createClass({
 	}
 });
 
-function searchClass(field) {
+function searchClass(field, sort) {
 	return React.createClass({
 		mixins: [Reflux.listenTo(Stores.tracks, 'setState')],
 		render: function() {
@@ -290,10 +290,10 @@ function searchClass(field) {
 					tracks.push(val);
 				}
 			});
-			return <Tracks tracks={tracks} />;
+			return <Tracks tracks={tracks} initSort={sort} />;
 		}
 	});
 }
 
-var Artist = searchClass('Artist');
-var Album = searchClass('Album');
+var Artist = searchClass('Artist', 'Album');
+var Album = searchClass('Album', 'Track');

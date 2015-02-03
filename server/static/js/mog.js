@@ -102,7 +102,7 @@ var Tracks = React.createClass({displayName: "Tracks",
 	},
 	getInitialState: function() {
 		var init = {
-			sort: 'Title',
+			sort: this.props.initSort || 'Title',
 			asc: true,
 			tracks: [],
 			search: '',
@@ -130,6 +130,38 @@ var Tracks = React.createClass({displayName: "Tracks",
 	add: function() {
 		var params = this.mkparams();
 		POST('/api/queue/change', mkcmd(params));
+	},
+	playTrack: function(index) {
+		return function() {
+			if (this.props.isqueue) {
+				var idx = this.getter(index).idx - 1;
+				POST('/api/cmd/play_idx?idx=' + idx);
+			} else {
+				var params = [
+					'clear',
+					'add-' + this.getter(index).ID.UID
+				];
+				POST('/api/queue/change', mkcmd(params), function() {
+					POST('/api/cmd/play');
+				});
+			}
+		}.bind(this);
+	},
+	appendTrack: function(index) {
+		return function() {
+			var params;
+			if (this.props.isqueue) {
+				var idx = this.getter(index).idx - 1;
+				params = [
+					'rem-' + idx
+				];
+			} else {
+				params = [
+					'add-' + this.getter(index).ID.UID
+				];
+			}
+			POST('/api/queue/change', mkcmd(params));
+		}.bind(this);
 	},
 	sort: function(field) {
 		return function() {
@@ -181,6 +213,9 @@ var Tracks = React.createClass({displayName: "Tracks",
 		}
 		var useIdx = (obj.sort == 'Track' && this.props.useIdxAsNum) || this.props.isqueue;
 		tracks = _.sortBy(tracks, function(v) {
+			return v.Info.Track;
+		});
+		tracks = _.sortBy(tracks, function(v) {
 			if (useIdx) {
 				return v.idx;
 			}
@@ -205,38 +240,8 @@ var Tracks = React.createClass({displayName: "Tracks",
 		return React.createElement("div", null, React.createElement(Time, {time: data.Info.Time}));
 	},
 	timeHeader: function() {
-		return React.createElement("div", null, React.createElement("i", {className: "fa fa-clock-o " + this.sortClass('Time'), onClick: this.sort('Time')}));
-	},
-	playTrack: function(index) {
 		return function() {
-			if (this.props.isqueue) {
-				var idx = this.getter(index).idx - 1;
-				POST('/api/cmd/play_idx?idx=' + idx);
-			} else {
-				var params = [
-					'clear',
-					'add-' + this.getter(index).ID.UID
-				];
-				POST('/api/queue/change', mkcmd(params), function() {
-					POST('/api/cmd/play');
-				});
-			}
-		}.bind(this);
-	},
-	appendTrack: function(index) {
-		return function() {
-			var params;
-			if (this.props.isqueue) {
-				var idx = this.getter(index).idx - 1;
-				params = [
-					'rem-' + idx
-				];
-			} else {
-				params = [
-					'add-' + this.getter(index).ID.UID
-				];
-			}
-			POST('/api/queue/change', mkcmd(params));
+			return React.createElement("i", {className: "fa fa-clock-o " + this.sortClass('Time'), onClick: this.sort('Time')});
 		}.bind(this);
 	},
 	mkHeader: function(name, text) {
@@ -311,13 +316,11 @@ var Tracks = React.createClass({displayName: "Tracks",
 					overflowX: 'hidden'
 					}, 
 					React.createElement(Column, {
-						label: this.props.isqueue ? '' : '#', 
 						width: 50, 
 						headerRenderer: this.mkHeader('Track', '#'), 
 						cellRenderer: this.trackRenderer}
 					), 
 					React.createElement(Column, {
-						label: "Name", 
 						width: 200, 
 						flexGrow: 3, 
 						cellClassName: "nowrap", 
@@ -325,13 +328,11 @@ var Tracks = React.createClass({displayName: "Tracks",
 						cellRenderer: this.titleCellRenderer}
 					), 
 					React.createElement(Column, {
-						label: "Time", 
 						width: 50, 
 						cellRenderer: this.timeCellRenderer, 
-						headerRenderer: this.timeHeaderRenderer}
+						headerRenderer: this.timeHeader()}
 					), 
 					React.createElement(Column, {
-						label: "Artist", 
 						width: 100, 
 						flexGrow: 1, 
 						cellRenderer: this.artistCellRenderer, 
@@ -339,7 +340,6 @@ var Tracks = React.createClass({displayName: "Tracks",
 						headerRenderer: this.mkHeader('Artist')}
 					), 
 					React.createElement(Column, {
-						label: "Album", 
 						width: 100, 
 						flexGrow: 1, 
 						cellRenderer: this.albumCellRenderer, 
@@ -367,7 +367,7 @@ var TrackList = React.createClass({displayName: "TrackList",
 	}
 });
 
-function searchClass(field) {
+function searchClass(field, sort) {
 	return React.createClass({
 		mixins: [Reflux.listenTo(Stores.tracks, 'setState')],
 		render: function() {
@@ -381,13 +381,13 @@ function searchClass(field) {
 					tracks.push(val);
 				}
 			});
-			return React.createElement(Tracks, {tracks: tracks});
+			return React.createElement(Tracks, {tracks: tracks, initSort: sort});
 		}
 	});
 }
 
-var Artist = searchClass('Artist');
-var Album = searchClass('Album');
+var Artist = searchClass('Artist', 'Album');
+var Album = searchClass('Album', 'Track');
 // @flow
 
 var Protocols = React.createClass({displayName: "Protocols",
