@@ -22,7 +22,7 @@ var Protocols = React.createClass({
 		var protocols = [];
 		_.each(this.state.Current, function(instances, protocol) {
 			_.each(instances, function(key) {
-				protocols.push(<Protocol key={key} protocol={protocol} name={key} />);
+				protocols.push(<ProtocolRow key={key} protocol={protocol} name={key} />);
 			}, this);
 		}, this);
 		var selected;
@@ -51,76 +51,67 @@ var Protocols = React.createClass({
 	}
 });
 
-var ProtocolParam = React.createClass({
-	getInitialState: function() {
-		return {
-			value: '',
-			changed: false,
-		};
-	},
-	componentWillReceiveProps: function(props) {
-		if (this.state.changed) {
-			return;
-		}
-		this.setState({
-			value: props.value,
-			changed: true,
-		});
-	},
-	paramChange: function(event) {
-		this.setState({
-			value: event.target.value,
-		});
-		this.props.change();
-	},
-	render: function() {
-		return (
-			<li>
-				{this.props.name} <input type="text" onChange={this.paramChange} value={this.state.value || this.props.value} />
-			</li>
-		);
-	}
-});
-
-var ProtocolOAuth = React.createClass({
-	render: function() {
-		return <li><a href={this.props.url}>connect</a></li>;
-	}
-});
-
 var Protocol = React.createClass({
 	getInitialState: function() {
 		return {
+			params: [],
 			save: false,
 		};
 	},
-	getDefaultProps: function() {
-		return {
-			instance: {},
-			params: {},
-		};
-	},
-	setSave: function() {
-		this.setState({save: true});
-	},
 	save: function() {
-		var params = Object.keys(this.refs).sort();
-		params = params.map(function(ref) {
-			var v = this.refs[ref].state.value;
-			this.refs[ref].state.value = '';
+		var params = this.state.params.map(function(v) {
 			return {
 				name: 'params',
 				value: v,
 			};
-		}, this);
+		});
 		params.push({
 			name: 'protocol',
 			value: this.props.protocol,
 		});
 		POST('/api/protocol/add', params, function() {
-				this.setState({save: false});
-			}.bind(this));
+			this.setState(this.getInitialState());
+		}.bind(this));
 	},
+	render: function() {
+		if (!this.props.params) {
+			return <div></div>;
+		}
+		var params = [];
+		if (this.props.params.Params) {
+			params = this.props.params.Params.map(function(param, idx) {
+				var change = function(event) {
+					var p = this.state.params.slice();
+					p[idx] = event.target.value;
+					this.setState({
+						params: p,
+						save: true,
+					});
+				}.bind(this);
+				return (
+					<li key={idx}>
+						{param}: <input type="text" style={{width: '75%'}} onChange={change} value={this.state.params[idx]} />
+					</li>
+				);
+			}.bind(this));
+		}
+		if (this.props.params.OAuthURL) {
+			params.push(<li key={'oauth'}><a href={this.props.params.OAuthURL}>connect</a></li>);
+		}
+		var save;
+		if (this.state.save) {
+			save = <button onClick={this.save}>save</button>;
+		}
+		return (
+			<div>
+				<ul>{params}</ul>
+				{save}
+			</div>
+		);
+	}
+});
+
+var ProtocolRow = React.createClass({
 	remove: function() {
 		POST('/api/protocol/remove', {
 			protocol: this.props.protocol,
@@ -134,34 +125,14 @@ var Protocol = React.createClass({
 		});
 	},
 	render: function() {
-		var params = [];
-		if (this.props.params.Params) {
-			params = this.props.params.Params.map(function(param, idx) {
-				var current = this.props.instance.Params || [];
-				return <ProtocolParam key={param} name={param} ref={idx} value={current[idx]} change={this.setSave} />;
-			}.bind(this));
-		}
-		if (this.props.params.OAuthURL) {
-			params.push(<ProtocolOAuth key={'oauth'} url={this.props.params.OAuthURL} />);
-		}
-		if (this.props.name) {
-			var icon = 'fa fa-fw fa-border fa-2x clickable ';
-			return (
-				<tr>
-					<td>{this.props.protocol}</td>
-					<td>{this.props.name}</td>
-					<td><i className={icon + 'fa-times'} onClick={this.remove} /></td>
-					<td><i className={icon + 'fa-repeat'} onClick={this.refresh} /></td>
-				</tr>
-			);
-		}
-		var save;
-		if (this.state.save) {
-			save = <button onClick={this.save}>save</button>;
-		}
-		return <div>
-				<ul>{params}</ul>
-				{save}
-			</div>;
+		var icon = 'fa fa-fw fa-border fa-2x clickable ';
+		return (
+			<tr>
+				<td>{this.props.protocol}</td>
+				<td>{this.props.name}</td>
+				<td><i className={icon + 'fa-times'} onClick={this.remove} /></td>
+				<td><i className={icon + 'fa-repeat'} onClick={this.refresh} /></td>
+			</tr>
+		);
 	}
 });

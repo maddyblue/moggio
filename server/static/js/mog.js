@@ -412,7 +412,7 @@ var Protocols = React.createClass({displayName: "Protocols",
 		var protocols = [];
 		_.each(this.state.Current, function(instances, protocol) {
 			_.each(instances, function(key) {
-				protocols.push(React.createElement(Protocol, {key: key, protocol: protocol, name: key}));
+				protocols.push(React.createElement(ProtocolRow, {key: key, protocol: protocol, name: key}));
 			}, this);
 		}, this);
 		var selected;
@@ -441,76 +441,67 @@ var Protocols = React.createClass({displayName: "Protocols",
 	}
 });
 
-var ProtocolParam = React.createClass({displayName: "ProtocolParam",
-	getInitialState: function() {
-		return {
-			value: '',
-			changed: false,
-		};
-	},
-	componentWillReceiveProps: function(props) {
-		if (this.state.changed) {
-			return;
-		}
-		this.setState({
-			value: props.value,
-			changed: true,
-		});
-	},
-	paramChange: function(event) {
-		this.setState({
-			value: event.target.value,
-		});
-		this.props.change();
-	},
-	render: function() {
-		return (
-			React.createElement("li", null, 
-				this.props.name, " ", React.createElement("input", {type: "text", onChange: this.paramChange, value: this.state.value || this.props.value})
-			)
-		);
-	}
-});
-
-var ProtocolOAuth = React.createClass({displayName: "ProtocolOAuth",
-	render: function() {
-		return React.createElement("li", null, React.createElement("a", {href: this.props.url}, "connect"));
-	}
-});
-
 var Protocol = React.createClass({displayName: "Protocol",
 	getInitialState: function() {
 		return {
+			params: [],
 			save: false,
 		};
 	},
-	getDefaultProps: function() {
-		return {
-			instance: {},
-			params: {},
-		};
-	},
-	setSave: function() {
-		this.setState({save: true});
-	},
 	save: function() {
-		var params = Object.keys(this.refs).sort();
-		params = params.map(function(ref) {
-			var v = this.refs[ref].state.value;
-			this.refs[ref].state.value = '';
+		var params = this.state.params.map(function(v) {
 			return {
 				name: 'params',
 				value: v,
 			};
-		}, this);
+		});
 		params.push({
 			name: 'protocol',
 			value: this.props.protocol,
 		});
 		POST('/api/protocol/add', params, function() {
-				this.setState({save: false});
-			}.bind(this));
+			this.setState(this.getInitialState());
+		}.bind(this));
 	},
+	render: function() {
+		if (!this.props.params) {
+			return React.createElement("div", null);
+		}
+		var params = [];
+		if (this.props.params.Params) {
+			params = this.props.params.Params.map(function(param, idx) {
+				var change = function(event) {
+					var p = this.state.params.slice();
+					p[idx] = event.target.value;
+					this.setState({
+						params: p,
+						save: true,
+					});
+				}.bind(this);
+				return (
+					React.createElement("li", {key: idx}, 
+						param, ": ", React.createElement("input", {type: "text", style: {width: '75%'}, onChange: change, value: this.state.params[idx]})
+					)
+				);
+			}.bind(this));
+		}
+		if (this.props.params.OAuthURL) {
+			params.push(React.createElement("li", {key: 'oauth'}, React.createElement("a", {href: this.props.params.OAuthURL}, "connect")));
+		}
+		var save;
+		if (this.state.save) {
+			save = React.createElement("button", {onClick: this.save}, "save");
+		}
+		return (
+			React.createElement("div", null, 
+				React.createElement("ul", null, params), 
+				save
+			)
+		);
+	}
+});
+
+var ProtocolRow = React.createClass({displayName: "ProtocolRow",
 	remove: function() {
 		POST('/api/protocol/remove', {
 			protocol: this.props.protocol,
@@ -524,35 +515,15 @@ var Protocol = React.createClass({displayName: "Protocol",
 		});
 	},
 	render: function() {
-		var params = [];
-		if (this.props.params.Params) {
-			params = this.props.params.Params.map(function(param, idx) {
-				var current = this.props.instance.Params || [];
-				return React.createElement(ProtocolParam, {key: param, name: param, ref: idx, value: current[idx], change: this.setSave});
-			}.bind(this));
-		}
-		if (this.props.params.OAuthURL) {
-			params.push(React.createElement(ProtocolOAuth, {key: 'oauth', url: this.props.params.OAuthURL}));
-		}
-		if (this.props.name) {
-			var icon = 'fa fa-fw fa-border fa-2x clickable ';
-			return (
-				React.createElement("tr", null, 
-					React.createElement("td", null, this.props.protocol), 
-					React.createElement("td", null, this.props.name), 
-					React.createElement("td", null, React.createElement("i", {className: icon + 'fa-times', onClick: this.remove})), 
-					React.createElement("td", null, React.createElement("i", {className: icon + 'fa-repeat', onClick: this.refresh}))
-				)
-			);
-		}
-		var save;
-		if (this.state.save) {
-			save = React.createElement("button", {onClick: this.save}, "save");
-		}
-		return React.createElement("div", null, 
-				React.createElement("ul", null, params), 
-				save
-			);
+		var icon = 'fa fa-fw fa-border fa-2x clickable ';
+		return (
+			React.createElement("tr", null, 
+				React.createElement("td", null, this.props.protocol), 
+				React.createElement("td", null, this.props.name), 
+				React.createElement("td", null, React.createElement("i", {className: icon + 'fa-times', onClick: this.remove})), 
+				React.createElement("td", null, React.createElement("i", {className: icon + 'fa-repeat', onClick: this.refresh}))
+			)
+		);
 	}
 });
 // @flow
