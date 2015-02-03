@@ -37,9 +37,18 @@ function POST(path, params, success) {
 	var xhr = new XMLHttpRequest();
 	xhr.open('POST', path, true);
 	xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded; charset=UTF-8');
-	if (success) {
-		xhr.onload = success;
-	}
+	xhr.onreadystatechange = function() {
+		if (xhr.readyState != 4) {
+			return;
+		}
+		if (xhr.status >= 300) {
+			alert(xhr.status + ": " + xhr.statusText + ": " + xhr.responseText);
+			return;
+		}
+		if (success) {
+			success();
+		}
+	};
 	xhr.send(data);
 }
 
