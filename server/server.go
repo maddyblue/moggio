@@ -162,13 +162,17 @@ func (srv *Server) makeWaitData(wt waitType) *waitData {
 			Tracks: srv.list(),
 		}
 	case waitPlaylist:
-		data = struct {
-			Queue     Playlist
-			Playlists map[string]Playlist
+		d := struct {
+			Queue     PlaylistInfo
+			Playlists map[string]PlaylistInfo
 		}{
-			Queue:     srv.Queue,
-			Playlists: srv.Playlists,
+			Queue:     srv.playlistInfo(srv.Queue),
+			Playlists: make(map[string]PlaylistInfo),
 		}
+		for name, p := range srv.Playlists {
+			d.Playlists[name] = srv.playlistInfo(p)
+		}
+		data = d
 	default:
 		panic("bad wait type")
 	}
@@ -176,6 +180,19 @@ func (srv *Server) makeWaitData(wt waitType) *waitData {
 		Type: wt,
 		Data: data,
 	}
+}
+
+type PlaylistInfo []listItem
+
+func (srv *Server) playlistInfo(p Playlist) PlaylistInfo {
+	r := make(PlaylistInfo, len(p))
+	for idx, id := range p {
+		r[idx] = listItem{
+			ID: id,
+			Info: srv.songs[id],
+		}
+	}
+	return r
 }
 
 func (srv *Server) broadcast(wt waitType) {
@@ -354,6 +371,9 @@ func (srv *Server) audio() {
 		srv.PlaylistIndex--
 		if srv.elapsed < time.Second*3 {
 			srv.PlaylistIndex--
+		}
+		if srv.PlaylistIndex < 0 {
+			srv.PlaylistIndex = 0
 		}
 		next()
 	}
@@ -807,12 +827,13 @@ func (srv *Server) list() []listItem {
 
 func (srv *Server) status() *Status {
 	return &Status{
-		State:   srv.state,
-		Song:    srv.songID,
-		Elapsed: srv.elapsed,
-		Time:    srv.info.Time,
-		Random:  srv.Random,
-		Repeat:  srv.Repeat,
+		State:    srv.state,
+		Song:     srv.songID,
+		SongInfo: srv.info,
+		Elapsed:  srv.elapsed,
+		Time:     srv.info.Time,
+		Random:   srv.Random,
+		Repeat:   srv.Repeat,
 	}
 }
 
@@ -821,6 +842,7 @@ type Status struct {
 	State State
 	// Song ID.
 	Song SongID
+	SongInfo codec.SongInfo
 	// Elapsed time of current song.
 	Elapsed time.Duration
 	// Duration of current song.

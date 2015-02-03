@@ -28,17 +28,12 @@ var Queue = React.createClass({
 		POST('/api/playlist/change/' + name, mkcmd(params));
 	},
 	render: function() {
-		var q = _.map(this.state.Queue, function(val) {
-			return {
-				ID: val
-			};
-		});
 		return (
 			<div>
 				<h4>Queue</h4>
 				<button onClick={this.clear}>clear</button>
 				<button onClick={this.save}>save</button>
-				<Tracks tracks={q} noIdx={true} isqueue={true} />
+				<Tracks tracks={this.state.Queue} noIdx={true} isqueue={true} />
 			</div>
 		);
 	}
@@ -61,16 +56,11 @@ var Playlist = React.createClass({
 		POST('/api/playlist/change/' + this.props.params.Playlist, params);
 	},
 	render: function() {
-		var q = _.map(this.state.Playlists[this.props.params.Playlist], function(val) {
-			return {
-				ID: val
-			};
-		});
 		return (
 			<div>
 				<h4>{this.props.params.Playlist}</h4>
 				<button onClick={this.clear}>delete playlist</button>
-				<Tracks tracks={q} useIdxAsNum={true} />
+				<Tracks tracks={this.state.Playlists[this.props.params.Playlist]} useIdxAsNum={true} />
 			</div>
 		);
 	}

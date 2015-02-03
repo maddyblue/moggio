@@ -69,26 +69,23 @@ var Player = React.createClass({
 	render: function() {
 		var status;
 		if (this.state.Song && this.state.Song.ID) {
-			var info = Lookup(this.state.Song);
+			var info = this.state.SongInfo;
 			var song = this.state.Song.UID;
-			if (info) {
-				info = info.Info;
-				var album;
-				if (info.Album) {
-					album = <span>- <Link to="album" params={info}>{info.Album}</Link></span>;
-				}
-				var artist;
-				if (info.Artist) {
-					artist = <span>- <Link to="artist" params={info}>{info.Artist}</Link></span>;
-				}
-				song = (
-					<span>
-						{info.Title}
-						{album}
-						{artist}
-					</span>
-				);
+			var album;
+			if (info.Album) {
+				album = <span>- <Link to="album" params={info}>{info.Album}</Link></span>;
 			}
+			var artist;
+			if (info.Artist) {
+				artist = <span>- <Link to="artist" params={info}>{info.Artist}</Link></span>;
+			}
+			song = (
+				<span>
+					{info.Title}
+					{album}
+					{artist}
+				</span>
+			);
 			status = (
 				<span>
 					<span>

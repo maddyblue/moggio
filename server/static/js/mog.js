@@ -21,23 +21,6 @@ _.each(Actions, function(action, name) {
 	});
 });
 
-// Lookup returns track data for song with given ID. null is returned if no
-// song with id found.
-function Lookup(id) {
-	var t = Stores.tracks.data;
-	if (!t || !t.Tracks) {
-		return null;
-	}
-	t = t.Tracks;
-	for (var i = 0; i < t.length; i++) {
-		var d = t[i];
-		if (_.isEqual(d.ID, id)) {
-			return d;
-		}
-	}
-	return null;
-}
-
 function POST(path, params, success) {
 	var data;
 	if (_.isArray(params)) {
@@ -102,107 +85,38 @@ var Time = React.createClass({displayName: "Time",
 		return React.createElement("span", null, m, ":", s);
 	}
 });
+
+function mkIcon(name) {
+	return 'icon fa fa-border fa-lg clickable ' + name;
+}
 // @flow
 
-var Track = React.createClass({displayName: "Track",
-	mixins: [Reflux.listenTo(Stores.tracks, 'update')],
-	play: function() {
-		if (this.props.isqueue) {
-			POST('/api/cmd/play_idx?idx=' + this.props.idx);
-		} else {
-			var params = mkcmd([
-				'clear',
-				'add-' + this.props.id.UID
-			]);
-			POST('/api/queue/change', params, function() {
-				POST('/api/cmd/play');
-			});
-		}
-	},
-	getInitialState: function() {
-		if (this.props.info) {
-			return {
-				info: this.props.info
-			};
-		}
-		var d = Lookup(this.props.id);
-		if (d) {
-			return {
-				info: d.Info
-			};
-		}
-		return {};
-	},
-	update: function() {
-		this.setState(this.getInitialState());
-	},
-	over: function() {
-		this.setState({over: true});
-	},
-	out: function() {
-		this.setState({over: false});
-	},
-	dequeue: function() {
-		var params = mkcmd([
-			'rem-' + this.props.idx
-		]);
-		POST('/api/queue/change', params);
-	},
-	append: function() {
-		var params = mkcmd([
-			'add-' + this.props.id.UID
-		]);
-		POST('/api/queue/change', params);
-	},
-	render: function() {
-		var info = this.state.info;
-		if (!info) {
-			return (
-				React.createElement("tr", null, 
-					React.createElement("td", null, this.props.id)
-				)
-			);
-		}
-		var control;
-		var track;
-		var icon = "fa fa-border fa-lg clickable ";
-		if (this.state.over) {
-			if (this.props.isqueue) {
-				control = React.createElement("i", {className: icon + "fa-times", onClick: this.dequeue});
-			} else {
-				control = React.createElement("i", {className: icon + "fa-plus", onClick: this.append});
-			}
-			track = React.createElement("i", {className: icon + "fa-play", onClick: this.play});
-		} else {
-			track = info.Track || '';
-			if (this.props.useIdxAsNum) {
-				track = this.props.idx + 1;
-			} else if (this.props.noIdx) {
-				track = null;
-			}
-		}
-		return (
-			React.createElement("tr", {onMouseEnter: this.over, onMouseLeave: this.out}, 
-				React.createElement("td", {className: "control"}, track), 
-				React.createElement("td", null, info.Title), 
-				React.createElement("td", {className: "control"}, control), 
-				React.createElement("td", null, React.createElement(Time, {time: info.Time})), 
-				React.createElement("td", null, React.createElement(Link, {to: "artist", params: info}, info.Artist)), 
-				React.createElement("td", null, React.createElement(Link, {to: "album", params: info}, info.Album))
-			)
-		);
-	}
-});
+var Table = FixedDataTable.Table;
+var Column = FixedDataTable.Column;
 
 var Tracks = React.createClass({displayName: "Tracks",
-	getInitialState: function() {
+	getDefaultProps: function() {
 		return {
-			sort: 'Title',
-			asc: true,
+			tracks: []
 		};
 	},
+	getInitialState: function() {
+		var init = {
+			sort: 'Title',
+			asc: true,
+			tracks: [],
+			search: '',
+		};
+		if (this.props.isqueue || this.props.useIdxAsNum) {
+			init.sort = 'Track';
+		}
+		return init;
+	},
+	componentWillReceiveProps: function(next) {
+		this.update(null, next.tracks);
+	},
 	mkparams: function() {
-		return _.map(this.props.tracks, function(t) {
+		return _.map(this.state.tracks, function(t, i) {
 			return 'add-' + t.ID.UID;
 		});
 	},
@@ -220,9 +134,9 @@ var Tracks = React.createClass({displayName: "Tracks",
 	sort: function(field) {
 		return function() {
 			if (this.state.sort == field) {
-				this.setState({asc: !this.state.asc});
+				this.update({asc: !this.state.asc});
 			} else {
-				this.setState({sort: field});
+				this.update({sort: field});
 			}
 		}.bind(this);
 	},
@@ -236,26 +150,142 @@ var Tracks = React.createClass({displayName: "Tracks",
 		}
 		return name;
 	},
-	render: function() {
-		var sorted = this.props.tracks;
-		if (!this.props.isqueue) {
-			sorted = _.sortBy(this.props.tracks, function(v) {
-				if (!v.Info) {
-					return v.ID.UID;
-				}
-				var d = v.Info[this.state.sort];
-				if (_.isString(d)) {
-					d = d.toLocaleLowerCase();
-				}
-				return d;
-			}.bind(this));
-			if (!this.state.asc) {
-				sorted.reverse();
-			}
+	handleResize: function() {
+		this.forceUpdate();
+	},
+	componentDidMount: function() {
+		window.addEventListener('resize', this.handleResize);
+		this.update();
+	},
+	componentWillUnmount: function() {
+		window.removeEventListener('resize', this.handleResize);
+	},
+	update: function(obj, next) {
+		if (obj) {
+			this.setState(obj);
 		}
-		var tracks = _.map(sorted, function(t, idx) {
-			return React.createElement(Track, {key: idx + '-' + t.ID.UID, id: t.ID, info: t.Info, idx: idx, isqueue: this.props.isqueue, useIdxAsNum: this.props.useIdxAsNum, noIdx: this.props.noIdx});
+		obj = _.extend({}, this.state, obj);
+		var tracks = next || this.props.tracks;
+		if (next) {
+			_.each(tracks, function(v, i) {
+				v.idx = i + 1;
+			});
+		}
+		if (obj.search) {
+			var s = obj.search.toLocaleLowerCase().trim();
+			tracks = _.filter(tracks, function(v) {
+				var t = v.Info.Title + v.Info.Album + v.Info.Artist;
+				t = t.toLocaleLowerCase();
+				return t.indexOf(s) > -1;
+			});
+		}
+		var useIdx = (obj.sort == 'Track' && this.props.useIdxAsNum) || this.props.isqueue;
+		tracks = _.sortBy(tracks, function(v) {
+			if (useIdx) {
+				return v.idx;
+			}
+			var d = v.Info[obj.sort];
+			if (_.isString(d)) {
+				d = d.toLocaleLowerCase();
+			}
+			return d;
 		}.bind(this));
+		if (!obj.asc) {
+			tracks.reverse();
+		}
+		this.setState({tracks: tracks});
+	},
+	search: function(event) {
+		this.update({search: event.target.value});
+	},
+	getter: function(index) {
+		return this.state.tracks[index];
+	},
+	timeCellRenderer: function(str, key, data, index) {
+		return React.createElement("div", null, React.createElement(Time, {time: data.Info.Time}));
+	},
+	timeHeader: function() {
+		return React.createElement("div", null, React.createElement("i", {className: "fa fa-clock-o " + this.sortClass('Time'), onClick: this.sort('Time')}));
+	},
+	playTrack: function(index) {
+		return function() {
+			if (this.props.isqueue) {
+				var idx = this.getter(index).idx - 1;
+				POST('/api/cmd/play_idx?idx=' + idx);
+			} else {
+				var params = [
+					'clear',
+					'add-' + this.getter(index).ID.UID
+				];
+				POST('/api/queue/change', mkcmd(params), function() {
+					POST('/api/cmd/play');
+				});
+			}
+		}.bind(this);
+	},
+	appendTrack: function(index) {
+		return function() {
+			var params;
+			if (this.props.isqueue) {
+				var idx = this.getter(index).idx - 1;
+				params = [
+					'rem-' + idx
+				];
+			} else {
+				params = [
+					'add-' + this.getter(index).ID.UID
+				];
+			}
+			POST('/api/queue/change', mkcmd(params));
+		}.bind(this);
+	},
+	mkHeader: function(name, text) {
+		if (!text) {
+			text = name;
+		}
+		if (this.props.isqueue) {
+			return function() {
+				return text;
+			};
+		}
+		return function() {
+			return React.createElement("div", {className: this.sortClass(name), onClick: this.sort(name)}, text);
+		}.bind(this);
+	},
+	trackRenderer: function(str, key, data, index) {
+		var track = data.Info.Track || '';
+		if (this.props.useIdxAsNum) {
+			track = data.idx;
+		} else if (this.props.noIdx) {
+			track = '';
+		}
+		return (
+			React.createElement("div", null, 
+				React.createElement("span", {className: "nohover"}, track), 
+				React.createElement("span", {className: "hover"}, React.createElement("i", {className: mkIcon('fa-play'), onClick: this.playTrack(index)}))
+			)
+		);
+	},
+	titleCellRenderer: function(str, key, data, index) {
+		return (
+			React.createElement("div", null, 
+				data.Info.Title, 
+				React.createElement("span", {className: "hover pull-right"}, React.createElement("i", {className: mkIcon(this.props.isqueue ? 'fa-times' : 'fa-play'), onClick: this.appendTrack(index)}))
+			)
+		);
+	},
+	artistCellRenderer: function(str, key, data, index) {
+		return React.createElement("div", null, React.createElement(Link, {to: "artist", params: data.Info}, data.Info.Artist));
+	},
+	albumCellRenderer: function(str, key, data, index) {
+		return React.createElement("div", null, React.createElement(Link, {to: "album", params: data.Info}, data.Info.Album));
+	},
+	render: function() {
+		var height = 0;
+		if (this.refs.table) {
+			var d = this.refs.table.getDOMNode();
+			height = window.innerHeight - d.offsetTop - 62;
+		}
 		var queue;
 		if (!this.props.isqueue) {
 			queue = (
@@ -266,23 +296,57 @@ var Tracks = React.createClass({displayName: "Tracks",
 			);
 		};
 		var track = this.props.isqueue ? React.createElement("th", null) : React.createElement("th", {className: this.sortClass('Track'), onClick: this.sort('Track')}, "#");
+		var tableWidth = window.innerWidth - 227;
 		return (
 			React.createElement("div", null, 
 				queue, 
-				React.createElement("table", {className: "u-full-width tracks"}, 
-					React.createElement("thead", null, 
-						React.createElement("tr", null, 
-							track, 
-							React.createElement("th", {className: this.sortClass('Title'), onClick: this.sort('Title')}, "Name"), 
-							React.createElement("th", null), 
-							React.createElement("th", {className: this.sortClass('Time'), onClick: this.sort('Time')}, React.createElement("i", {className: "fa fa-clock-o"})), 
-							React.createElement("th", {className: this.sortClass('Artist'), onClick: this.sort('Artist')}, "Artist"), 
-							React.createElement("th", {className: this.sortClass('Album'), onClick: this.sort('Album')}, "Album")
-						)
+				React.createElement("div", null, React.createElement("input", {type: "search", style: {width: tableWidth - 2}, placeholder: "search", onChange: this.search, value: this.state.search})), 
+				React.createElement(Table, {ref: "table", 
+					headerHeight: 50, 
+					rowHeight: 50, 
+					rowGetter: this.getter, 
+					rowsCount: this.state.tracks.length, 
+					width: tableWidth, 
+					height: height, 
+					overflowX: 'hidden'
+					}, 
+					React.createElement(Column, {
+						label: this.props.isqueue ? '' : '#', 
+						width: 50, 
+						headerRenderer: this.mkHeader('Track', '#'), 
+						cellRenderer: this.trackRenderer}
 					), 
-					React.createElement("tbody", null, tracks)
+					React.createElement(Column, {
+						label: "Name", 
+						width: 200, 
+						flexGrow: 3, 
+						cellClassName: "nowrap", 
+						headerRenderer: this.mkHeader('Title'), 
+						cellRenderer: this.titleCellRenderer}
+					), 
+					React.createElement(Column, {
+						label: "Time", 
+						width: 50, 
+						cellRenderer: this.timeCellRenderer, 
+						headerRenderer: this.timeHeaderRenderer}
+					), 
+					React.createElement(Column, {
+						label: "Artist", 
+						width: 100, 
+						flexGrow: 1, 
+						cellRenderer: this.artistCellRenderer, 
+						cellClassName: "nowrap", 
+						headerRenderer: this.mkHeader('Artist')}
+					), 
+					React.createElement(Column, {
+						label: "Album", 
+						width: 100, 
+						flexGrow: 1, 
+						cellRenderer: this.albumCellRenderer, 
+						cellClassName: "nowrap", 
+						headerRenderer: this.mkHeader('Album')}
+					)
 				)
-
 			)
 		);
 	}
@@ -294,7 +358,12 @@ var TrackList = React.createClass({displayName: "TrackList",
 		return Stores.tracks.data || {};
 	},
 	render: function() {
-		return React.createElement(Tracks, {tracks: this.state.Tracks});
+		return (
+			React.createElement("div", null, 
+				React.createElement("h4", null, "Music"), 
+				React.createElement(Tracks, {tracks: this.state.Tracks})
+			)
+		);
 	}
 });
 
@@ -516,17 +585,12 @@ var Queue = React.createClass({displayName: "Queue",
 		POST('/api/playlist/change/' + name, mkcmd(params));
 	},
 	render: function() {
-		var q = _.map(this.state.Queue, function(val) {
-			return {
-				ID: val
-			};
-		});
 		return (
 			React.createElement("div", null, 
 				React.createElement("h4", null, "Queue"), 
 				React.createElement("button", {onClick: this.clear}, "clear"), 
 				React.createElement("button", {onClick: this.save}, "save"), 
-				React.createElement(Tracks, {tracks: q, noIdx: true, isqueue: true})
+				React.createElement(Tracks, {tracks: this.state.Queue, noIdx: true, isqueue: true})
 			)
 		);
 	}
@@ -549,16 +613,11 @@ var Playlist = React.createClass({displayName: "Playlist",
 		POST('/api/playlist/change/' + this.props.params.Playlist, params);
 	},
 	render: function() {
-		var q = _.map(this.state.Playlists[this.props.params.Playlist], function(val) {
-			return {
-				ID: val
-			};
-		});
 		return (
 			React.createElement("div", null, 
 				React.createElement("h4", null, this.props.params.Playlist), 
 				React.createElement("button", {onClick: this.clear}, "delete playlist"), 
-				React.createElement(Tracks, {tracks: q, useIdxAsNum: true})
+				React.createElement(Tracks, {tracks: this.state.Playlists[this.props.params.Playlist], useIdxAsNum: true})
 			)
 		);
 	}
@@ -634,26 +693,23 @@ var Player = React.createClass({displayName: "Player",
 	render: function() {
 		var status;
 		if (this.state.Song && this.state.Song.ID) {
-			var info = Lookup(this.state.Song);
+			var info = this.state.SongInfo;
 			var song = this.state.Song.UID;
-			if (info) {
-				info = info.Info;
-				var album;
-				if (info.Album) {
-					album = React.createElement("span", null, "- ", React.createElement(Link, {to: "album", params: info}, info.Album));
-				}
-				var artist;
-				if (info.Artist) {
-					artist = React.createElement("span", null, "- ", React.createElement(Link, {to: "artist", params: info}, info.Artist));
-				}
-				song = (
-					React.createElement("span", null, 
-						info.Title, 
-						album, 
-						artist
-					)
-				);
+			var album;
+			if (info.Album) {
+				album = React.createElement("span", null, "- ", React.createElement(Link, {to: "album", params: info}, info.Album));
 			}
+			var artist;
+			if (info.Artist) {
+				artist = React.createElement("span", null, "- ", React.createElement(Link, {to: "artist", params: info}, info.Artist));
+			}
+			song = (
+				React.createElement("span", null, 
+					info.Title, 
+					album, 
+					artist
+				)
+			);
 			status = (
 				React.createElement("span", null, 
 					React.createElement("span", null, 

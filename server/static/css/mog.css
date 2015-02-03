@@ -94,3 +94,46 @@ table.tracks button {
 .clickable:hover {
 	cursor: pointer;
 }
+
+.nowrap div {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.public_fixedDataTable_bodyRow .nowrap div:after {
+	content: "";
+	position: absolute;
+	top: 0;
+	right: 0;
+	height: 100%;
+	width: 15px;
+	background: linear-gradient(to right, rgba(0,0,0,0), #FFF);
+}
+
+.public_fixedDataTable_bodyRow.public_fixedDataTableRow_highlighted .nowrap div:after {
+	background: linear-gradient(to right, rgba(0,0,0,0), #F6F7F8);
+}
+
+.fixedDataTableCellGroup_cellGroup .hover {
+	display: none;
+}
+
+.fixedDataTableCellGroup_cellGroup:hover .hover {
+	display: inline;
+}
+
+.fixedDataTableCellGroup_cellGroup:hover .nohover {
+	display: none;
+}
+
+.icon {
+	background-color: white;
+}
+
+.pull-right {
+	float: right;
+	position: absolute;
+	right: 5px;
+	z-index: 10;
+}
