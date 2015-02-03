@@ -188,7 +188,7 @@ func (srv *Server) playlistInfo(p Playlist) PlaylistInfo {
 	r := make(PlaylistInfo, len(p))
 	for idx, id := range p {
 		r[idx] = listItem{
-			ID: id,
+			ID:   id,
 			Info: srv.songs[id],
 		}
 	}
@@ -841,7 +841,7 @@ type Status struct {
 	// Playback state
 	State State
 	// Song ID.
-	Song SongID
+	Song     SongID
 	SongInfo codec.SongInfo
 	// Elapsed time of current song.
 	Elapsed time.Duration
