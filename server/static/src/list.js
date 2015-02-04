@@ -19,6 +19,7 @@ var Tracks = React.createClass({
 		if (this.props.isqueue || this.props.useIdxAsNum) {
 			init.sort = 'Track';
 		}
+		this.update(null, this.props.tracks);
 		return init;
 	},
 	componentWillReceiveProps: function(next) {
@@ -43,7 +44,7 @@ var Tracks = React.createClass({
 	playTrack: function(index) {
 		return function() {
 			if (this.props.isqueue) {
-				var idx = this.getter(index).idx - 1;
+				idx = this.getIdx(index);
 				POST('/api/cmd/play_idx?idx=' + idx);
 			} else {
 				var params = [
@@ -60,7 +61,7 @@ var Tracks = React.createClass({
 		return function() {
 			var params;
 			if (this.props.isqueue) {
-				var idx = this.getter(index).idx - 1;
+				var idx = this.getIdx(index);
 				params = [
 					'rem-' + idx
 				];
@@ -144,6 +145,9 @@ var Tracks = React.createClass({
 	},
 	getter: function(index) {
 		return this.state.tracks[index];
+	},
+	getIdx: function(index) {
+		return this.getter(index).idx - 1;
 	},
 	timeCellRenderer: function(str, key, data, index) {
 		return <div><Time time={data.Info.Time} /></div>;
