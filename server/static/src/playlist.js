@@ -22,7 +22,7 @@ var Queue = React.createClass({
 			}
 		}
 		var params = _.map(this.state.Queue, function(t) {
-			return 'add-' + t.UID;
+			return 'add-' + t.ID.UID;
 		});
 		params.unshift('clear');
 		POST('/api/playlist/change/' + name, mkcmd(params));

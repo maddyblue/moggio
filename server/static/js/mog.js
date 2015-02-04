@@ -284,7 +284,7 @@ var Tracks = React.createClass({displayName: "Tracks",
 		return (
 			React.createElement("div", null, 
 				data.Info.Title, 
-				React.createElement("span", {className: "hover pull-right"}, React.createElement("i", {className: mkIcon(this.props.isqueue ? 'fa-times' : 'fa-play'), onClick: this.appendTrack(index)}))
+				React.createElement("span", {className: "hover pull-right"}, React.createElement("i", {className: mkIcon(this.props.isqueue ? 'fa-times' : 'fa-plus'), onClick: this.appendTrack(index)}))
 			)
 		);
 	},
@@ -559,7 +559,7 @@ var Queue = React.createClass({displayName: "Queue",
 			}
 		}
 		var params = _.map(this.state.Queue, function(t) {
-			return 'add-' + t.UID;
+			return 'add-' + t.ID.UID;
 		});
 		params.unshift('clear');
 		POST('/api/playlist/change/' + name, mkcmd(params));

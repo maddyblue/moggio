@@ -184,7 +184,7 @@ var Tracks = React.createClass({
 		return (
 			<div>
 				{data.Info.Title}
-				<span className="hover pull-right"><i className={mkIcon(this.props.isqueue ? 'fa-times' : 'fa-play')} onClick={this.appendTrack(index)} /></span>
+				<span className="hover pull-right"><i className={mkIcon(this.props.isqueue ? 'fa-times' : 'fa-plus')} onClick={this.appendTrack(index)} /></span>
 			</div>
 		);
 	},
