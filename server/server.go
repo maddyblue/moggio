@@ -19,7 +19,6 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/julienschmidt/httprouter"
@@ -108,8 +107,6 @@ func (s SongID) MarshalJSON() ([]byte, error) {
 }
 
 type Server struct {
-	lock sync.Mutex
-
 	Queue     Playlist
 	Playlists map[string]Playlist
 
@@ -124,9 +121,7 @@ type Server struct {
 	info          codec.SongInfo
 	elapsed       time.Duration
 
-	ch          chan command
-	chParam     chan interface{}
-	waiters     map[chan *waitData]struct{}
+	ch          chan interface{}
 	state       State
 	songs       map[SongID]*codec.SongInfo
 	stateFile   string
@@ -147,6 +142,7 @@ const (
 	waitTracks             = "tracks"
 )
 
+// makeWaitData should only be called by the audio() function.
 func (srv *Server) makeWaitData(wt waitType) (*waitData, error) {
 	var data interface{}
 	switch wt {
@@ -165,12 +161,29 @@ func (srv *Server) makeWaitData(wt waitType) (*waitData, error) {
 			protos,
 		}
 	case waitStatus:
-		data = srv.status()
+		data = &Status{
+			State:    srv.state,
+			Song:     srv.songID,
+			SongInfo: srv.info,
+			Elapsed:  srv.elapsed,
+			Time:     srv.info.Time,
+			Random:   srv.Random,
+			Repeat:   srv.Repeat,
+		}
 	case waitTracks:
+		songs := make([]listItem, len(srv.songs))
+		i := 0
+		for id, info := range srv.songs {
+			songs[i] = listItem{
+				ID:   id,
+				Info: info,
+			}
+			i++
+		}
 		data = struct {
 			Tracks []listItem
 		}{
-			Tracks: srv.list(),
+			Tracks: songs,
 		}
 	case waitPlaylist:
 		d := struct {
@@ -206,37 +219,18 @@ func (srv *Server) playlistInfo(p Playlist) PlaylistInfo {
 	return r
 }
 
-func (srv *Server) broadcast(wt waitType) {
-	wd, err := srv.makeWaitData(wt)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	srv.lock.Lock()
-	defer srv.lock.Unlock()
-	for w := range srv.waiters {
-		go func(w chan *waitData) {
-			w <- wd
-		}(w)
-	}
-}
-
 var dir = filepath.Join("server")
 
 func New(stateFile string) (*Server, error) {
 	srv := Server{
-		ch:        make(chan command),
-		chParam:   make(chan interface{}, 1),
+		ch:        make(chan interface{}),
 		songs:     make(map[SongID]*codec.SongInfo),
 		Protocols: make(map[string]map[string]protocol.Instance),
 		Playlists: make(map[string]Playlist),
-		waiters:   make(map[chan *waitData]struct{}),
 	}
 	for name := range protocol.Get() {
 		srv.Protocols[name] = make(map[string]protocol.Instance)
 	}
-	srv.lock.Lock()
-	defer srv.lock.Unlock()
 	if stateFile != "" {
 		if f, err := os.Open(stateFile); os.IsNotExist(err) {
 		} else if err != nil {
@@ -260,42 +254,6 @@ func New(stateFile string) (*Server, error) {
 	}
 	go srv.audio()
 	return &srv, nil
-}
-
-func (srv *Server) Save() {
-	if srv.stateFile == "" {
-		return
-	}
-	go func() {
-		srv.lock.Lock()
-		defer srv.lock.Unlock()
-		if srv.savePending {
-			return
-		}
-		srv.savePending = true
-		time.AfterFunc(time.Second, srv.save)
-	}()
-}
-
-func (srv *Server) save() {
-	srv.lock.Lock()
-	defer srv.lock.Unlock()
-	srv.savePending = false
-	tmp := srv.stateFile + ".tmp"
-	f, err := os.Create(tmp)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	if err := gob.NewEncoder(f).Encode(srv); err != nil {
-		log.Println(err)
-		return
-	}
-	f.Close()
-	if err := os.Rename(tmp, srv.stateFile); err != nil {
-		log.Println(err)
-		return
-	}
 }
 
 var indexHTML []byte
@@ -340,40 +298,25 @@ func (srv *Server) ListenAndServe(addr string, devMode bool) error {
 	return http.ListenAndServe(addr, mux)
 }
 
+type cmdNewWS struct {
+	ws   *websocket.Conn
+	done chan struct{}
+}
+
+type cmdDeleteWS *websocket.Conn
+
 func (srv *Server) WebSocket(ws *websocket.Conn) {
-	inits := []waitType{
-		waitPlaylist,
-		waitProtocols,
-		waitStatus,
-		waitTracks,
+	c := make(chan struct{})
+	srv.ch <- cmdNewWS{
+		ws:   ws,
+		done: c,
 	}
-	for _, wt := range inits {
-		data, err := srv.makeWaitData(wt)
-		if err != nil {
-			log.Println(err)
-			return
-		}
-		if err := websocket.JSON.Send(ws, data); err != nil {
-			log.Println(err)
-			return
-		}
+	for range c {
 	}
-	c := make(chan *waitData)
-	srv.lock.Lock()
-	srv.waiters[c] = struct{}{}
-	srv.lock.Unlock()
-	for d := range c {
-		go func(d *waitData) {
-			if err := websocket.JSON.Send(ws, d); err != nil {
-				srv.lock.Lock()
-				if _, ok := srv.waiters[c]; ok {
-					delete(srv.waiters, c)
-					close(c)
-				}
-				srv.lock.Unlock()
-			}
-		}(d)
-	}
+}
+
+func (srv *Server) error(err error) {
+	// TODO: broadcast err
 }
 
 func Index(w http.ResponseWriter, r *http.Request) {
@@ -387,6 +330,52 @@ func (srv *Server) audio() {
 	srv.state = stateStop
 	var next, stop, tick, play, pause, prev func()
 	var timer <-chan time.Time
+	waiters := make(map[*websocket.Conn]chan struct{})
+	broadcast := func(wt waitType) {
+		wd, err := srv.makeWaitData(wt)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		for ws := range waiters {
+			go func(ws *websocket.Conn) {
+				if err := websocket.JSON.Send(ws, wd); err != nil {
+					srv.ch <- cmdDeleteWS(ws)
+				}
+			}(ws)
+		}
+	}
+	newWS := func(c cmdNewWS) {
+		ws := (*websocket.Conn)(c.ws)
+		waiters[ws] = c.done
+		inits := []waitType{
+			waitPlaylist,
+			waitProtocols,
+			waitStatus,
+			waitTracks,
+		}
+		for _, wt := range inits {
+			data, err := srv.makeWaitData(wt)
+			if err != nil {
+				return
+			}
+			go func() {
+				if err := websocket.JSON.Send(ws, data); err != nil {
+					srv.ch <- cmdDeleteWS(ws)
+					return
+				}
+			}()
+		}
+	}
+	deleteWS := func(c cmdDeleteWS) {
+		ws := (*websocket.Conn)(c)
+		ch := waiters[ws]
+		if ch == nil {
+			return
+		}
+		close(ch)
+		delete(waiters, ws)
+	}
 	prev = func() {
 		log.Println("prev")
 		srv.PlaylistIndex--
@@ -495,7 +484,7 @@ func (srv *Server) audio() {
 			}
 			select {
 			case <-timer:
-				srv.broadcast(waitStatus)
+				broadcast(waitStatus)
 				timer = nil
 			default:
 			}
@@ -524,45 +513,224 @@ func (srv *Server) audio() {
 		}
 		tick()
 	}
+	playIdx := func(c cmdPlayIdx) {
+		stop()
+		srv.PlaylistIndex = int(c)
+		play()
+	}
+	refresh := func(c cmdRefresh) {
+		for id := range srv.songs {
+			if id.Protocol == c.protocol {
+				delete(srv.songs, id)
+			}
+		}
+		for id, s := range c.songs {
+			srv.songs[SongID{
+				Protocol: c.protocol,
+				Key:      c.key,
+				ID:       id,
+			}] = s
+		}
+		broadcast(waitTracks)
+		broadcast(waitProtocols)
+	}
+	protocolRemove := func(c cmdProtocolRemove) {
+		delete(c.prots, c.key)
+		for id := range srv.songs {
+			if id.Protocol == c.protocol && id.Key == c.key {
+				delete(srv.songs, id)
+			}
+		}
+		broadcast(waitTracks)
+		broadcast(waitProtocols)
+	}
+	queueChange := func(c cmdQueueChange) {
+		n, err := srv.playlistChange(srv.Queue, url.Values(c), true)
+		if err != nil {
+			srv.error(err)
+			return
+		}
+		srv.Queue = n
+		if len(n) == 0 {
+			stop()
+			srv.PlaylistIndex = 0
+		}
+		broadcast(waitPlaylist)
+	}
+	playlistChange := func(c cmdPlaylistChange) {
+		p := srv.Playlists[c.name]
+		n, err := srv.playlistChange(p, c.form, false)
+		if err != nil {
+			srv.error(err)
+			return
+		}
+		if len(n) == 0 {
+			delete(srv.Playlists, c.name)
+		} else {
+			srv.Playlists[c.name] = n
+		}
+		broadcast(waitPlaylist)
+	}
+	queueSave := func() {
+		if srv.stateFile == "" {
+			return
+		}
+		if srv.savePending {
+			return
+		}
+		srv.savePending = true
+		time.AfterFunc(time.Second, func() {
+			srv.ch <- cmdDoSave{}
+		})
+	}
+	doSave := func() {
+		srv.savePending = false
+		tmp := srv.stateFile + ".tmp"
+		f, err := os.Create(tmp)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		if err := gob.NewEncoder(f).Encode(srv); err != nil {
+			log.Println(err)
+			return
+		}
+		f.Close()
+		if err := os.Rename(tmp, srv.stateFile); err != nil {
+			log.Println(err)
+			return
+		}
+	}
+	addOAuth := func(c cmdAddOAuth) {
+		prot, err := protocol.ByName(c.name)
+		if err != nil {
+			c.done <- err
+			return
+		}
+		prots, ok := srv.Protocols[c.name]
+		if !ok || prot.OAuth == nil {
+			c.done <- fmt.Errorf("bad protocol")
+			return
+		}
+		// TODO: decouple this from the audio thread
+		t, err := prot.OAuth.Exchange(oauth2.NoContext, c.r.FormValue("code"))
+		if err != nil {
+			c.done <- err
+			return
+		}
+		// "Bearer" was added for dropbox. It happens to work also with Google Music's
+		// OAuth. This may need to be changed to be protocol-specific in the future.
+		t.TokenType = "Bearer"
+		instance, err := prot.NewInstance(nil, t)
+		if err != nil {
+			c.done <- err
+			return
+		}
+		prots[t.AccessToken] = instance
+		queueSave()
+		go srv.protocolRefresh(c.name, instance.Key(), false)
+		c.done <- nil
+	}
 	for {
 		select {
 		case <-t:
 			tick()
-		case cmd := <-srv.ch:
-			switch cmd {
-			case cmdPlay:
-				play()
-			case cmdStop:
-				stop()
-			case cmdNext:
-				next()
-			case cmdPause:
-				pause()
-			case cmdPrev:
-				prev()
+		case c := <-srv.ch:
+			save := true
+			log.Printf("%T\n", c)
+			switch c := c.(type) {
+			case controlCmd:
+				switch c {
+				case cmdPlay:
+					play()
+				case cmdStop:
+					stop()
+				case cmdNext:
+					next()
+				case cmdPause:
+					pause()
+				case cmdPrev:
+					prev()
+				case cmdRandom:
+					srv.Random = !srv.Random
+				case cmdRepeat:
+					srv.Repeat = !srv.Repeat
+				default:
+					panic(c)
+				}
 			case cmdPlayIdx:
-				stop()
-				srv.PlaylistIndex = (<-srv.chParam).(int)
-				play()
+				playIdx(c)
+			case cmdRefresh:
+				refresh(c)
+			case cmdProtocolRemove:
+				protocolRemove(c)
+			case cmdQueueChange:
+				queueChange(c)
+			case cmdPlaylistChange:
+				playlistChange(c)
+			case cmdNewWS:
+				newWS(c)
+			case cmdDeleteWS:
+				deleteWS(c)
+			case cmdQueueSave:
+				queueSave()
+			case cmdDoSave:
+				save = false
+				doSave()
+			case cmdAddOAuth:
+				addOAuth(c)
 			default:
-				panic("unknown command")
+				panic(c)
 			}
-			srv.broadcast(waitStatus)
-			srv.Save()
+			broadcast(waitStatus)
+			if save {
+				queueSave()
+			}
 		}
 	}
 }
 
-type command int
+type controlCmd int
 
 const (
-	cmdPlay command = iota
-	cmdStop
+	cmdUnknown controlCmd = iota
 	cmdNext
 	cmdPause
+	cmdPlay
 	cmdPrev
-	cmdPlayIdx
+	cmdRandom
+	cmdRepeat
+	cmdStop
 )
+
+type cmdPlayIdx int
+
+type cmdRefresh struct {
+	protocol, key string
+	songs         protocol.SongList
+}
+
+type cmdProtocolRemove struct {
+	protocol, key string
+	prots         map[string]protocol.Instance
+}
+
+type cmdQueueChange url.Values
+
+type cmdPlaylistChange struct {
+	form url.Values
+	name string
+}
+
+type cmdQueueSave struct{}
+
+type cmdDoSave struct{}
+
+type cmdAddOAuth struct {
+	name string
+	r    *http.Request
+	done chan error
+}
 
 func JSON(h func(url.Values, httprouter.Params) (interface{}, error)) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -589,33 +757,17 @@ func JSON(h func(url.Values, httprouter.Params) (interface{}, error)) httprouter
 }
 
 func (srv *Server) OAuth(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	name := ps.ByName("protocol")
-	prot, err := protocol.ByName(name)
+	done := make(chan error)
+	srv.ch <- cmdAddOAuth{
+		name: ps.ByName("protocol"),
+		r:    r,
+		done: done,
+	}
+	err := <-done
 	if err != nil {
 		serveError(w, err)
 		return
 	}
-	prots, ok := srv.Protocols[name]
-	if !ok || prot.OAuth == nil {
-		serveError(w, fmt.Errorf("bad protocol"))
-		return
-	}
-	t, err := prot.OAuth.Exchange(oauth2.NoContext, r.FormValue("code"))
-	if err != nil {
-		serveError(w, err)
-		return
-	}
-	// "Bearer" was added for dropbox. It happens to work also with Google Music's
-	// OAuth. This may need to be changed to be protocol-specific in the future.
-	t.TokenType = "Bearer"
-	instance, err := prot.NewInstance(nil, t)
-	if err != nil {
-		serveError(w, err)
-		return
-	}
-	prots[t.AccessToken] = instance
-	srv.Save()
-	go srv.protocolRefresh(name, instance.Key(), false)
 	http.Redirect(w, r, "/", http.StatusFound)
 }
 
@@ -640,20 +792,11 @@ func (srv *Server) Cmd(form url.Values, ps httprouter.Params) (interface{}, erro
 		if err != nil {
 			return nil, err
 		}
-		srv.chParam <- i
-		srv.ch <- cmdPlayIdx
+		srv.ch <- cmdPlayIdx(i)
 	case "random":
-		srv.lock.Lock()
-		srv.Random = !srv.Random
-		srv.lock.Unlock()
-		srv.Save()
-		srv.broadcast(waitStatus)
+		srv.ch <- cmdRandom
 	case "repeat":
-		srv.lock.Lock()
-		srv.Repeat = !srv.Repeat
-		srv.lock.Unlock()
-		srv.Save()
-		srv.broadcast(waitStatus)
+		srv.ch <- cmdRepeat
 	default:
 		return nil, fmt.Errorf("unknown command: %v", cmd)
 	}
@@ -685,23 +828,11 @@ func (srv *Server) protocolRefresh(protocol, key string, list bool) error {
 	if err != nil {
 		return err
 	}
-	srv.lock.Lock()
-	for id := range srv.songs {
-		if id.Protocol == protocol {
-			delete(srv.songs, id)
-		}
+	srv.ch <- cmdRefresh{
+		protocol: protocol,
+		key:      key,
+		songs:    songs,
 	}
-	for id, s := range songs {
-		srv.songs[SongID{
-			Protocol: protocol,
-			Key:      key,
-			ID:       id,
-		}] = s
-	}
-	srv.lock.Unlock()
-	srv.Save()
-	srv.broadcast(waitTracks)
-	srv.broadcast(waitProtocols)
 	return err
 }
 
@@ -731,21 +862,15 @@ func (srv *Server) ProtocolAdd(form url.Values, ps httprouter.Params) (interface
 func (srv *Server) ProtocolRemove(form url.Values, ps httprouter.Params) (interface{}, error) {
 	p := form.Get("protocol")
 	k := form.Get("key")
-	srv.lock.Lock()
 	prots, ok := srv.Protocols[p]
 	if !ok {
 		return nil, fmt.Errorf("unknown protocol: %v", p)
 	}
-	delete(prots, k)
-	for id := range srv.songs {
-		if id.Protocol == p && id.Key == k {
-			delete(srv.songs, id)
-		}
+	srv.ch <- cmdProtocolRemove{
+		protocol: p,
+		key:      k,
+		prots:    prots,
 	}
-	srv.lock.Unlock()
-	srv.Save()
-	srv.broadcast(waitTracks)
-	srv.broadcast(waitProtocols)
 	return nil, nil
 }
 
@@ -761,12 +886,6 @@ func (srv *Server) playlistChange(p Playlist, form url.Values, isq bool) (Playli
 		case "clear":
 			for i := range m {
 				m[i] = nil
-			}
-			if isq {
-				go func() {
-					srv.ch <- cmdStop
-					srv.PlaylistIndex = 0
-				}()
 			}
 		case "rem":
 			i, err := strconv.Atoi(sp[1])
@@ -797,69 +916,21 @@ func (srv *Server) playlistChange(p Playlist, form url.Values, isq bool) (Playli
 }
 
 func (srv *Server) QueueChange(form url.Values, ps httprouter.Params) (interface{}, error) {
-	srv.lock.Lock()
-	n, err := srv.playlistChange(srv.Queue, form, true)
-	if err != nil {
-		return nil, err
-	} else {
-		srv.Queue = n
-		srv.Save()
-	}
-	srv.lock.Unlock()
-	srv.broadcast(waitPlaylist)
+	srv.ch <- cmdQueueChange(form)
 	return nil, nil
 }
 
 func (srv *Server) PlaylistChange(form url.Values, ps httprouter.Params) (interface{}, error) {
-	name := ps.ByName("playlist")
-	p := srv.Playlists[name]
-	srv.lock.Lock()
-	n, err := srv.playlistChange(p, form, false)
-	if err != nil {
-		return nil, err
-	} else {
-		if len(n) == 0 {
-			delete(srv.Playlists, name)
-		} else {
-			srv.Playlists[name] = n
-		}
-		srv.Save()
+	srv.ch <- cmdPlaylistChange{
+		form: form,
+		name: ps.ByName("playlist"),
 	}
-	srv.lock.Unlock()
-	srv.broadcast(waitPlaylist)
 	return nil, nil
 }
 
 type listItem struct {
 	ID   SongID
 	Info *codec.SongInfo
-}
-
-func (srv *Server) list() []listItem {
-	srv.lock.Lock()
-	defer srv.lock.Unlock()
-	songs := make([]listItem, len(srv.songs))
-	i := 0
-	for id, info := range srv.songs {
-		songs[i] = listItem{
-			ID:   id,
-			Info: info,
-		}
-		i++
-	}
-	return songs
-}
-
-func (srv *Server) status() *Status {
-	return &Status{
-		State:    srv.state,
-		Song:     srv.songID,
-		SongInfo: srv.info,
-		Elapsed:  srv.elapsed,
-		Time:     srv.info.Time,
-		Random:   srv.Random,
-		Repeat:   srv.Repeat,
-	}
 }
 
 type Status struct {
