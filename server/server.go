@@ -545,13 +545,13 @@ func (srv *Server) audio() {
 		broadcast(waitProtocols)
 	}
 	queueChange := func(c cmdQueueChange) {
-		n, err := srv.playlistChange(srv.Queue, url.Values(c), true)
+		n, clear, err := srv.playlistChange(srv.Queue, url.Values(c), true)
 		if err != nil {
 			srv.error(err)
 			return
 		}
 		srv.Queue = n
-		if len(n) == 0 {
+		if clear || len(n) == 0 {
 			stop()
 			srv.PlaylistIndex = 0
 		}
@@ -559,7 +559,7 @@ func (srv *Server) audio() {
 	}
 	playlistChange := func(c cmdPlaylistChange) {
 		p := srv.Playlists[c.name]
-		n, err := srv.playlistChange(p, c.form, false)
+		n, _, err := srv.playlistChange(p, c.form, false)
 		if err != nil {
 			srv.error(err)
 			return
@@ -874,7 +874,7 @@ func (srv *Server) ProtocolRemove(form url.Values, ps httprouter.Params) (interf
 	return nil, nil
 }
 
-func (srv *Server) playlistChange(p Playlist, form url.Values, isq bool) (Playlist, error) {
+func (srv *Server) playlistChange(p Playlist, form url.Values, isq bool) (pl Playlist, cleared bool, err error) {
 	m := make([]*SongID, len(p))
 	for i, v := range p {
 		v := v
@@ -884,35 +884,35 @@ func (srv *Server) playlistChange(p Playlist, form url.Values, isq bool) (Playli
 		sp := strings.SplitN(c, "-", 2)
 		switch sp[0] {
 		case "clear":
+			cleared = true
 			for i := range m {
 				m[i] = nil
 			}
 		case "rem":
 			i, err := strconv.Atoi(sp[1])
 			if err != nil {
-				return nil, err
+				return nil, false, err
 			}
 			if len(m) <= i {
-				return nil, fmt.Errorf("unknown index: %v", i)
+				return nil, false, fmt.Errorf("unknown index: %v", i)
 			}
 			m[i] = nil
 		case "add":
 			id, err := ParseSongID(sp[1])
 			if err != nil {
-				return nil, err
+				return nil, false, err
 			}
 			m = append(m, &id)
 		default:
-			return nil, fmt.Errorf("unknown command: %v", sp[0])
+			return nil, false, fmt.Errorf("unknown command: %v", sp[0])
 		}
 	}
-	var pl Playlist
 	for _, id := range m {
 		if id != nil {
 			pl = append(pl, *id)
 		}
 	}
-	return pl, nil
+	return
 }
 
 func (srv *Server) QueueChange(form url.Values, ps httprouter.Params) (interface{}, error) {
