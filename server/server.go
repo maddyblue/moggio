@@ -627,7 +627,6 @@ func (srv *Server) audio() {
 			return
 		}
 		prots[t.AccessToken] = instance
-		queueSave()
 		go srv.protocolRefresh(c.name, instance.Key(), false)
 		c.done <- nil
 	}
