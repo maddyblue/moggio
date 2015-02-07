@@ -22,13 +22,17 @@ func New(params []string, token *oauth2.Token) (protocol.Instance, error) {
 	if len(params) != 1 {
 		return nil, fmt.Errorf("expected one parameter")
 	}
-	f, err := os.Open(params[0])
+	p, err := filepath.Abs(params[0])
+	if err != nil {
+		return nil, err
+	}
+	f, err := os.Open(p)
 	if err != nil {
 		return nil, err
 	}
 	f.Close()
 	return &File{
-		Path:  params[0],
+		Path:  p,
 		Songs: make(protocol.SongList),
 	}, nil
 }
@@ -94,10 +98,18 @@ func (f *File) Refresh() (protocol.SongList, error) {
 		}
 		for i, s := range ss {
 			id := fmt.Sprintf("%v-%v", i, path)
-			info, err := s.Info()
-			if err == nil {
-				songs[id] = &info
+			info, _ := s.Info()
+			if info.Title == "" {
+				title := filepath.Base(path)
+				if len(ss) != 1 {
+					title += fmt.Sprintf(":%v", i)
+				}
+				info.Title = title
 			}
+			if info.Album == "" {
+				info.Album = filepath.Base(filepath.Dir(path))
+			}
+			songs[id] = &info
 		}
 		return nil
 	})
