@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/mjibson/mog/_third_party/github.com/julienschmidt/httprouter"
+	"github.com/mjibson/mog/_third_party/github.com/pkg/browser"
 	"github.com/mjibson/mog/_third_party/golang.org/x/net/websocket"
 	"github.com/mjibson/mog/_third_party/golang.org/x/oauth2"
 	"github.com/mjibson/mog/codec"
@@ -48,6 +49,16 @@ func ListenAndServe(stateFile, addr string, devMode bool) error {
 	server, err := New(stateFile)
 	if err != nil {
 		return err
+	}
+	if !devMode {
+		host := addr
+		if strings.HasPrefix(host, ":") {
+			host = "localhost" + host
+		}
+		err := browser.OpenURL("http://" + host + "/")
+		if err != nil {
+			log.Println(err)
+		}
 	}
 	return server.ListenAndServe(addr, devMode)
 }
