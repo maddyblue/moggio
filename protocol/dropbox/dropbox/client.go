@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"net/url"
 
-	"code.google.com/p/google-api-go-client/googleapi"
+	"github.com/mjibson/mog/_third_party/code.google.com/p/google-api-go-client/googleapi"
 )
 
 const (

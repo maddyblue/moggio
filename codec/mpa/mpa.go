@@ -3,7 +3,7 @@ package mpa
 import (
 	"io"
 
-	"github.com/korandiz/mpa"
+	"github.com/mjibson/mog/_third_party/github.com/korandiz/mpa"
 	"github.com/mjibson/mog/codec"
 )
 

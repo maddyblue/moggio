@@ -6,7 +6,7 @@ import (
 	"syscall"
 	"unsafe"
 
-	"github.com/oov/directsound-go/dsound"
+	"github.com/mjibson/mog/_third_party/github.com/oov/directsound-go/dsound"
 )
 
 var (

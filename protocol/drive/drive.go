@@ -7,12 +7,12 @@ import (
 
 	"net/http"
 
-	"code.google.com/p/google-api-go-client/drive/v2"
+	"github.com/mjibson/mog/_third_party/code.google.com/p/google-api-go-client/drive/v2"
 
+	"github.com/mjibson/mog/_third_party/golang.org/x/oauth2"
+	"github.com/mjibson/mog/_third_party/golang.org/x/oauth2/google"
 	"github.com/mjibson/mog/codec"
 	"github.com/mjibson/mog/protocol"
-	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/google"
 )
 
 var config *oauth2.Config

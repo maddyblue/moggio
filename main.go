@@ -13,8 +13,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/mjibson/mog/_third_party/gopkg.in/fsnotify.v1"
 	"github.com/mjibson/mog/server"
-	"gopkg.in/fsnotify.v1"
 
 	// codecs
 	_ "github.com/mjibson/mog/codec/mpa"

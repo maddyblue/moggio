@@ -7,7 +7,7 @@ import (
 	"encoding/binary"
 	"log"
 
-	"github.com/mesilliac/pulse-simple"
+	"github.com/mjibson/mog/_third_party/github.com/mesilliac/pulse-simple"
 )
 
 type output struct {

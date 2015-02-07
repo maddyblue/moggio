@@ -3,8 +3,8 @@ package nsf
 import (
 	"fmt"
 
+	"github.com/mjibson/mog/_third_party/github.com/mjibson/nsf"
 	"github.com/mjibson/mog/codec"
-	"github.com/mjibson/nsf"
 )
 
 func init() {

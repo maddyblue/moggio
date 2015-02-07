@@ -21,12 +21,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/julienschmidt/httprouter"
+	"github.com/mjibson/mog/_third_party/github.com/julienschmidt/httprouter"
+	"github.com/mjibson/mog/_third_party/golang.org/x/net/websocket"
+	"github.com/mjibson/mog/_third_party/golang.org/x/oauth2"
 	"github.com/mjibson/mog/codec"
 	"github.com/mjibson/mog/output"
 	"github.com/mjibson/mog/protocol"
-	"golang.org/x/net/websocket"
-	"golang.org/x/oauth2"
 )
 
 func init() {
