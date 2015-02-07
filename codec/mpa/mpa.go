@@ -1,8 +1,14 @@
 package mpa
 
 import (
+	"bytes"
+	"fmt"
 	"io"
+	"io/ioutil"
+	"strconv"
+	"time"
 
+	"github.com/mjibson/mog/_third_party/github.com/ascherkus/go-id3/src/id3"
 	"github.com/mjibson/mog/_third_party/github.com/korandiz/mpa"
 	"github.com/mjibson/mog/codec"
 )
@@ -29,6 +35,7 @@ type Song struct {
 	Reader  codec.Reader
 	r       io.ReadCloser
 	decoder *mpa.Decoder
+	initbuf []byte
 	buff    [2][]float32
 }
 
@@ -44,7 +51,11 @@ func (s *Song) Init() (sampleRate, channels int, err error) {
 		if err != nil {
 			return 0, 0, err
 		}
-		s.decoder = &mpa.Decoder{Input: r}
+		buf := new(bytes.Buffer)
+		defer func() {
+			s.initbuf = buf.Bytes()
+		}()
+		s.decoder = &mpa.Decoder{Input: io.TeeReader(r, buf)}
 		s.r = r
 		for {
 			if err := s.decoder.DecodeFrame(); err != nil {
@@ -61,8 +72,32 @@ func (s *Song) Init() (sampleRate, channels int, err error) {
 	return s.decoder.SamplingFrequency(), s.decoder.NChannels(), nil
 }
 
-func (s *Song) Info() (codec.SongInfo, error) {
-	return codec.SongInfo{}, nil
+func (s *Song) Info() (info codec.SongInfo, err error) {
+	var r io.ReadCloser
+	if len(s.initbuf) != 0 {
+		r = ioutil.NopCloser(bytes.NewBuffer(s.initbuf))
+	}
+	if r == nil {
+		r, _, err = s.Reader()
+		if err != nil {
+			return
+		}
+	}
+	f := id3.Read(r)
+	r.Close()
+	if f == nil {
+		err = fmt.Errorf("could not read id3 data")
+		return
+	}
+	track, _ := strconv.ParseFloat(f.Track, 64)
+	dur, _ := strconv.Atoi(f.Length)
+	return codec.SongInfo{
+		Artist: f.Artist,
+		Title:  f.Name,
+		Album:  f.Album,
+		Track:  track,
+		Time:   time.Duration(dur) * time.Millisecond,
+	}, nil
 }
 
 func (s *Song) Play(n int) (r []float32, err error) {
