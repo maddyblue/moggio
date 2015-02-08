@@ -24,9 +24,9 @@ type Instance interface {
 	// Key returns a unique identifier for the instance.
 	Key() string
 	// List returns the list of available songs, possibly cached.
-	List(progress chan<- SongList) (SongList, error)
+	List() (SongList, error)
 	// Refresh forces an update of the song list.
-	Refresh(progress chan<- SongList) (SongList, error)
+	Refresh() (SongList, error)
 	// Info returns information about one song.
 	Info(string) (*codec.SongInfo, error)
 	// GetSong returns a playable song.
@@ -34,14 +34,6 @@ type Instance interface {
 }
 
 type SongList map[string]*codec.SongInfo
-
-func (s SongList) Copy() SongList {
-	r := make(SongList)
-	for k, v := range s {
-		r[k] = v
-	}
-	return r
-}
 
 func (p *Protocol) NewInstance(params []string, token *oauth2.Token) (Instance, error) {
 	return p.newInstance(params, token)

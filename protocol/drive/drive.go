@@ -65,9 +65,9 @@ func (d *Drive) Info(id string) (*codec.SongInfo, error) {
 	return s, nil
 }
 
-func (d *Drive) List(progress chan<- protocol.SongList) (protocol.SongList, error) {
+func (d *Drive) List() (protocol.SongList, error) {
 	if len(d.Songs) == 0 {
-		return d.Refresh(progress)
+		return d.Refresh()
 	}
 	return d.Songs, nil
 }
@@ -114,7 +114,7 @@ func (d *Drive) reader(id string) codec.Reader {
 	}
 }
 
-func (d *Drive) Refresh(progress chan<- protocol.SongList) (protocol.SongList, error) {
+func (d *Drive) Refresh() (protocol.SongList, error) {
 	service, _, err := d.getService()
 	if err != nil {
 		return nil, err
@@ -122,6 +122,7 @@ func (d *Drive) Refresh(progress chan<- protocol.SongList) (protocol.SongList, e
 	files := make(map[string]*drive.File)
 	songs := make(protocol.SongList)
 	var nextPage string
+	var ss []codec.Song
 	for {
 		fl, err := service.Files.
 			List().
@@ -133,9 +134,8 @@ func (d *Drive) Refresh(progress chan<- protocol.SongList) (protocol.SongList, e
 			return nil, err
 		}
 		nextPage = fl.NextPageToken
-		added := false
 		for _, f := range fl.Items {
-			ss, _, err := codec.ByExtension(f.FileExtension, d.reader(f.Id))
+			ss, _, err = codec.ByExtension(f.FileExtension, d.reader(f.Id))
 			if err != nil || len(ss) == 0 {
 				continue
 			}
@@ -152,13 +152,9 @@ func (d *Drive) Refresh(progress chan<- protocol.SongList) (protocol.SongList, e
 				}
 				songs[id] = &info
 			}
-			added = true
 		}
 		if nextPage == "" {
 			break
-		}
-		if added {
-			progress <- songs.Copy()
 		}
 	}
 	d.Songs = songs
