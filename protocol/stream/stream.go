@@ -124,14 +124,14 @@ func (s *Stream) Key() string {
 	return s.URL
 }
 
-func (s *Stream) List() (protocol.SongList, error) {
+func (s *Stream) Refresh(progress chan<- protocol.SongList) (protocol.SongList, error) {
 	return protocol.SongList{
 		s.URL: s.info(),
 	}, nil
 }
 
-func (s *Stream) Refresh() (protocol.SongList, error) {
-	return s.List()
+func (s *Stream) List(progress chan<- protocol.SongList) (protocol.SongList, error) {
+	return s.Refresh(progress)
 }
 
 func (s *Stream) Info(string) (*codec.SongInfo, error) {

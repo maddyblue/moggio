@@ -19,6 +19,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/mjibson/mog/_third_party/github.com/julienschmidt/httprouter"
@@ -825,8 +826,8 @@ func (srv *Server) GetInstance(name, key string) (protocol.Instance, error) {
 	return inst, nil
 }
 
-func (srv *Server) protocolRefresh(protocol, key string, list bool) error {
-	inst, err := srv.GetInstance(protocol, key)
+func (srv *Server) protocolRefresh(proto, key string, list bool) error {
+	inst, err := srv.GetInstance(proto, key)
 	if err != nil {
 		return err
 	}
@@ -834,12 +835,27 @@ func (srv *Server) protocolRefresh(protocol, key string, list bool) error {
 	if list {
 		f = inst.List
 	}
-	songs, err := f()
+	progress := make(chan protocol.SongList)
+	var wait sync.WaitGroup
+	wait.Add(1)
+	go func() {
+		for sl := range progress {
+			srv.ch <- cmdRefresh{
+				protocol: proto,
+				key:      key,
+				songs:    sl,
+			}
+		}
+		wait.Done()
+	}()
+	songs, err := f(progress)
+	close(progress)
 	if err != nil {
 		return err
 	}
+	wait.Wait()
 	srv.ch <- cmdRefresh{
-		protocol: protocol,
+		protocol: proto,
 		key:      key,
 		songs:    songs,
 	}

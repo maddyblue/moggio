@@ -63,9 +63,9 @@ func (d *Dropbox) Info(id string) (*codec.SongInfo, error) {
 	return s, nil
 }
 
-func (d *Dropbox) List() (protocol.SongList, error) {
+func (d *Dropbox) List(progress chan<- protocol.SongList) (protocol.SongList, error) {
 	if len(d.Songs) == 0 {
-		return d.Refresh()
+		return d.Refresh(progress)
 	}
 	return d.Songs, nil
 }
@@ -104,14 +104,13 @@ func (d *Dropbox) reader(id string, size int64) codec.Reader {
 	}
 }
 
-func (d *Dropbox) Refresh() (protocol.SongList, error) {
+func (d *Dropbox) Refresh(progress chan<- protocol.SongList) (protocol.SongList, error) {
 	service, err := d.getService()
 	if err != nil {
 		return nil, err
 	}
 	files := make(map[string]*dropbox.ListContent)
 	songs := make(protocol.SongList)
-	var ss []codec.Song
 	dirs := []string{""}
 	for {
 		if len(dirs) == 0 {
@@ -123,12 +122,13 @@ func (d *Dropbox) Refresh() (protocol.SongList, error) {
 		if err != nil {
 			return nil, err
 		}
+		added := false
 		for _, f := range list.Contents {
 			if f.IsDir {
 				dirs = append(dirs, f.Path)
 				continue
 			}
-			ss, _, err = codec.ByExtension(f.Path, d.reader(f.Path, f.Bytes))
+			ss, _, err := codec.ByExtension(f.Path, d.reader(f.Path, f.Bytes))
 			if err != nil || len(ss) == 0 {
 				continue
 			}
@@ -148,6 +148,10 @@ func (d *Dropbox) Refresh() (protocol.SongList, error) {
 				}
 				songs[id] = &info
 			}
+			added = true
+		}
+		if added {
+			progress <- songs.Copy()
 		}
 	}
 	d.Songs = songs

@@ -87,9 +87,9 @@ func (s *Soundcloud) SongList() protocol.SongList {
 	return m
 }
 
-func (s *Soundcloud) List() (protocol.SongList, error) {
+func (s *Soundcloud) List(progress chan<- protocol.SongList) (protocol.SongList, error) {
 	if len(s.Favorites) == 0 {
-		return s.Refresh()
+		return s.Refresh(progress)
 	}
 	return s.SongList(), nil
 }
@@ -116,7 +116,7 @@ func (s *Soundcloud) GetSong(id string) (codec.Song, error) {
 	})
 }
 
-func (s *Soundcloud) Refresh() (protocol.SongList, error) {
+func (s *Soundcloud) Refresh(progress chan<- protocol.SongList) (protocol.SongList, error) {
 	service, _, err := s.getService()
 	if err != nil {
 		return nil, err

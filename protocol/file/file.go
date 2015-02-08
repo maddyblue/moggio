@@ -47,11 +47,6 @@ func (f *File) Key() string {
 }
 
 func (f *File) Info(id string) (*codec.SongInfo, error) {
-	if _, ok := f.Songs[id]; !ok {
-		if _, err := f.List(); err != nil {
-			return nil, err
-		}
-	}
 	v := f.Songs[id]
 	if v == nil {
 		return nil, fmt.Errorf("could not find %v", id)
@@ -71,20 +66,25 @@ func (f *File) GetSong(id string) (codec.Song, error) {
 	return songs[num], nil
 }
 
-func (f *File) List() (protocol.SongList, error) {
+func (f *File) List(progress chan<- protocol.SongList) (protocol.SongList, error) {
 	if len(f.Songs) == 0 {
-		return f.Refresh()
+		return f.Refresh(progress)
 	}
 	return f.Songs, nil
 }
 
-func (f *File) Refresh() (protocol.SongList, error) {
+func (f *File) Refresh(progress chan<- protocol.SongList) (protocol.SongList, error) {
 	songs := make(protocol.SongList)
+	added := false
 	err := filepath.Walk(f.Path, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
-			return err
+			return nil
 		}
 		if info.IsDir() {
+			if added {
+				added = false
+				progress <- songs.Copy()
+			}
 			return nil
 		}
 		f, err := os.Open(path)
@@ -111,6 +111,7 @@ func (f *File) Refresh() (protocol.SongList, error) {
 			}
 			songs[id] = &info
 		}
+		added = true
 		return nil
 	})
 	f.Songs = songs

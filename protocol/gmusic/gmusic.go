@@ -51,9 +51,9 @@ func (g *GMusic) Key() string {
 	return g.GMusic.DeviceID
 }
 
-func (g *GMusic) List() (protocol.SongList, error) {
+func (g *GMusic) List(progress chan<- protocol.SongList) (protocol.SongList, error) {
 	if len(g.Songs) == 0 {
-		return g.Refresh()
+		return g.Refresh(progress)
 	}
 	return g.Songs, nil
 }
@@ -74,7 +74,7 @@ func (g *GMusic) GetSong(id string) (codec.Song, error) {
 	})
 }
 
-func (g *GMusic) Refresh() (protocol.SongList, error) {
+func (g *GMusic) Refresh(progress chan<- protocol.SongList) (protocol.SongList, error) {
 	tracks := make(map[string]*gmusic.Track)
 	songs := make(protocol.SongList)
 	log.Println("get gmusic tracks")
