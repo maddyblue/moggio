@@ -4,6 +4,7 @@ import (
 	"encoding/gob"
 	"fmt"
 	"io"
+	"path"
 
 	"github.com/mjibson/mog/_third_party/golang.org/x/oauth2"
 	"github.com/mjibson/mog/codec"
@@ -111,7 +112,6 @@ func (d *Dropbox) Refresh() (protocol.SongList, error) {
 	files := make(map[string]*dropbox.ListContent)
 	songs := make(protocol.SongList)
 	var ss []codec.Song
-	var info codec.SongInfo
 	dirs := []string{""}
 	for {
 		if len(dirs) == 0 {
@@ -135,9 +135,16 @@ func (d *Dropbox) Refresh() (protocol.SongList, error) {
 			files[f.Path] = f
 			for i, v := range ss {
 				id := fmt.Sprintf("%v-%v", i, f.Path)
-				info, err = v.Info()
-				if err != nil {
-					continue
+				info, _ := v.Info()
+				if info.Title == "" {
+					title := path.Base(f.Path)
+					if len(ss) != 1 {
+						title += fmt.Sprintf(":%v", i)
+					}
+					info.Title = title
+				}
+				if info.Album == "" {
+					info.Album = path.Base(dir)
 				}
 				songs[id] = &info
 			}

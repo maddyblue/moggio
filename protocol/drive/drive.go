@@ -123,7 +123,6 @@ func (d *Drive) Refresh() (protocol.SongList, error) {
 	songs := make(protocol.SongList)
 	var nextPage string
 	var ss []codec.Song
-	var info codec.SongInfo
 	for {
 		fl, err := service.Files.
 			List().
@@ -143,9 +142,13 @@ func (d *Drive) Refresh() (protocol.SongList, error) {
 			files[f.Id] = f
 			for i, v := range ss {
 				id := fmt.Sprintf("%v-%v", i, f.Id)
-				info, err = v.Info()
-				if err != nil {
-					continue
+				info, _ := v.Info()
+				if info.Title == "" {
+					title := f.Title
+					if len(ss) != 1 {
+						title += fmt.Sprintf(":%v", i)
+					}
+					info.Title = title
 				}
 				songs[id] = &info
 			}
