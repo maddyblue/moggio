@@ -531,7 +531,7 @@ func (srv *Server) audio() {
 	}
 	refresh := func(c cmdRefresh) {
 		for id := range srv.songs {
-			if id.Protocol == c.protocol {
+			if id.Protocol == c.protocol && id.Key == c.key {
 				delete(srv.songs, id)
 			}
 		}
