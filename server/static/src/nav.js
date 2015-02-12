@@ -57,7 +57,7 @@ var App = React.createClass({
 });
 
 var Player = React.createClass({
-	mixins: [Reflux.listenTo(Stores.status, 'setState')],
+	mixins: [Reflux.listenTo(Stores.status, 'setStatus')],
 	cmd: function(cmd) {
 		return function() {
 			POST('/api/cmd/' + cmd);
@@ -65,6 +65,12 @@ var Player = React.createClass({
 	},
 	getInitialState: function() {
 		return {};
+	},
+	setStatus: function(d) {
+		if (!this.state.Song || d.Song.UID != this.state.Song.UID) {
+			Actions.active(d.Song.UID);
+		}
+		this.setState(d);
 	},
 	render: function() {
 		var status;

@@ -4,6 +4,7 @@ var Table = FixedDataTable.Table;
 var Column = FixedDataTable.Column;
 
 var Tracks = React.createClass({
+	mixins: [Reflux.listenTo(Stores.active, 'setActive')],
 	getDefaultProps: function() {
 		return {
 			tracks: []
@@ -24,6 +25,9 @@ var Tracks = React.createClass({
 	},
 	componentWillReceiveProps: function(next) {
 		this.update(null, next.tracks);
+	},
+	setActive: function() {
+		this.forceUpdate();
 	},
 	mkparams: function() {
 		return _.map(this.state.tracks, function(t, i) {
@@ -198,6 +202,13 @@ var Tracks = React.createClass({
 	albumCellRenderer: function(str, key, data, index) {
 		return <div><Link to="album" params={data.Info}>{data.Info.Album}</Link></div>;
 	},
+	rowClassNameGetter: function(index) {
+		var g = this.getter(index);
+		if (g.ID.UID == Stores.active.data) {
+			return 'active';
+		}
+		return null;
+	},
 	render: function() {
 		var height = 0;
 		if (this.refs.table) {
@@ -224,6 +235,7 @@ var Tracks = React.createClass({
 					rowHeight={50}
 					rowGetter={this.getter}
 					rowsCount={this.state.tracks.length}
+					rowClassNameGetter={this.rowClassNameGetter}
 					width={tableWidth}
 					height={height}
 					overflowX={'hidden'}

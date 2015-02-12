@@ -1,6 +1,7 @@
 // @flow
 
 var Actions = Reflux.createActions([
+	'active', // active song
 	'playlist',
 	'protocols',
 	'status',
@@ -104,6 +105,7 @@ var Table = FixedDataTable.Table;
 var Column = FixedDataTable.Column;
 
 var Tracks = React.createClass({displayName: "Tracks",
+	mixins: [Reflux.listenTo(Stores.active, 'setActive')],
 	getDefaultProps: function() {
 		return {
 			tracks: []
@@ -124,6 +126,9 @@ var Tracks = React.createClass({displayName: "Tracks",
 	},
 	componentWillReceiveProps: function(next) {
 		this.update(null, next.tracks);
+	},
+	setActive: function() {
+		this.forceUpdate();
 	},
 	mkparams: function() {
 		return _.map(this.state.tracks, function(t, i) {
@@ -298,6 +303,13 @@ var Tracks = React.createClass({displayName: "Tracks",
 	albumCellRenderer: function(str, key, data, index) {
 		return React.createElement("div", null, React.createElement(Link, {to: "album", params: data.Info}, data.Info.Album));
 	},
+	rowClassNameGetter: function(index) {
+		var g = this.getter(index);
+		if (g.ID.UID == Stores.active.data) {
+			return 'active';
+		}
+		return null;
+	},
 	render: function() {
 		var height = 0;
 		if (this.refs.table) {
@@ -324,6 +336,7 @@ var Tracks = React.createClass({displayName: "Tracks",
 					rowHeight: 50, 
 					rowGetter: this.getter, 
 					rowsCount: this.state.tracks.length, 
+					rowClassNameGetter: this.rowClassNameGetter, 
 					width: tableWidth, 
 					height: height, 
 					overflowX: 'hidden'
@@ -665,7 +678,7 @@ var App = React.createClass({displayName: "App",
 });
 
 var Player = React.createClass({displayName: "Player",
-	mixins: [Reflux.listenTo(Stores.status, 'setState')],
+	mixins: [Reflux.listenTo(Stores.status, 'setStatus')],
 	cmd: function(cmd) {
 		return function() {
 			POST('/api/cmd/' + cmd);
@@ -673,6 +686,12 @@ var Player = React.createClass({displayName: "Player",
 	},
 	getInitialState: function() {
 		return {};
+	},
+	setStatus: function(d) {
+		if (!this.state.Song || d.Song.UID != this.state.Song.UID) {
+			Actions.active(d.Song.UID);
+		}
+		this.setState(d);
 	},
 	render: function() {
 		var status;

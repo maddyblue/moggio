@@ -1,6 +1,7 @@
 // @flow
 
 var Actions = Reflux.createActions([
+	'active', // active song
 	'playlist',
 	'protocols',
 	'status',

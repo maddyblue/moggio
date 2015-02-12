@@ -137,3 +137,7 @@ table.tracks button {
 	right: 5px;
 	z-index: 10;
 }
+
+.active .public_fixedDataTableCell_cellContent {
+	font-weight: bold;
+}
