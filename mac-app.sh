@@ -30,8 +30,6 @@ cat > $DIR/../Info.plist << EOF
         <string>APPL</string>
         <key>CFBundleSignature</key>
         <string>????</string>
-        <key>CFBundleVersion</key>
-        <string>0.0.1</string>
 </dict>
 </plist>
 EOF
