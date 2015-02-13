@@ -95,8 +95,17 @@ var Player = React.createClass({
 		}
 		document.title = title;
 	},
+	seek: function(event) {
+		if (!this.state.Time) {
+			return;
+		}
+		var pos = event.screenX / window.innerWidth;
+		var s = pos * this.state.Time;
+		POST('/api/cmd/seek?pos=' + s + 'ns');
+	},
 	render: function() {
 		var status;
+		var pos = 0;
 		if (this.state.Song && this.state.Song.ID) {
 			var info = this.state.SongInfo;
 			var song = this.state.Song.UID;
@@ -115,6 +124,8 @@ var Player = React.createClass({
 					{artist}
 				</span>
 			);
+			pos = this.state.Elapsed / this.state.Time;
+			pos = (pos * 100) + '%';
 			status = (
 				<span>
 					<span>
@@ -141,6 +152,9 @@ var Player = React.createClass({
 		var random = this.state.Random ? 'highlight ' : '';
 		return (
 			<div>
+				<div id="seek" onClick={this.seek}>
+					<div id="seek-pos" style={{width: pos}}/>
+				</div>
 				<span><i className={icon + repeat + 'fa-repeat'} onClick={this.cmd('repeat')} /></span>
 				<span><i className={icon + 'fa-fast-backward'} onClick={this.cmd('prev')} /></span>
 				<span><i className={icon + play} onClick={this.cmd('pause')} /></span>

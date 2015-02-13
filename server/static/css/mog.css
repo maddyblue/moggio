@@ -30,7 +30,7 @@ header {
 	top: 10px;
 	left: 10px;
 	right: 220px;
-	bottom: 60px;
+	bottom: 80px;
 	overflow-y: auto;
 }
 
@@ -39,8 +39,7 @@ main {
 	left: 225px;
 	top: 0;
 	right: 0;
-	bottom: 60px;
-	overflow-y: auto;
+	bottom: 80px;
 }
 
 footer {
@@ -59,6 +58,23 @@ footer > div {
 
 footer span {
 	margin-right: 10px;
+}
+
+#seek {
+	position: fixed;
+	bottom: 60px;
+	height: 20px;
+	width: 100%;
+	background-color: grey;
+	cursor: pointer;
+}
+
+#seek-pos {
+	position: fixed;
+	bottom: 60px;
+	height: 20px;
+	left: 0;
+	background-color: orange;
 }
 
 table.tracks tr {

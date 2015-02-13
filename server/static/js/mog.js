@@ -314,7 +314,7 @@ var Tracks = React.createClass({displayName: "Tracks",
 		var height = 0;
 		if (this.refs.table) {
 			var d = this.refs.table.getDOMNode();
-			height = window.innerHeight - d.offsetTop - 62;
+			height = window.innerHeight - d.offsetTop - 82;
 		}
 		var queue;
 		if (!this.props.isqueue) {
@@ -716,8 +716,17 @@ var Player = React.createClass({displayName: "Player",
 		}
 		document.title = title;
 	},
+	seek: function(event) {
+		if (!this.state.Time) {
+			return;
+		}
+		var pos = event.screenX / window.innerWidth;
+		var s = pos * this.state.Time;
+		POST('/api/cmd/seek?pos=' + s + 'ns');
+	},
 	render: function() {
 		var status;
+		var pos = 0;
 		if (this.state.Song && this.state.Song.ID) {
 			var info = this.state.SongInfo;
 			var song = this.state.Song.UID;
@@ -736,6 +745,8 @@ var Player = React.createClass({displayName: "Player",
 					artist
 				)
 			);
+			pos = this.state.Elapsed / this.state.Time;
+			pos = (pos * 100) + '%';
 			status = (
 				React.createElement("span", null, 
 					React.createElement("span", null, 
@@ -762,6 +773,9 @@ var Player = React.createClass({displayName: "Player",
 		var random = this.state.Random ? 'highlight ' : '';
 		return (
 			React.createElement("div", null, 
+				React.createElement("div", {id: "seek", onClick: this.seek}, 
+					React.createElement("div", {id: "seek-pos", style: {width: pos}})
+				), 
 				React.createElement("span", null, React.createElement("i", {className: icon + repeat + 'fa-repeat', onClick: this.cmd('repeat')})), 
 				React.createElement("span", null, React.createElement("i", {className: icon + 'fa-fast-backward', onClick: this.cmd('prev')})), 
 				React.createElement("span", null, React.createElement("i", {className: icon + play, onClick: this.cmd('pause')})), 

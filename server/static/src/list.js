@@ -213,7 +213,7 @@ var Tracks = React.createClass({
 		var height = 0;
 		if (this.refs.table) {
 			var d = this.refs.table.getDOMNode();
-			height = window.innerHeight - d.offsetTop - 62;
+			height = window.innerHeight - d.offsetTop - 82;
 		}
 		var queue;
 		if (!this.props.isqueue) {
