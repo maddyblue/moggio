@@ -86,6 +86,14 @@ var Player = React.createClass({
 			Actions.active(d.Song.UID);
 		}
 		this.setState(d);
+		var title = 'mog';
+		if (this.state.SongInfo && this.state.SongInfo.Title) {
+			title = this.state.SongInfo.Title + ' - ' + title;
+		}
+		if (this.state.State == 0) {
+			title = '\u25B6 ' + title;
+		}
+		document.title = title;
 	},
 	render: function() {
 		var status;
