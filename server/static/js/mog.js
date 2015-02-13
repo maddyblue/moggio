@@ -640,23 +640,38 @@ var App = React.createClass({displayName: "App",
 	startWS: function() {
 		var ws = new WebSocket('ws://' + window.location.host + '/ws/');
 		ws.onmessage = function(e) {
+			this.setState({connected: true});
 			var d = JSON.parse(e.data);
 			if (Actions[d.Type]) {
 				Actions[d.Type](d.Data);
 			} else {
 				console.log("missing action", d.Type);
 			}
-		};
+		}.bind(this);
 		ws.onclose = function() {
+			this.setState({connected: false});
 			setTimeout(this.startWS, 1000);
 		}.bind(this);
 	},
 	render: function() {
+		var overlay;
+		if (!this.state.connected) {
+			overlay = (
+				React.createElement("div", {id: "overlay"}, 
+					React.createElement("div", {id: "overlay-text"}, 
+						"mog lost connection with server", 
+						React.createElement("p", null), 
+						"attempting to reconnect..."
+					)
+				)
+			);
+		}
 		var playlists = _.map(this.state.Playlists, function(_, key) {
 			return React.createElement("li", {key: key}, React.createElement(Link, {to: "playlist", params: {Playlist: key}}, key));
 		});
 		return (
 			React.createElement("div", null, 
+				overlay, 
 				React.createElement("header", null, 
 					React.createElement("ul", null, 
 						React.createElement("li", null, React.createElement(Link, {to: "app"}, "Music")), 

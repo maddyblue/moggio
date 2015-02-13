@@ -19,23 +19,38 @@ var App = React.createClass({
 	startWS: function() {
 		var ws = new WebSocket('ws://' + window.location.host + '/ws/');
 		ws.onmessage = function(e) {
+			this.setState({connected: true});
 			var d = JSON.parse(e.data);
 			if (Actions[d.Type]) {
 				Actions[d.Type](d.Data);
 			} else {
 				console.log("missing action", d.Type);
 			}
-		};
+		}.bind(this);
 		ws.onclose = function() {
+			this.setState({connected: false});
 			setTimeout(this.startWS, 1000);
 		}.bind(this);
 	},
 	render: function() {
+		var overlay;
+		if (!this.state.connected) {
+			overlay = (
+				<div id="overlay">
+					<div id="overlay-text">
+						mog lost connection with server
+						<p/>
+						attempting to reconnect...
+					</div>
+				</div>
+			);
+		}
 		var playlists = _.map(this.state.Playlists, function(_, key) {
 			return <li key={key}><Link to="playlist" params={{Playlist: key}}>{key}</Link></li>;
 		});
 		return (
 			<div>
+				{overlay}
 				<header>
 					<ul>
 						<li><Link to="app">Music</Link></li>
