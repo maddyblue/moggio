@@ -10,7 +10,7 @@ PALIB=/usr/local/lib/$PA
 
 rm -rf $APPNAME.app
 mkdir -p $DIR
-go build -o $OUTPUT
+go build -o $OUTPUT -ldflags "-linkmode=external"
 chmod +x $OUTPUT
 cp $PALIB $DIR/$PA
 install_name_tool -change $PALIB @executable_path/$PA $OUTPUT
