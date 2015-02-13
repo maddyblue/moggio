@@ -327,6 +327,7 @@ func (srv *Server) WebSocket(ws *websocket.Conn) {
 }
 
 func (srv *Server) error(err error) {
+	log.Println("ERR:", err)
 	// TODO: broadcast err
 }
 
