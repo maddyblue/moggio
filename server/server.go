@@ -343,6 +343,7 @@ func (srv *Server) audio() {
 	var next, stop, tick, play, pause, prev func()
 	var timer <-chan time.Time
 	waiters := make(map[*websocket.Conn]chan struct{})
+	var seek *Seek
 	broadcast := func(wt waitType) {
 		wd, err := srv.makeWaitData(wt)
 		if err != nil {
@@ -437,6 +438,7 @@ func (srv *Server) audio() {
 		srv.song = nil
 	}
 	tick = func() {
+		const expected = 4096
 		if false && srv.elapsed > srv.info.Time {
 			log.Println("elapsed time completed", srv.elapsed, srv.info.Time)
 			stop()
@@ -482,15 +484,15 @@ func (srv *Server) audio() {
 			srv.info = *srv.songs[sid]
 			srv.elapsed = 0
 			dur = time.Second / (time.Duration(sr * ch))
-			log.Println("playing", srv.info, sr, ch, dur, time.Duration(4096)*dur)
+			seek = NewSeek(srv.info.Time > 0, dur, srv.song.Play)
+			log.Println("playing", srv.info, sr, ch, dur, time.Duration(expected)*dur)
 			t = make(chan interface{})
 			close(t)
 			srv.state = statePlay
 		}
-		const expected = 4096
-		next, err := srv.song.Play(expected)
+		next, err := seek.Read(expected)
 		if err == nil {
-			srv.elapsed += time.Duration(len(next)) * dur
+			srv.elapsed = seek.Pos()
 			if len(next) > 0 {
 				o.Push(next)
 			}
@@ -642,6 +644,15 @@ func (srv *Server) audio() {
 		go srv.protocolRefresh(c.name, instance.Key(), false)
 		c.done <- nil
 	}
+	doSeek := func(c cmdSeek) {
+		if seek == nil {
+			return
+		}
+		err := seek.Seek(time.Duration(c))
+		if err != nil {
+			srv.error(err)
+		}
+	}
 	for {
 		select {
 		case <-t:
@@ -690,6 +701,8 @@ func (srv *Server) audio() {
 				doSave()
 			case cmdAddOAuth:
 				addOAuth(c)
+			case cmdSeek:
+				doSeek(c)
 			default:
 				panic(c)
 			}
@@ -713,6 +726,8 @@ const (
 	cmdRepeat
 	cmdStop
 )
+
+type cmdSeek time.Duration
 
 type cmdPlayIdx int
 
@@ -808,6 +823,12 @@ func (srv *Server) Cmd(form url.Values, ps httprouter.Params) (interface{}, erro
 		srv.ch <- cmdRandom
 	case "repeat":
 		srv.ch <- cmdRepeat
+	case "seek":
+		d, err := time.ParseDuration(form.Get("pos"))
+		if err != nil {
+			return nil, err
+		}
+		srv.ch <- cmdSeek(d)
 	default:
 		return nil, fmt.Errorf("unknown command: %v", cmd)
 	}
