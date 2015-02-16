@@ -9,7 +9,10 @@ var RouteHandler = Router.RouteHandler;
 var Redirect = Router.Redirect;
 
 var App = React.createClass({
-	mixins: [Reflux.listenTo(Stores.playlist, 'setState')],
+	mixins: [
+		Reflux.listenTo(Stores.playlist, 'setState'),
+		Reflux.listenTo(Stores.error, 'error')
+	],
 	componentDidMount: function() {
 		this.startWS();
 	},
@@ -32,6 +35,12 @@ var App = React.createClass({
 			setTimeout(this.startWS, 1000);
 		}.bind(this);
 	},
+	error: function(d) {
+		this.setState({error: d});
+	},
+	clearError: function() {
+		this.setState({error: null});
+	},
 	render: function() {
 		var overlay;
 		if (!this.state.connected) {
@@ -48,6 +57,11 @@ var App = React.createClass({
 		var playlists = _.map(this.state.Playlists, function(_, key) {
 			return <li key={key}><Link to="playlist" params={{Playlist: key}}>{key}</Link></li>;
 		});
+		var error;
+		if (this.state.error) {
+			var time = new Date(this.state.error.Time);
+			error = <div><a href="#" onClick={this.clearError}>[clear]</a> error at {time.toString()}: {this.state.error.Error}</div>;
+		}
 		return (
 			<div>
 				{overlay}
@@ -61,6 +75,7 @@ var App = React.createClass({
 					<ul>{playlists}</ul>
 				</header>
 				<main>
+					{error}
 					<RouteHandler {...this.props}/>
 				</main>
 				<footer>

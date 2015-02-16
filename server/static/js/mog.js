@@ -2,6 +2,7 @@
 
 var Actions = Reflux.createActions([
 	'active', // active song
+	'error',
 	'playlist',
 	'protocols',
 	'status',
@@ -630,7 +631,10 @@ var RouteHandler = Router.RouteHandler;
 var Redirect = Router.Redirect;
 
 var App = React.createClass({displayName: "App",
-	mixins: [Reflux.listenTo(Stores.playlist, 'setState')],
+	mixins: [
+		Reflux.listenTo(Stores.playlist, 'setState'),
+		Reflux.listenTo(Stores.error, 'error')
+	],
 	componentDidMount: function() {
 		this.startWS();
 	},
@@ -653,6 +657,12 @@ var App = React.createClass({displayName: "App",
 			setTimeout(this.startWS, 1000);
 		}.bind(this);
 	},
+	error: function(d) {
+		this.setState({error: d});
+	},
+	clearError: function() {
+		this.setState({error: null});
+	},
 	render: function() {
 		var overlay;
 		if (!this.state.connected) {
@@ -669,6 +679,11 @@ var App = React.createClass({displayName: "App",
 		var playlists = _.map(this.state.Playlists, function(_, key) {
 			return React.createElement("li", {key: key}, React.createElement(Link, {to: "playlist", params: {Playlist: key}}, key));
 		});
+		var error;
+		if (this.state.error) {
+			var time = new Date(this.state.error.Time);
+			error = React.createElement("div", null, React.createElement("a", {href: "#", onClick: this.clearError}, "[clear]"), " error at ", time.toString(), ": ", this.state.error.Error);
+		}
 		return (
 			React.createElement("div", null, 
 				overlay, 
@@ -682,6 +697,7 @@ var App = React.createClass({displayName: "App",
 					React.createElement("ul", null, playlists)
 				), 
 				React.createElement("main", null, 
+					error, 
 					React.createElement(RouteHandler, React.__spread({},  this.props))
 				), 
 				React.createElement("footer", null, 

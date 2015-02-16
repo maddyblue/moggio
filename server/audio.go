@@ -26,12 +26,7 @@ func (srv *Server) audio() {
 	var timer <-chan time.Time
 	waiters := make(map[*websocket.Conn]chan struct{})
 	var seek *Seek
-	broadcast := func(wt waitType) {
-		wd, err := srv.makeWaitData(wt)
-		if err != nil {
-			log.Println(err)
-			return
-		}
+	broadcastData := func(wd *waitData) {
 		for ws := range waiters {
 			go func(ws *websocket.Conn) {
 				if err := websocket.JSON.Send(ws, wd); err != nil {
@@ -39,6 +34,28 @@ func (srv *Server) audio() {
 				}
 			}(ws)
 		}
+	}
+	broadcast := func(wt waitType) {
+		wd, err := srv.makeWaitData(wt)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		broadcastData(wd)
+	}
+	broadcastErr := func(err error) {
+		log.Println("err:", err)
+		v := struct {
+			Time  time.Time
+			Error string
+		}{
+			time.Now().UTC(),
+			err.Error(),
+		}
+		broadcastData(&waitData{
+			Type: waitError,
+			Data: v,
+		})
 	}
 	newWS := func(c cmdNewWS) {
 		ws := (*websocket.Conn)(c.ws)
@@ -243,7 +260,7 @@ func (srv *Server) audio() {
 	queueChange := func(c cmdQueueChange) {
 		n, clear, err := srv.playlistChange(srv.Queue, url.Values(c), true)
 		if err != nil {
-			srv.error(err)
+			broadcastErr(err)
 			return
 		}
 		srv.Queue = n
@@ -257,7 +274,7 @@ func (srv *Server) audio() {
 		p := srv.Playlists[c.name]
 		n, _, err := srv.playlistChange(p, c.form, false)
 		if err != nil {
-			srv.error(err)
+			broadcastErr(err)
 			return
 		}
 		if len(n) == 0 {
@@ -332,7 +349,7 @@ func (srv *Server) audio() {
 		}
 		err := seek.Seek(time.Duration(c))
 		if err != nil {
-			srv.error(err)
+			broadcastErr(err)
 		}
 	}
 	for {

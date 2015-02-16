@@ -2,6 +2,7 @@
 
 var Actions = Reflux.createActions([
 	'active', // active song
+	'error',
 	'playlist',
 	'protocols',
 	'status',

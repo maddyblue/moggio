@@ -2,7 +2,6 @@ package server
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/mjibson/mog/protocol"
 	"golang.org/x/net/websocket"
@@ -20,6 +19,7 @@ const (
 	waitPlaylist           = "playlist"
 	waitProtocols          = "protocols"
 	waitTracks             = "tracks"
+	waitError              = "error"
 )
 
 // makeWaitData should only be called by the audio() function.
@@ -101,9 +101,4 @@ func (srv *Server) WebSocket(ws *websocket.Conn) {
 	}
 	for range c {
 	}
-}
-
-func (srv *Server) error(err error) {
-	log.Println("ERR:", err)
-	// TODO: broadcast err
 }
