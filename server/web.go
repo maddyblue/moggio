@@ -10,9 +10,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/julienschmidt/httprouter"
+	"github.com/mjibson/mog/_third_party/github.com/julienschmidt/httprouter"
+	"github.com/mjibson/mog/_third_party/golang.org/x/net/websocket"
 	"github.com/mjibson/mog/protocol"
-	"golang.org/x/net/websocket"
 )
 
 var indexHTML []byte
