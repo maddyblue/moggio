@@ -120,7 +120,7 @@ var Tracks = React.createClass({
 		if (obj.search) {
 			var s = obj.search.toLocaleLowerCase().trim();
 			tracks = _.filter(tracks, function(v) {
-				var t = v.Info.Title + v.Info.Album + v.Info.Artist;
+				var t = v.Info.Title + v.Info.Album + v.Info.Artist + v.ID.Protocol;
 				t = t.toLocaleLowerCase();
 				return t.indexOf(s) > -1;
 			});
@@ -134,6 +134,9 @@ var Tracks = React.createClass({
 				return v.idx;
 			}
 			var d = v.Info[obj.sort];
+			if (obj.sort == "Source") {
+				d = v.ID.UID;
+			}
 			if (_.isString(d)) {
 				d = d.toLocaleLowerCase();
 			}
@@ -201,6 +204,9 @@ var Tracks = React.createClass({
 	},
 	albumCellRenderer: function(str, key, data, index) {
 		return <div><Link to="album" params={data.Info}>{data.Info.Album}</Link></div>;
+	},
+	sourceCellRenderer: function(str, key, data, index) {
+		return <div title={data.ID.ID + "|" + data.ID.Key + "|" + data.ID.Protocol}>{data.ID.Protocol}</div>;
 	},
 	rowClassNameGetter: function(index) {
 		var g = this.getter(index);
@@ -273,6 +279,12 @@ var Tracks = React.createClass({
 						cellRenderer={this.albumCellRenderer}
 						cellClassName="nowrap"
 						headerRenderer={this.mkHeader('Album')}
+					/>
+					<Column
+						width={100}
+						cellClassName="nowrap"
+						cellRenderer={this.sourceCellRenderer}
+						headerRenderer={this.mkHeader('Source')}
 					/>
 				</Table>
 			</div>
