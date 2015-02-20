@@ -2,6 +2,8 @@
 package server
 
 import (
+	"bytes"
+	"compress/gzip"
 	crand "crypto/rand"
 	"encoding/gob"
 	"encoding/json"
@@ -11,13 +13,13 @@ import (
 	"math/big"
 	"math/rand"
 	"net/url"
-	"os"
 	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/mjibson/mog/_third_party/github.com/boltdb/bolt"
 	"github.com/mjibson/mog/_third_party/github.com/pkg/browser"
 	"github.com/mjibson/mog/codec"
 	"github.com/mjibson/mog/protocol"
@@ -128,7 +130,7 @@ type Server struct {
 	ch          chan interface{}
 	state       State
 	songs       map[SongID]*codec.SongInfo
-	stateFile   string
+	db          *bolt.DB
 	savePending bool
 }
 
@@ -157,29 +159,100 @@ func New(stateFile string) (*Server, error) {
 	for name := range protocol.Get() {
 		srv.Protocols[name] = make(map[string]protocol.Instance)
 	}
-	if stateFile != "" {
-		if f, err := os.Open(stateFile); os.IsNotExist(err) {
-		} else if err != nil {
-			return nil, err
-		} else {
-			defer f.Close()
-			if err := gob.NewDecoder(f).Decode(&srv); err != nil {
-				return nil, err
-			}
-			for name, insts := range srv.Protocols {
-				for key := range insts {
-					go func(name, key string) {
-						if err := srv.protocolRefresh(name, key, true); err != nil {
-							log.Println(err)
-						}
-					}(name, key)
-				}
-			}
-		}
-		srv.stateFile = stateFile
+	db, err := bolt.Open(stateFile, 0600, nil)
+	if err != nil {
+		return nil, err
 	}
+	srv.db = db
+	if err := srv.restore(); err != nil {
+		log.Println(err)
+	}
+	log.Println("started from", stateFile)
 	go srv.audio()
 	return &srv, nil
+}
+
+const (
+	dbBucket = "bucket"
+	dbServer = "server"
+)
+
+func (srv *Server) restore() error {
+	decode := func(name string, dst interface{}) error {
+		var data []byte
+		err := srv.db.View(func(tx *bolt.Tx) error {
+			b := tx.Bucket([]byte(dbBucket))
+			if b == nil {
+				return fmt.Errorf("unknown bucket: %v", dbBucket)
+			}
+			data = b.Get([]byte(name))
+			return nil
+		})
+		if err != nil {
+			return err
+		}
+		gr, err := gzip.NewReader(bytes.NewReader(data))
+		if err != nil {
+			return err
+		}
+		defer gr.Close()
+		return gob.NewDecoder(gr).Decode(dst)
+	}
+	if err := decode(dbServer, srv); err != nil {
+		return err
+	}
+	for name, insts := range srv.Protocols {
+		for key := range insts {
+			go func(name, key string) {
+				if err := srv.protocolRefresh(name, key, true); err != nil {
+					log.Println(err)
+				}
+			}(name, key)
+		}
+	}
+	return nil
+}
+
+func (srv *Server) save() error {
+	defer func() {
+		srv.savePending = false
+	}()
+	store := map[string]interface{}{
+		dbServer: srv,
+	}
+	tostore := make(map[string][]byte)
+	for name, data := range store {
+		f := new(bytes.Buffer)
+		gz := gzip.NewWriter(f)
+		enc := gob.NewEncoder(gz)
+		if err := enc.Encode(data); err != nil {
+			return err
+		}
+		if err := gz.Flush(); err != nil {
+			return err
+		}
+		if err := gz.Close(); err != nil {
+			return err
+		}
+		tostore[name] = f.Bytes()
+	}
+	err := srv.db.Update(func(tx *bolt.Tx) error {
+		b, err := tx.CreateBucketIfNotExists([]byte(dbBucket))
+		if err != nil {
+			return err
+		}
+		for name, data := range tostore {
+			if err := b.Put([]byte(name), data); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	log.Println("save to db complete")
+	return nil
 }
 
 func (srv *Server) GetInstance(name, key string) (protocol.Instance, error) {

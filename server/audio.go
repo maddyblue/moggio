@@ -1,20 +1,18 @@
 package server
 
 import (
-	"encoding/gob"
 	"fmt"
 	"io"
 	"log"
 	"math/rand"
 	"net/http"
 	"net/url"
-	"os"
 	"time"
 
+	"github.com/mjibson/mog/_third_party/golang.org/x/net/websocket"
+	"github.com/mjibson/mog/_third_party/golang.org/x/oauth2"
 	"github.com/mjibson/mog/output"
 	"github.com/mjibson/mog/protocol"
-	"golang.org/x/net/websocket"
-	"golang.org/x/oauth2"
 )
 
 func (srv *Server) audio() {
@@ -285,9 +283,6 @@ func (srv *Server) audio() {
 		broadcast(waitPlaylist)
 	}
 	queueSave := func() {
-		if srv.stateFile == "" {
-			return
-		}
 		if srv.savePending {
 			return
 		}
@@ -297,21 +292,8 @@ func (srv *Server) audio() {
 		})
 	}
 	doSave := func() {
-		srv.savePending = false
-		tmp := srv.stateFile + ".tmp"
-		f, err := os.Create(tmp)
-		if err != nil {
-			log.Println(err)
-			return
-		}
-		if err := gob.NewEncoder(f).Encode(srv); err != nil {
-			log.Println(err)
-			return
-		}
-		f.Close()
-		if err := os.Rename(tmp, srv.stateFile); err != nil {
-			log.Println(err)
-			return
+		if err := srv.save(); err != nil {
+			broadcastErr(err)
 		}
 	}
 	addOAuth := func(c cmdAddOAuth) {
