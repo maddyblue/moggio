@@ -79,7 +79,11 @@ func main() {
 		case *flagDev:
 			*stateFile = "mog.state"
 		case runtime.GOOS == "windows":
-			*stateFile = filepath.Join(os.Getenv("APPDATA"), "mog", "mog.state")
+			dir := filepath.Join(os.Getenv("APPDATA"), "mog")
+			if err := os.MkdirAll(dir, 0600); err != nil {
+				log.Fatal(err)
+			}
+			*stateFile = filepath.Join(dir, "mog.state")
 		default:
 			*stateFile = filepath.Join(os.Getenv("HOME"), ".mog.state")
 		}
