@@ -220,7 +220,10 @@ var Tracks = React.createClass({
 			queue = (
 				<div>
 					<button onClick={this.play}>play</button>
+					&nbsp;
 					<button onClick={this.add}>add</button>
+					&nbsp;
+					({this.state.tracks.length} tracks)
 				</div>
 			);
 		};

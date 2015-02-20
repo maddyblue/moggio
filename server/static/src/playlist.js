@@ -32,6 +32,7 @@ var Queue = React.createClass({
 			<div>
 				<h4>Queue</h4>
 				<button onClick={this.clear}>clear</button>
+				&nbsp;
 				<button onClick={this.save}>save</button>
 				<Tracks tracks={this.state.Queue} noIdx={true} isqueue={true} />
 			</div>

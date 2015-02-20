@@ -322,7 +322,10 @@ var Tracks = React.createClass({displayName: "Tracks",
 			queue = (
 				React.createElement("div", null, 
 					React.createElement("button", {onClick: this.play}, "play"), 
-					React.createElement("button", {onClick: this.add}, "add")
+					" ", 
+					React.createElement("button", {onClick: this.add}, "add"), 
+					" " + ' ' +
+					"(", this.state.tracks.length, " tracks)"
 				)
 			);
 		};
@@ -587,6 +590,7 @@ var Queue = React.createClass({displayName: "Queue",
 			React.createElement("div", null, 
 				React.createElement("h4", null, "Queue"), 
 				React.createElement("button", {onClick: this.clear}, "clear"), 
+				" ", 
 				React.createElement("button", {onClick: this.save}, "save"), 
 				React.createElement(Tracks, {tracks: this.state.Queue, noIdx: true, isqueue: true})
 			)
