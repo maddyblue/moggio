@@ -19,6 +19,7 @@ import (
 	// codecs
 	_ "github.com/mjibson/mog/codec/mpa"
 	_ "github.com/mjibson/mog/codec/nsf"
+	_ "github.com/mjibson/mog/codec/wav"
 
 	// protocols
 	"github.com/mjibson/mog/protocol/drive"
