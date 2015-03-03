@@ -133,6 +133,7 @@ func (srv *Server) audio() {
 			}
 		}
 		srv.song = nil
+		srv.elapsed = 0
 	}
 	tick = func() {
 		const expected = 4096
