@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/mjibson/mog/_third_party/github.com/ascherkus/go-id3/src/id3"
 	"github.com/mjibson/mog/_third_party/github.com/korandiz/mpa"
+	"github.com/mjibson/mog/_third_party/github.com/mjibson/id3"
 	"github.com/mjibson/mog/codec"
 )
 

@@ -17,13 +17,13 @@ package id3
 import (
 	"bufio"
 	"fmt"
+	"io"
+	"io/ioutil"
 	"strings"
 	"unicode/utf16"
 )
 
-var skipBuffer []byte = make([]byte, 1024*4)
-
-func ISO8859_1ToUTF8(data []byte) string {
+func iso8859_1ToUTF8(data []byte) string {
 	p := make([]rune, len(data))
 	for i, b := range data {
 		p[i] = rune(b)
@@ -103,7 +103,7 @@ func parseString(data []byte) string {
 	var s string
 	switch data[0] {
 	case 0: // ISO-8859-1 text.
-		s = ISO8859_1ToUTF8(data[1:])
+		s = iso8859_1ToUTF8(data[1:])
 		break
 	case 1: // UTF-16 with BOM.
 		s = string(utf16.Decode(toUTF16(data[1:])))
@@ -115,7 +115,7 @@ func parseString(data []byte) string {
 		break
 	default:
 		// No encoding, assume ISO-8859-1 text.
-		s = ISO8859_1ToUTF8(data)
+		s = iso8859_1ToUTF8(data)
 	}
 	return strings.TrimRight(s, "\u0000")
 }
@@ -143,17 +143,5 @@ func readGenre(reader *bufio.Reader, c int) string {
 }
 
 func skipBytes(reader *bufio.Reader, c int) {
-	pos := 0
-	for pos < c {
-		end := c - pos
-		if end > len(skipBuffer) {
-			end = len(skipBuffer)
-		}
-
-		i, err := reader.Read(skipBuffer[0:end])
-		pos += i
-		if err != nil {
-			panic(err)
-		}
-	}
+	io.CopyN(ioutil.Discard, reader, int64(c))
 }
