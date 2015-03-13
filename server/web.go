@@ -67,7 +67,7 @@ func serveError(w http.ResponseWriter, err error) {
 
 func JSON(h func(url.Values, httprouter.Params) (interface{}, error)) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-		if err := r.ParseForm(); err != nil {
+		if err := r.ParseMultipartForm(1 << 20); err != nil {
 			serveError(w, err)
 			return
 		}

@@ -24,34 +24,36 @@ _.each(Actions, function(action, name) {
 });
 
 function POST(path, params, success) {
-	var data;
+	var data = new(FormData);
 	if (_.isArray(params)) {
-		data = _.map(params, function(v) {
-			return encodeURIComponent(v.name) + '=' + encodeURIComponent(v.value);
-		}).join('&');
+		_.each(params, function(v) {
+			data.append(v.name, v.value);
+		});
 	} else if (_.isObject(params)) {
-		data = _.map(params, function(v, k) {
-			return encodeURIComponent(k) + '=' + encodeURIComponent(v);
-		}).join('&');
-	} else {
+		_.each(params, function(v, k) {
+			data.append(k, v);
+		});
+	} else if (params) {
 		data = params;
 	}
-	var xhr = new XMLHttpRequest();
-	xhr.open('POST', path, true);
-	xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded; charset=UTF-8');
-	xhr.onreadystatechange = function() {
-		if (xhr.readyState != 4) {
-			return;
+	var f = fetch(path, {
+		method: 'post',
+		body: data
+	});
+	f.then(function(response) {
+		if (response.status >= 200 && response.status < 300) {
+			return Promise.resolve(response);
+		} else {
+			return Promise.reject(new Error(response.statusText));
 		}
-		if (xhr.status >= 300) {
-			alert(xhr.status + ": " + xhr.statusText + ": " + xhr.responseText);
-			return;
-		}
-		if (success) {
-			success();
-		}
-	};
-	xhr.send(data);
+	});
+	f.catch(function(err) {
+		alert(err);
+	});
+	if (success) {
+		f.then(success);
+	}
+	return f;
 }
 
 function mkcmd(cmds) {
