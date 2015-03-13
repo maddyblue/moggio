@@ -62,6 +62,7 @@ func Index(w http.ResponseWriter, r *http.Request) {
 }
 
 func serveError(w http.ResponseWriter, err error) {
+	log.Println(err)
 	http.Error(w, err.Error(), http.StatusInternalServerError)
 }
 
