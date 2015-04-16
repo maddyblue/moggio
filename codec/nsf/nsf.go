@@ -9,6 +9,7 @@ import (
 
 func init() {
 	codec.RegisterCodec("NSF", "NESM\u001a", []string{"nsf"}, ReadNSFSongs)
+	codec.RegisterCodec("NSFE", "NSFE", []string{"nsfe"}, ReadNSFSongs)
 }
 
 func ReadNSFSongs(rf codec.Reader) ([]codec.Song, error) {
@@ -17,11 +18,11 @@ func ReadNSFSongs(rf codec.Reader) ([]codec.Song, error) {
 		return nil, err
 	}
 	defer r.Close()
-	n, err := nsf.ReadNSF(r)
+	n, err := nsf.New(r)
 	if err != nil {
 		return nil, err
 	}
-	songs := make([]codec.Song, n.Songs)
+	songs := make([]codec.Song, len(n.Songs))
 	for i := range songs {
 		songs[i] = &NSFSong{
 			NSF:    n,
@@ -46,7 +47,7 @@ func (n *NSFSong) Init() (sampleRate, channels int, err error) {
 			return 0, 0, err
 		}
 		defer r.Close()
-		n.NSF, err = nsf.ReadNSF(r)
+		n.NSF, err = nsf.New(r)
 		if err != nil {
 			return 0, 0, err
 		}
@@ -66,31 +67,29 @@ func (n *NSFSong) Close() {
 }
 
 func (n *NSFSong) Info() (si codec.SongInfo, err error) {
-	if n.NSF != nil {
-		si = codec.SongInfo{
-			Time:   n.NSF.Limit,
-			Artist: n.NSF.Artist,
-			Album:  n.NSF.Song,
-			Track:  float64(n.Index),
-			Title:  fmt.Sprintf("%s:%02d", n.NSF.Song, n.Index),
+	ns := n.NSF
+	if ns == nil {
+		r, _, err := n.Reader()
+		if err != nil {
+			return si, err
 		}
-		return
+		defer r.Close()
+		ns, err = nsf.New(r)
+		if err != nil {
+			return si, err
+		}
 	}
-	r, _, err := n.Reader()
-	if err != nil {
-		return
-	}
-	defer r.Close()
-	ns, err := nsf.ReadNSF(r)
-	if err != nil {
-		return
+	s := n.NSF.Songs[n.Index-1]
+	title := s.Name
+	if title == "" {
+		title = fmt.Sprintf("%s:%02d", n.NSF.Game, n.Index)
 	}
 	si = codec.SongInfo{
-		Time:   ns.Limit,
-		Artist: ns.Artist,
-		Album:  ns.Song,
+		Time:   s.Duration,
+		Artist: n.NSF.Artist,
+		Album:  n.NSF.Game,
 		Track:  float64(n.Index),
-		Title:  fmt.Sprintf("%s:%d", ns.Song, n.Index),
+		Title:  title,
 	}
 	return
 }
