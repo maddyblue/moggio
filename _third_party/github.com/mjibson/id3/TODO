@@ -1,0 +1,13 @@
+General
+-------
+  - ID3 v1 support
+  - ID3 v2.x code can be deduplicated
+  - ID3 (un)synchronization handling
+  - ID3 v2.4 timestamp parsing
+  - Pictures!
+
+Unicode support
+---------------
+  - UTF-16BE needs to be tested
+  - Variable length UTF-16 strings are probably handled incorrectly
+  - UTF-16 w/o BOM needs to be tested
