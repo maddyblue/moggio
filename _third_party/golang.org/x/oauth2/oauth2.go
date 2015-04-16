@@ -25,14 +25,9 @@ import (
 	"github.com/mjibson/mog/_third_party/golang.org/x/net/context"
 )
 
-// Context can be an golang.org/x/net.Context, or an App Engine Context.
-// If you don't care and aren't running on App Engine, you may use NoContext.
-type Context interface{}
-
-// NoContext is the default context. If you're not running this code
-// on App Engine or not using golang.org/x/net.Context to provide a custom
-// HTTP client, you should use NoContext.
-var NoContext Context = nil
+// NoContext is the default context you should supply if not using
+// your own context.Context (see https://golang.org/x/net/context).
+var NoContext = context.TODO()
 
 // Config describes a typical 3-legged OAuth2 flow, with both the
 // client application information and the server's endpoint URLs.
@@ -84,22 +79,28 @@ var (
 	// result in your application obtaining a refresh token the
 	// first time your application exchanges an authorization
 	// code for a user.
-	AccessTypeOnline  AuthCodeOption = setParam{"access_type", "online"}
-	AccessTypeOffline AuthCodeOption = setParam{"access_type", "offline"}
+	AccessTypeOnline  AuthCodeOption = SetAuthURLParam("access_type", "online")
+	AccessTypeOffline AuthCodeOption = SetAuthURLParam("access_type", "offline")
 
 	// ApprovalForce forces the users to view the consent dialog
 	// and confirm the permissions request at the URL returned
 	// from AuthCodeURL, even if they've already done so.
-	ApprovalForce AuthCodeOption = setParam{"approval_prompt", "force"}
+	ApprovalForce AuthCodeOption = SetAuthURLParam("approval_prompt", "force")
 )
+
+// An AuthCodeOption is passed to Config.AuthCodeURL.
+type AuthCodeOption interface {
+	setValue(url.Values)
+}
 
 type setParam struct{ k, v string }
 
 func (p setParam) setValue(m url.Values) { m.Set(p.k, p.v) }
 
-// An AuthCodeOption is passed to Config.AuthCodeURL.
-type AuthCodeOption interface {
-	setValue(url.Values)
+// SetAuthURLParam builds an AuthCodeOption which passes key/value parameters
+// to a provider's authorization endpoint.
+func SetAuthURLParam(key, value string) AuthCodeOption {
+	return setParam{key, value}
 }
 
 // AuthCodeURL returns a URL to OAuth 2.0 provider's consent page
@@ -143,9 +144,9 @@ func (c *Config) AuthCodeURL(state string, opts ...AuthCodeOption) string {
 // and when other authorization grant types are not available."
 // See https://tools.ietf.org/html/rfc6749#section-4.3 for more info.
 //
-// The HTTP client to use is derived from the context. If nil,
-// http.DefaultClient is used. See the Context type's documentation.
-func (c *Config) PasswordCredentialsToken(ctx Context, username, password string) (*Token, error) {
+// The HTTP client to use is derived from the context.
+// If nil, http.DefaultClient is used.
+func (c *Config) PasswordCredentialsToken(ctx context.Context, username, password string) (*Token, error) {
 	return retrieveToken(ctx, c, url.Values{
 		"grant_type": {"password"},
 		"username":   {username},
@@ -159,12 +160,12 @@ func (c *Config) PasswordCredentialsToken(ctx Context, username, password string
 // It is used after a resource provider redirects the user back
 // to the Redirect URI (the URL obtained from AuthCodeURL).
 //
-// The HTTP client to use is derived from the context. If nil,
-// http.DefaultClient is used. See the Context type's documentation.
+// The HTTP client to use is derived from the context.
+// If a client is not provided via the context, http.DefaultClient is used.
 //
 // The code will be in the *http.Request.FormValue("code"). Before
 // calling Exchange, be sure to validate FormValue("state").
-func (c *Config) Exchange(ctx Context, code string) (*Token, error) {
+func (c *Config) Exchange(ctx context.Context, code string) (*Token, error) {
 	return retrieveToken(ctx, c, url.Values{
 		"grant_type":   {"authorization_code"},
 		"code":         {code},
@@ -177,7 +178,7 @@ func (c *Config) Exchange(ctx Context, code string) (*Token, error) {
 // given a Context value. If it returns an error, the search stops
 // with that error.  If it returns (nil, nil), the search continues
 // down the list of registered funcs.
-type contextClientFunc func(Context) (*http.Client, error)
+type contextClientFunc func(context.Context) (*http.Client, error)
 
 var contextClientFuncs []contextClientFunc
 
@@ -185,7 +186,7 @@ func registerContextClientFunc(fn contextClientFunc) {
 	contextClientFuncs = append(contextClientFuncs, fn)
 }
 
-func contextClient(ctx Context) (*http.Client, error) {
+func contextClient(ctx context.Context) (*http.Client, error) {
 	for _, fn := range contextClientFuncs {
 		c, err := fn(ctx)
 		if err != nil {
@@ -195,15 +196,13 @@ func contextClient(ctx Context) (*http.Client, error) {
 			return c, nil
 		}
 	}
-	if xc, ok := ctx.(context.Context); ok {
-		if hc, ok := xc.Value(HTTPClient).(*http.Client); ok {
-			return hc, nil
-		}
+	if hc, ok := ctx.Value(HTTPClient).(*http.Client); ok {
+		return hc, nil
 	}
 	return http.DefaultClient, nil
 }
 
-func contextTransport(ctx Context) http.RoundTripper {
+func contextTransport(ctx context.Context) http.RoundTripper {
 	hc, err := contextClient(ctx)
 	if err != nil {
 		// This is a rare error case (somebody using nil on App Engine),
@@ -219,45 +218,57 @@ func contextTransport(ctx Context) http.RoundTripper {
 // The token will auto-refresh as necessary. The underlying
 // HTTP transport will be obtained using the provided context.
 // The returned client and its Transport should not be modified.
-func (c *Config) Client(ctx Context, t *Token) *http.Client {
+func (c *Config) Client(ctx context.Context, t *Token) *http.Client {
 	return NewClient(ctx, c.TokenSource(ctx, t))
 }
 
 // TokenSource returns a TokenSource that returns t until t expires,
 // automatically refreshing it as necessary using the provided context.
-// See the the Context documentation.
 //
 // Most users will use Config.Client instead.
-func (c *Config) TokenSource(ctx Context, t *Token) TokenSource {
-	nwn := &reuseTokenSource{t: t}
-	nwn.new = tokenRefresher{
-		ctx:      ctx,
-		conf:     c,
-		oldToken: &nwn.t,
+func (c *Config) TokenSource(ctx context.Context, t *Token) TokenSource {
+	tkr := &tokenRefresher{
+		ctx:  ctx,
+		conf: c,
 	}
-	return nwn
+	if t != nil {
+		tkr.refreshToken = t.RefreshToken
+	}
+	return &reuseTokenSource{
+		t:   t,
+		new: tkr,
+	}
 }
 
 // tokenRefresher is a TokenSource that makes "grant_type"=="refresh_token"
 // HTTP requests to renew a token using a RefreshToken.
 type tokenRefresher struct {
-	ctx      Context // used to get HTTP requests
-	conf     *Config
-	oldToken **Token // pointer to old *Token w/ RefreshToken
+	ctx          context.Context // used to get HTTP requests
+	conf         *Config
+	refreshToken string
 }
 
-func (tf tokenRefresher) Token() (*Token, error) {
-	t := *tf.oldToken
-	if t == nil {
-		return nil, errors.New("oauth2: attempted use of nil Token")
-	}
-	if t.RefreshToken == "" {
+// WARNING: Token is not safe for concurrent access, as it
+// updates the tokenRefresher's refreshToken field.
+// Within this package, it is used by reuseTokenSource which
+// synchronizes calls to this method with its own mutex.
+func (tf *tokenRefresher) Token() (*Token, error) {
+	if tf.refreshToken == "" {
 		return nil, errors.New("oauth2: token expired and refresh token is not set")
 	}
-	return retrieveToken(tf.ctx, tf.conf, url.Values{
+
+	tk, err := retrieveToken(tf.ctx, tf.conf, url.Values{
 		"grant_type":    {"refresh_token"},
-		"refresh_token": {t.RefreshToken},
+		"refresh_token": {tf.refreshToken},
 	})
+
+	if err != nil {
+		return nil, err
+	}
+	if tf.refreshToken != tk.RefreshToken {
+		tf.refreshToken = tk.RefreshToken
+	}
+	return tk, err
 }
 
 // reuseTokenSource is a TokenSource that holds a single token in memory
@@ -288,7 +299,7 @@ func (s *reuseTokenSource) Token() (*Token, error) {
 	return t, nil
 }
 
-func retrieveToken(ctx Context, c *Config, v url.Values) (*Token, error) {
+func retrieveToken(ctx context.Context, c *Config, v url.Values) (*Token, error) {
 	hc, err := contextClient(ctx)
 	if err != nil {
 		return nil, err
@@ -303,7 +314,7 @@ func retrieveToken(ctx Context, c *Config, v url.Values) (*Token, error) {
 		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	if !bustedAuth && c.ClientSecret != "" {
+	if !bustedAuth {
 		req.SetBasicAuth(c.ClientID, c.ClientSecret)
 	}
 	r, err := hc.Do(req)
@@ -369,11 +380,11 @@ func retrieveToken(ctx Context, c *Config, v url.Values) (*Token, error) {
 // tokenJSON is the struct representing the HTTP response from OAuth2
 // providers returning a token in JSON form.
 type tokenJSON struct {
-	AccessToken  string `json:"access_token"`
-	TokenType    string `json:"token_type"`
-	RefreshToken string `json:"refresh_token"`
-	ExpiresIn    int32  `json:"expires_in"`
-	Expires      int32  `json:"expires"` // broken Facebook spelling of expires_in
+	AccessToken  string         `json:"access_token"`
+	TokenType    string         `json:"token_type"`
+	RefreshToken string         `json:"refresh_token"`
+	ExpiresIn    expirationTime `json:"expires_in"` // at least PayPal returns string, while most return number
+	Expires      expirationTime `json:"expires"`    // broken Facebook spelling of expires_in
 }
 
 func (e *tokenJSON) expiry() (t time.Time) {
@@ -386,11 +397,46 @@ func (e *tokenJSON) expiry() (t time.Time) {
 	return
 }
 
+type expirationTime int32
+
+func (e *expirationTime) UnmarshalJSON(b []byte) error {
+	var n json.Number
+	err := json.Unmarshal(b, &n)
+	if err != nil {
+		return err
+	}
+	i, err := n.Int64()
+	if err != nil {
+		return err
+	}
+	*e = expirationTime(i)
+	return nil
+}
+
 func condVal(v string) []string {
 	if v == "" {
 		return nil
 	}
 	return []string{v}
+}
+
+var brokenAuthHeaderProviders = []string{
+	"https://accounts.google.com/",
+	"https://www.googleapis.com/",
+	"https://github.com/",
+	"https://api.instagram.com/",
+	"https://www.douban.com/",
+	"https://api.dropbox.com/",
+	"https://api.soundcloud.com/",
+	"https://www.linkedin.com/",
+	"https://api.twitch.tv/",
+	"https://oauth.vk.com/",
+	"https://api.odnoklassniki.ru/",
+	"https://connect.stripe.com/",
+	"https://api.pushbullet.com/",
+	"https://oauth.sandbox.trainingpeaks.com/",
+	"https://oauth.trainingpeaks.com/",
+	"https://www.strava.com/oauth/",
 }
 
 // providerAuthHeaderWorks reports whether the OAuth2 server identified by the tokenURL
@@ -400,17 +446,13 @@ func condVal(v string) []string {
 // - Reddit only accepts client secret in the Authorization header
 // - Dropbox accepts either it in URL param or Auth header, but not both.
 // - Google only accepts URL param (not spec compliant?), not Auth header
+// - Stripe only accepts client secret in Auth header with Bearer method, not Basic
 func providerAuthHeaderWorks(tokenURL string) bool {
-	if strings.HasPrefix(tokenURL, "https://accounts.google.com/") ||
-		strings.HasPrefix(tokenURL, "https://www.googleapis.com/") ||
-		strings.HasPrefix(tokenURL, "https://github.com/") ||
-		strings.HasPrefix(tokenURL, "https://api.instagram.com/") ||
-		strings.HasPrefix(tokenURL, "https://www.douban.com/") ||
-		strings.HasPrefix(tokenURL, "https://api.dropbox.com/") ||
-		strings.HasPrefix(tokenURL, "https://api.soundcloud.com/") ||
-		strings.HasPrefix(tokenURL, "https://www.linkedin.com/") {
-		// Some sites fail to implement the OAuth2 spec fully.
-		return false
+	for _, s := range brokenAuthHeaderProviders {
+		if strings.HasPrefix(tokenURL, s) {
+			// Some sites fail to implement the OAuth2 spec fully.
+			return false
+		}
 	}
 
 	// Assume the provider implements the spec properly
@@ -435,7 +477,7 @@ type contextKey struct{}
 // As a special case, if src is nil, a non-OAuth2 client is returned
 // using the provided context. This exists to support related OAuth2
 // packages.
-func NewClient(ctx Context, src TokenSource) *http.Client {
+func NewClient(ctx context.Context, src TokenSource) *http.Client {
 	if src == nil {
 		c, err := contextClient(ctx)
 		if err != nil {

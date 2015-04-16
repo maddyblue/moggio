@@ -60,7 +60,6 @@ func ReadNSF(b []byte) (*NSF, error) {
 	n.Artist = bToString(b[nsfARTIST:])
 	n.Copyright = bToString(b[nsfCOPYRIGHT:])
 	n.SpeedNTSC = bLEtoUint16(b[nsfSPEED_NTSC:])
-	println("SNTSC", n.SpeedNTSC)
 	copy(n.Bankswitch[:], b[nsfBANKSWITCH:nsfSPEED_PAL])
 	n.Data = b[nsfHEADER_LEN:]
 	return &n, nil
@@ -138,9 +137,6 @@ func ReadNSFE(b []byte) (*NSF, error) {
 		default:
 			panic(id)
 		}
-	}
-	for i, s := range n.Songs {
-		fmt.Println(i, s.Name, s.Duration, s.Fade)
 	}
 	return &n, nil
 }
