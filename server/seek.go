@@ -32,7 +32,7 @@ func (s *Seek) Read(n int) (b []float32, err error) {
 	for len(s.b)-s.pos < n {
 		b, err = s.f(n)
 		s.b = append(s.b, b...)
-		if err != nil {
+		if err != nil || len(b) == 0 {
 			break
 		}
 	}
