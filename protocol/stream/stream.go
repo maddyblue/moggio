@@ -1,6 +1,7 @@
 package stream
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/gob"
 	"fmt"
@@ -8,6 +9,8 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"net/url"
+	"strings"
 	"time"
 
 	"github.com/mjibson/mog/_third_party/golang.org/x/oauth2"
@@ -25,8 +28,14 @@ func New(params []string, token *oauth2.Token) (protocol.Instance, error) {
 	if len(params) != 1 {
 		return nil, fmt.Errorf("expected one parameter")
 	}
+	u, name := tryPLS(params[0])
+	if name == "" {
+		name = params[0]
+	}
 	s := Stream{
-		URL: params[0],
+		Orig: params[0],
+		URL:  u,
+		Name: name,
 	}
 	resp, err := s.get()
 	if err != nil {
@@ -36,8 +45,46 @@ func New(params []string, token *oauth2.Token) (protocol.Instance, error) {
 	return &s, nil
 }
 
+// tryPLS checks if u is a URL to a .pls file. If it is, it returns the
+// first File entry of as target and first Title entry as name.
+func tryPLS(u string) (target, name string) {
+	target = u
+	resp, err := http.Get(u)
+	if err != nil {
+		return
+	}
+	defer resp.Body.Close()
+	sc := bufio.NewScanner(io.LimitReader(resp.Body, 1024))
+	i := 0
+	for sc.Scan() {
+		if i > 5 {
+			break
+		}
+		i++
+		sp := strings.SplitN(sc.Text(), "=", 2)
+		if len(sp) != 2 {
+			continue
+		}
+		if strings.HasPrefix(sp[0], "File") {
+			_, err := url.Parse(sp[1])
+			if err != nil {
+				return
+			}
+			target = sp[1]
+		} else if strings.HasPrefix(sp[0], "Title") {
+			name = sp[1]
+		}
+		if target != u && name != "" {
+			return
+		}
+	}
+	return
+}
+
 type Stream struct {
-	URL string
+	Orig string
+	URL  string
+	Name string
 }
 
 type dialer struct {
@@ -116,12 +163,12 @@ func (s *Stream) get() (*http.Response, error) {
 
 func (s *Stream) info() *codec.SongInfo {
 	return &codec.SongInfo{
-		Title: s.URL,
+		Title: s.Name,
 	}
 }
 
 func (s *Stream) Key() string {
-	return s.URL
+	return s.Orig
 }
 
 func (s *Stream) List() (protocol.SongList, error) {
