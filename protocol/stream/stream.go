@@ -89,7 +89,7 @@ type Stream struct {
 	Name           string
 	metaint, count int
 	body           io.ReadCloser
-	title, artist  string
+	title          string
 }
 
 type dialer struct {
@@ -164,14 +164,14 @@ func (s *Stream) get() (*http.Response, error) {
 }
 
 func (s *Stream) info() *codec.SongInfo {
-	title := s.title
-	if title == "" {
-		title = s.Name
+	i := &codec.SongInfo{
+		Title: s.Name,
 	}
-	return &codec.SongInfo{
-		Title:  title,
-		Artist: s.artist,
+	if s.title != "" {
+		i.Title = s.title
+		i.Album = s.Name
 	}
+	return i
 }
 
 func (s *Stream) Key() string {
@@ -232,9 +232,7 @@ func (s *Stream) Read(p []byte) (n int, err error) {
 		}
 		matches := titleRE.FindSubmatch(meta)
 		if len(matches) == 2 {
-			sp := strings.SplitN(string(matches[1]), " - ", 2)
-			s.title = sp[0]
-			s.artist = sp[1]
+			s.title = string(matches[1])
 		}
 	}
 	return
@@ -248,6 +246,5 @@ func (s *Stream) Close() error {
 	s.body = nil
 	s.count = 0
 	s.title = ""
-	s.artist = ""
 	return err
 }
