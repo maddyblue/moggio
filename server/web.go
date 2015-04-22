@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/mjibson/mog/_third_party/github.com/julienschmidt/httprouter"
@@ -68,9 +69,16 @@ func serveError(w http.ResponseWriter, err error) {
 
 func JSON(h func(url.Values, httprouter.Params) (interface{}, error)) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-		if err := r.ParseMultipartForm(1 << 20); err != nil {
-			serveError(w, err)
-			return
+		if strings.HasPrefix(r.Header.Get("Content-Type"), "multipart/form-data") {
+			if err := r.ParseMultipartForm(1 << 20); err != nil {
+				serveError(w, err)
+				return
+			}
+		} else {
+			if err := r.ParseForm(); err != nil {
+				serveError(w, err)
+				return
+			}
 		}
 		d, err := h(r.Form, ps)
 		if err != nil {
