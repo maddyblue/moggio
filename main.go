@@ -22,6 +22,7 @@ import (
 	_ "github.com/mjibson/mog/codec/wav"
 
 	// protocols
+	_ "github.com/mjibson/mog/protocol/bandcamp"
 	"github.com/mjibson/mog/protocol/drive"
 	"github.com/mjibson/mog/protocol/dropbox"
 	_ "github.com/mjibson/mog/protocol/file"
