@@ -10,6 +10,8 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -82,9 +84,12 @@ func tryPLS(u string) (target, name string) {
 }
 
 type Stream struct {
-	Orig string
-	URL  string
-	Name string
+	Orig           string
+	URL            string
+	Name           string
+	metaint, count int
+	body           io.ReadCloser
+	title, artist  string
 }
 
 type dialer struct {
@@ -142,7 +147,7 @@ func (s *Stream) get() (*http.Response, error) {
 		panic(err)
 		log.Fatal(err)
 	}
-	//req.Header.Add("Icy-MetaData", "1")
+	req.Header.Add("Icy-MetaData", "1")
 	log.Println("stream open", req.URL)
 	resp, err := client.Do(req)
 	if err != nil {
@@ -151,19 +156,21 @@ func (s *Stream) get() (*http.Response, error) {
 	if resp.StatusCode != 200 {
 		return nil, fmt.Errorf("stream status: %v", resp.Status)
 	}
-	/*
-		metaint, err := strconv.ParseInt(resp.Header.Get("Icy-Metaint"), 10, 64)
-		if err != nil {
-			return nil, err
-		}
-	*/
-
+	s.metaint, err = strconv.Atoi(resp.Header.Get("Icy-Metaint"))
+	if err != nil {
+		return nil, err
+	}
 	return resp, nil
 }
 
 func (s *Stream) info() *codec.SongInfo {
+	title := s.title
+	if title == "" {
+		title = s.Name
+	}
 	return &codec.SongInfo{
-		Title: s.Name,
+		Title:  title,
+		Artist: s.artist,
 	}
 }
 
@@ -195,6 +202,52 @@ func (s *Stream) reader() codec.Reader {
 		if err != nil {
 			return nil, 0, err
 		}
-		return resp.Body, 0, nil
+		s.Close()
+		s.body = resp.Body
+		return s, 0, nil
 	}
+}
+
+var titleRE = regexp.MustCompile("StreamTitle='(.*?)';")
+
+func (s *Stream) Read(p []byte) (n int, err error) {
+	if s.metaint == 0 {
+		return s.body.Read(p)
+	}
+	l := s.metaint - s.count
+	if len(p) > l {
+		p = p[:l]
+	}
+	n, err = s.body.Read(p)
+	s.count += n
+	if s.count == s.metaint {
+		s.count = 0
+		mlen := make([]byte, 1)
+		if _, err := io.ReadFull(s.body, mlen); err != nil {
+			return n, err
+		}
+		meta := make([]byte, int(mlen[0])*16)
+		if _, err := io.ReadFull(s.body, meta); err != nil {
+			return n, err
+		}
+		matches := titleRE.FindSubmatch(meta)
+		if len(matches) == 2 {
+			sp := strings.SplitN(string(matches[1]), " - ", 2)
+			s.title = sp[0]
+			s.artist = sp[1]
+		}
+	}
+	return
+}
+
+func (s *Stream) Close() error {
+	var err error
+	if s.body != nil {
+		err = s.body.Close()
+	}
+	s.body = nil
+	s.count = 0
+	s.title = ""
+	s.artist = ""
+	return err
 }

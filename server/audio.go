@@ -135,6 +135,8 @@ func (srv *Server) audio() {
 		srv.song = nil
 		srv.elapsed = 0
 	}
+	var inst protocol.Instance
+	var sid SongID
 	tick = func() {
 		const expected = 4096
 		if false && srv.elapsed > srv.info.Time {
@@ -158,8 +160,9 @@ func (srv *Server) audio() {
 			}
 
 			srv.songID = srv.Queue[srv.PlaylistIndex]
-			sid := srv.songID
-			song, err := srv.Protocols[sid.Protocol][sid.Key].GetSong(sid.ID)
+			sid = srv.songID
+			inst = srv.Protocols[sid.Protocol][sid.Key]
+			song, err := inst.GetSong(sid.ID)
 			if err != nil {
 				printErr(err)
 				next()
@@ -196,6 +199,11 @@ func (srv *Server) audio() {
 			}
 			select {
 			case <-timer:
+				if info, err := inst.Info(sid.ID); err != nil {
+					broadcastErr(err)
+				} else {
+					srv.info = *info
+				}
 				broadcast(waitStatus)
 				timer = nil
 			default:
