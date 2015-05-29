@@ -2,6 +2,8 @@ package flac
 
 import (
 	"bytes"
+	"encoding/base64"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"math"
@@ -74,24 +76,28 @@ func (f *Flac) Info() (info codec.SongInfo, err error) {
 		Time: time.Duration(fv.Info.NSamples) / time.Duration(fv.Info.SampleRate) * time.Second,
 	}
 	for _, b := range fv.Blocks {
-		vc, ok := b.Body.(*meta.VorbisComment)
-		if !ok {
-			continue
-		}
-		for _, tag := range vc.Tags {
-			switch tag[0] {
-			case "TITLE":
-				si.Title = tag[1]
-			case "ARTIST":
-				si.Artist = tag[1]
-			case "ALBUM":
-				si.Album = tag[1]
-			case "TRACKNUMBER":
-				n, _ := strconv.Atoi(tag[1])
-				si.Track = float64(n)
+		switch v := b.Body.(type) {
+		case *meta.VorbisComment:
+			for _, tag := range v.Tags {
+				switch tag[0] {
+				case "TITLE":
+					si.Title = tag[1]
+				case "ARTIST":
+					si.Artist = tag[1]
+				case "ALBUM":
+					si.Album = tag[1]
+				case "TRACKNUMBER":
+					n, _ := strconv.Atoi(tag[1])
+					si.Track = float64(n)
+				}
 			}
+		case *meta.Picture:
+			if v.MIME == "-->" {
+				si.ImageURL = string(v.Data)
+				break
+			}
+			si.ImageURL = fmt.Sprintf("data:%s;base64,%s", v.MIME, base64.StdEncoding.EncodeToString(v.Data))
 		}
-		break
 	}
 	return si, nil
 }

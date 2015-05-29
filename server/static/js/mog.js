@@ -296,8 +296,13 @@ var Tracks = React.createClass({displayName: "Tracks",
 		);
 	},
 	titleCellRenderer: function(str, key, data, index) {
+		var image;
+		if (data.Info.ImageURL) {
+			image = React.createElement("img", {className: "track-image", src: data.Info.ImageURL});
+		}
 		return (
-			React.createElement("div", null, 
+			React.createElement("div", {className: "track-title"}, 
+				image, 
 				data.Info.Title, 
 				React.createElement("span", {className: "hover pull-right"}, React.createElement("i", {className: mkIcon(this.props.isqueue ? 'fa-times' : 'fa-plus'), onClick: this.appendTrack(index)}))
 			)

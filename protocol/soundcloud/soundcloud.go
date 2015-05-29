@@ -72,9 +72,10 @@ func (s *Soundcloud) Info(id string) (*codec.SongInfo, error) {
 
 func toInfo(f *soundcloud.Favorite) *codec.SongInfo {
 	return &codec.SongInfo{
-		Time:   time.Duration(f.Duration) * time.Millisecond,
-		Artist: f.User.Username,
-		Title:  f.Title,
+		Time:     time.Duration(f.Duration) * time.Millisecond,
+		Artist:   f.User.Username,
+		Title:    f.Title,
+		ImageURL: f.ArtworkURL,
 	}
 }
 

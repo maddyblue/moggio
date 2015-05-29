@@ -192,8 +192,13 @@ var Tracks = React.createClass({
 		);
 	},
 	titleCellRenderer: function(str, key, data, index) {
+		var image;
+		if (data.Info.ImageURL) {
+			image = <img className="track-image" src={data.Info.ImageURL}/>;
+		}
 		return (
-			<div>
+			<div className="track-title">
+				{image}
 				{data.Info.Title}
 				<span className="hover pull-right"><i className={mkIcon(this.props.isqueue ? 'fa-times' : 'fa-plus')} onClick={this.appendTrack(index)} /></span>
 			</div>

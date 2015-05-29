@@ -178,3 +178,15 @@ table.tracks button {
 	padding: 20px;
 	text-align: center;
 }
+
+.track-title {
+	padding-left: 50px;
+}
+
+.track-image {
+	position: absolute;
+	width: 40px;
+	height: 40px;
+	left: 5px;
+	top: 5px;
+}

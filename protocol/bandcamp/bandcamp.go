@@ -131,6 +131,21 @@ func (b *Bandcamp) Refresh() (protocol.SongList, error) {
 			return nil, err
 		}
 	}
+	var artURL string
+	func() {
+		const start = `    artThumbURL: "`
+		i := bytes.Index(y, []byte(start))
+		if i < 0 {
+			return
+		}
+		e := bytes.Index(y[i:], []byte("\",\n"))
+		if e < 0 {
+			return
+		}
+		if err := json.Unmarshal(y[i+len(start)-1:e+1+i], &artURL); err != nil {
+			return
+		}
+	}()
 	tracklist := make(map[string]*track)
 	songs := make(protocol.SongList)
 	for _, t := range tracks {
@@ -140,11 +155,12 @@ func (b *Bandcamp) Refresh() (protocol.SongList, error) {
 		id := strconv.FormatInt(t.ID, 10)
 		tracklist[id] = t
 		songs[id] = &codec.SongInfo{
-			Time:   time.Duration(t.Duration) * time.Second,
-			Album:  a.Title,
-			Artist: a.Artist,
-			Title:  t.Title,
-			Track:  float64(t.TrackNum),
+			Time:     time.Duration(t.Duration) * time.Second,
+			Album:    a.Title,
+			Artist:   a.Artist,
+			Title:    t.Title,
+			Track:    float64(t.TrackNum),
+			ImageURL: artURL,
 		}
 	}
 	fmt.Println(tracks[0])
