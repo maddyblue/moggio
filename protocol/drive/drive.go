@@ -4,11 +4,9 @@ import (
 	"encoding/gob"
 	"fmt"
 	"io"
-
 	"net/http"
 
-	"github.com/mjibson/mog/_third_party/code.google.com/p/google-api-go-client/drive/v2"
-
+	"github.com/mjibson/mog/_third_party/github.com/google/google-api-go-client/drive/v2"
 	"github.com/mjibson/mog/_third_party/golang.org/x/oauth2"
 	"github.com/mjibson/mog/_third_party/golang.org/x/oauth2/google"
 	"github.com/mjibson/mog/codec"

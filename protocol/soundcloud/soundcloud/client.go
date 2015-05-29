@@ -6,9 +6,8 @@ import (
 	"net/http"
 	"net/url"
 
+	"github.com/mjibson/mog/_third_party/github.com/google/google-api-go-client/googleapi"
 	"github.com/mjibson/mog/_third_party/golang.org/x/oauth2"
-
-	"github.com/mjibson/mog/_third_party/code.google.com/p/google-api-go-client/googleapi"
 )
 
 const basePath = "https://api.soundcloud.com/"

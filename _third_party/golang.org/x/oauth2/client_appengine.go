@@ -12,11 +12,12 @@ import (
 	"net/http"
 
 	"github.com/mjibson/mog/_third_party/golang.org/x/net/context"
+	"github.com/mjibson/mog/_third_party/golang.org/x/oauth2/internal"
 	"github.com/mjibson/mog/_third_party/google.golang.org/appengine/urlfetch"
 )
 
 func init() {
-	registerContextClientFunc(contextClientAppEngine)
+	internal.RegisterContextClientFunc(contextClientAppEngine)
 }
 
 func contextClientAppEngine(ctx context.Context) (*http.Client, error) {
