@@ -17,6 +17,7 @@ import (
 	"github.com/mjibson/mog/server"
 
 	// codecs
+	_ "github.com/mjibson/mog/codec/flac"
 	_ "github.com/mjibson/mog/codec/mpa"
 	_ "github.com/mjibson/mog/codec/nsf"
 	_ "github.com/mjibson/mog/codec/wav"
