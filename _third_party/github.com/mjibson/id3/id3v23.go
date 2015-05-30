@@ -51,6 +51,8 @@ func parseID3v23File(reader *bufio.Reader, file *File) {
 			file.Disc = readString(reader, size)
 		case "TLEN":
 			file.Length = readString(reader, size)
+		case "APIC":
+			file.Image = readImage(reader, size)
 		default:
 			skipBytes(reader, size)
 		}

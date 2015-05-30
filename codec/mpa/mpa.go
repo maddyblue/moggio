@@ -91,13 +91,17 @@ func (s *Song) Info() (info codec.SongInfo, err error) {
 	}
 	track, _ := strconv.ParseFloat(f.Track, 64)
 	dur, _ := strconv.Atoi(f.Length)
-	return codec.SongInfo{
+	si := codec.SongInfo{
 		Artist: f.Artist,
 		Title:  f.Name,
 		Album:  f.Album,
 		Track:  track,
 		Time:   time.Duration(dur) * time.Millisecond,
-	}, nil
+	}
+	if f.Image != nil {
+		si.ImageURL = f.Image.DataURL()
+	}
+	return si, nil
 }
 
 func (s *Song) Play(n int) (r []float32, err error) {

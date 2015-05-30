@@ -21,6 +21,7 @@ package id3
 
 import (
 	"bufio"
+	"encoding/base64"
 	"fmt"
 	"io"
 )
@@ -49,6 +50,23 @@ type File struct {
 	Disc   string
 	Genre  string
 	Length string
+	Image  *Image
+}
+
+type Image struct {
+	PictureType byte
+	Description string
+	Mime        string
+	Data        []byte
+}
+
+// DataURL returns a URL for an image, either a real URL to in image or an
+// embedded data URI.
+func (i *Image) DataURL() string {
+	if i.Mime == "-->" {
+		return string(i.Data)
+	}
+	return fmt.Sprintf("data:%s;base64,%s", i.Mime, base64.StdEncoding.EncodeToString(i.Data))
 }
 
 // Parse the input for ID3 information. Returns nil if parsing failed or the

@@ -16,6 +16,7 @@ package id3
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -140,6 +141,49 @@ func readString(reader *bufio.Reader, c int) string {
 func readGenre(reader *bufio.Reader, c int) string {
 	genre := parseString(readBytes(reader, c))
 	return convertID3v1Genre(genre)
+}
+
+func readImage(reader *bufio.Reader, c int) *Image {
+	b := readBytes(reader, c)
+	if len(b) == 0 {
+		return nil
+	}
+	enc := b[0]
+	b = b[1:]
+	i := bytes.Index(b, []byte{0})
+	if i < 0 {
+		return nil
+	}
+	var img Image
+	img.Mime = string(b[:i])
+	b = b[i+1:]
+	if len(b) < 2 {
+		return nil
+	}
+	img.PictureType = b[0]
+	b = b[1:]
+	switch enc {
+	case 1:
+		var i int
+		for ; i < len(b)+1; i += 2 {
+			if b[i] == 0 && b[i+1] == 0 {
+				break
+			}
+		}
+		i += 2
+		if i > len(b) {
+			i = len(b)
+		}
+		img.Description = parseString(b[:i])
+		b = b[i:]
+	default:
+		return nil
+	}
+	if len(b) == 0 {
+		return nil
+	}
+	img.Data = b
+	return &img
 }
 
 func skipBytes(reader *bufio.Reader, c int) {
