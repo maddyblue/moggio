@@ -86,13 +86,17 @@ func (g *GMusic) Refresh() (protocol.SongList, error) {
 	for _, t := range trackList {
 		tracks[t.ID] = t
 		duration, _ := strconv.Atoi(t.DurationMillis)
-		songs[t.ID] = &codec.SongInfo{
+		si := &codec.SongInfo{
 			Time:   time.Duration(duration) * time.Millisecond,
 			Artist: t.Artist,
 			Title:  t.Title,
 			Album:  t.Album,
 			Track:  t.TrackNumber,
 		}
+		if len(t.AlbumArtRef) != 0 {
+			si.ImageURL = t.AlbumArtRef[0].URL
+		}
+		songs[t.ID] = si
 	}
 	g.Songs = songs
 	g.Tracks = tracks
