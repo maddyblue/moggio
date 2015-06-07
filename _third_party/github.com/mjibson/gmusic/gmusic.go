@@ -1,3 +1,5 @@
+// Package gmusic provides methods to list and play music from Google
+// Play Music.
 package gmusic
 
 import (
@@ -8,19 +10,18 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/mjibson/mog/_third_party/github.com/mjibson/gpsoauth"
 )
 
 const (
-	clientLoginURL          = "https://www.google.com/accounts/ClientLogin"
 	googlePlayMusicEndpoint = "https://play.google.com/music"
 	serviceName             = "sj"
-	sourceName              = "mog"
 	sjURL                   = "https://www.googleapis.com/sj/v1.1/"
 )
 
@@ -29,37 +30,14 @@ type GMusic struct {
 	Auth     string
 }
 
-func Login(un, pw string) (*GMusic, error) {
-	values := url.Values{}
-	values.Add("accountType", "HOSTED_OR_GOOGLE")
-	values.Add("Email", un)
-	values.Add("Passwd", pw)
-	values.Add("service", serviceName)
-	values.Add("source", sourceName)
-	resp, err := http.PostForm(clientLoginURL, values)
+// Login logs in with a username and password.
+func Login(username, password string) (*GMusic, error) {
+	auth, err := gpsoauth.Login(username, password, serviceName)
 	if err != nil {
 		return nil, err
 	}
-	b, err := ioutil.ReadAll(resp.Body)
-	resp.Body.Close()
-	if err != nil {
-		return nil, err
-	}
-	gm := GMusic{}
-	for _, line := range strings.Fields(string(b)) {
-		sp := strings.SplitN(line, "=", 2)
-		if len(sp) < 2 {
-			continue
-		}
-		switch sp[0] {
-		case "Auth":
-			gm.Auth = sp[1]
-		case "Error":
-			return nil, fmt.Errorf("gmusic login: %s", sp[1])
-		}
-	}
-	if gm.Auth == "" {
-		return nil, fmt.Errorf("gmusic: %s", resp.Status)
+	gm := GMusic{
+		Auth: auth,
 	}
 	if err := gm.setDeviceID(); err != nil {
 		return nil, err
@@ -96,7 +74,7 @@ func (g *GMusic) request(method, url string, data interface{}, client *http.Clie
 	return resp, nil
 }
 
-func (g *GMusic) Request(method, path string, data interface{}) (*http.Response, error) {
+func (g *GMusic) sjRequest(method, path string, data interface{}) (*http.Response, error) {
 	return g.request(method, sjURL+path, data, nil)
 }
 
@@ -126,10 +104,16 @@ func (g *GMusic) setDeviceID() error {
 	if err != nil {
 		return err
 	}
-	if len(settings.Devices) == 0 || len(settings.Devices[0].ID) < 2 {
+	for _, d := range settings.Devices {
+		if d.Type != "PHONE" || len(d.ID) != 18 {
+			continue
+		}
+		g.DeviceID = d.ID[2:]
+		break
+	}
+	if g.DeviceID == "" {
 		return fmt.Errorf("no valid devices")
 	}
-	g.DeviceID = settings.Devices[0].ID[2:]
 	return nil
 }
 
@@ -176,7 +160,7 @@ type Settings struct {
 }
 
 func (g *GMusic) ListPlaylists() ([]*Playlist, error) {
-	r, err := g.Request("POST", "playlistfeed", nil)
+	r, err := g.sjRequest("POST", "playlistfeed", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -211,7 +195,7 @@ type Playlist struct {
 }
 
 func (g *GMusic) ListPlaylistEntries() ([]*PlaylistEntry, error) {
-	r, err := g.Request("POST", "plentryfeed", nil)
+	r, err := g.sjRequest("POST", "plentryfeed", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -248,7 +232,7 @@ func (g *GMusic) ListTracks() ([]*Track, error) {
 	var tracks []*Track
 	var next string
 	for {
-		r, err := g.Request("POST", "trackfeed", struct {
+		r, err := g.sjRequest("POST", "trackfeed", struct {
 			StartToken string `json:"start-token"`
 		}{
 			StartToken: next,
@@ -309,6 +293,7 @@ type Track struct {
 	Year                  float64  `json:"year"`
 }
 
+// GetStream returns a http.Response with a Body streamed as an MP3.
 func (g *GMusic) GetStream(songID string) (*http.Response, error) {
 	sig, salt := getSignature(songID)
 	v := url.Values{}

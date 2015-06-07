@@ -27,11 +27,9 @@ import (
 	"github.com/mjibson/mog/protocol/drive"
 	"github.com/mjibson/mog/protocol/dropbox"
 	_ "github.com/mjibson/mog/protocol/file"
+	_ "github.com/mjibson/mog/protocol/gmusic"
 	"github.com/mjibson/mog/protocol/soundcloud"
 	_ "github.com/mjibson/mog/protocol/stream"
-
-	// gmusic's login API changed and is currently broken.
-	// _ "github.com/mjibson/mog/protocol/gmusic"
 )
 
 var (

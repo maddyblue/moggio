@@ -6,14 +6,15 @@ import (
 )
 
 func TestGMusic(t *testing.T) {
-	var err error
-	var gm *GMusic
-	pw, err := ioutil.ReadFile("pw")
+	username, err := ioutil.ReadFile("username")
 	if err != nil {
 		t.Fatal(err)
 	}
-	un := "matt.jibson"
-	gm, err = Login(un, string(pw), "")
+	password, err := ioutil.ReadFile("password")
+	if err != nil {
+		t.Fatal(err)
+	}
+	gm, err := Login(string(username), string(password))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -37,14 +38,5 @@ func TestGMusic(t *testing.T) {
 	resp.Body.Read(b)
 	if b[0] != 0xff || b[1] != 0xfb {
 		t.Fatal("expected mp3 header, got:", b)
-	}
-}
-
-func _TestBadLogin(t *testing.T) {
-	pw := "onethsochk"
-	un := "blah"
-	_, err := Login(un, pw, "")
-	if err == nil {
-		t.Fatal("expected error")
 	}
 }
