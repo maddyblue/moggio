@@ -1,9 +1,20 @@
 // @flow
 
-var Table = FixedDataTable.Table;
-var Column = FixedDataTable.Column;
+var exports = module.exports = {};
 
-var Tracks = React.createClass({
+var FixedDataTable = require('fixed-data-table');
+var Mog = require('./mog.js');
+var React = require('react');
+var Reflux = require('reflux');
+var Router = require('react-router');
+var _ = require('underscore');
+
+var Column = FixedDataTable.Column;
+var Link = Router.Link;
+var Table = FixedDataTable.Table;
+
+
+var Tracks = exports.Tracks = React.createClass({
 	mixins: [Reflux.listenTo(Stores.active, 'setActive')],
 	getDefaultProps: function() {
 		return {
@@ -37,26 +48,26 @@ var Tracks = React.createClass({
 	play: function() {
 		var params = this.mkparams();
 		params.unshift('clear');
-		POST('/api/queue/change', mkcmd(params), function() {
-			POST('/api/cmd/play');
+		Mog.POST('/api/queue/change', Mog.mkcmd(params), function() {
+			Mog.POST('/api/cmd/play');
 		});
 	},
 	add: function() {
 		var params = this.mkparams();
-		POST('/api/queue/change', mkcmd(params));
+		Mog.POST('/api/queue/change', Mog.mkcmd(params));
 	},
 	playTrack: function(index) {
 		return function() {
 			if (this.props.isqueue) {
 				idx = this.getIdx(index);
-				POST('/api/cmd/play_idx?idx=' + idx);
+				Mog.POST('/api/cmd/play_idx?idx=' + idx);
 			} else {
 				var params = [
 					'clear',
 					'add-' + this.getter(index).ID.UID
 				];
-				POST('/api/queue/change', mkcmd(params), function() {
-					POST('/api/cmd/play');
+				Mog.POST('/api/queue/change', Mog.mkcmd(params), function() {
+					Mog.POST('/api/cmd/play');
 				});
 			}
 		}.bind(this);
@@ -74,7 +85,7 @@ var Tracks = React.createClass({
 					'add-' + this.getter(index).ID.UID
 				];
 			}
-			POST('/api/queue/change', mkcmd(params));
+			Mog.POST('/api/queue/change', Mog.mkcmd(params));
 		}.bind(this);
 	},
 	sort: function(field) {
@@ -157,7 +168,7 @@ var Tracks = React.createClass({
 		return this.getter(index).idx - 1;
 	},
 	timeCellRenderer: function(str, key, data, index) {
-		return <div><Time time={data.Info.Time} /></div>;
+		return <div><Mog.Time time={data.Info.Time} /></div>;
 	},
 	timeHeader: function() {
 		return function() {
@@ -187,7 +198,7 @@ var Tracks = React.createClass({
 		return (
 			<div>
 				<span className="nohover">{track}</span>
-				<span className="hover"><i className={mkIcon('fa-play')} onClick={this.playTrack(index)} /></span>
+				<span className="hover"><i className={Mog.mkIcon('fa-play')} onClick={this.playTrack(index)} /></span>
 			</div>
 		);
 	},
@@ -200,7 +211,7 @@ var Tracks = React.createClass({
 			<div className="track-title">
 				{image}
 				{data.Info.Title}
-				<span className="hover pull-right"><i className={mkIcon(this.props.isqueue ? 'fa-times' : 'fa-plus')} onClick={this.appendTrack(index)} /></span>
+				<span className="hover pull-right"><i className={Mog.mkIcon(this.props.isqueue ? 'fa-times' : 'fa-plus')} onClick={this.appendTrack(index)} /></span>
 			</div>
 		);
 	},
@@ -256,6 +267,7 @@ var Tracks = React.createClass({
 					>
 					<Column
 						width={50}
+						dataKey={'Track'}
 						headerRenderer={this.mkHeader('Track', '#')}
 						cellRenderer={this.trackRenderer}
 					/>
@@ -263,17 +275,20 @@ var Tracks = React.createClass({
 						width={200}
 						flexGrow={3}
 						cellClassName="nowrap"
+						dataKey={'Title'}
 						headerRenderer={this.mkHeader('Title')}
 						cellRenderer={this.titleCellRenderer}
 					/>
 					<Column
 						width={50}
+						dataKey={'Time'}
 						cellRenderer={this.timeCellRenderer}
 						headerRenderer={this.timeHeader()}
 					/>
 					<Column
 						width={100}
 						flexGrow={1}
+						dataKey={'Artist'}
 						cellRenderer={this.artistCellRenderer}
 						cellClassName="nowrap"
 						headerRenderer={this.mkHeader('Artist')}
@@ -281,6 +296,7 @@ var Tracks = React.createClass({
 					<Column
 						width={100}
 						flexGrow={1}
+						dataKey={'Album'}
 						cellRenderer={this.albumCellRenderer}
 						cellClassName="nowrap"
 						headerRenderer={this.mkHeader('Album')}
@@ -288,6 +304,7 @@ var Tracks = React.createClass({
 					<Column
 						width={100}
 						cellClassName="nowrap"
+						dataKey={'Source'}
 						cellRenderer={this.sourceCellRenderer}
 						headerRenderer={this.mkHeader('Source')}
 					/>
@@ -297,7 +314,7 @@ var Tracks = React.createClass({
 	}
 });
 
-var TrackList = React.createClass({
+exports.TrackList = React.createClass({
 	mixins: [Reflux.listenTo(Stores.tracks, 'setState')],
 	getInitialState: function() {
 		return Stores.tracks.data || {};
@@ -331,5 +348,5 @@ function searchClass(field, sort) {
 	});
 }
 
-var Artist = searchClass('Artist', 'Album');
-var Album = searchClass('Album', 'Track');
+exports.Artist = searchClass('Artist', 'Album');
+exports.Album = searchClass('Album', 'Track');

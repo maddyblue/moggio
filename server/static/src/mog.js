@@ -1,6 +1,12 @@
 // @flow
 
-var Actions = Reflux.createActions([
+var exports = module.exports = {};
+
+var React = require('react');
+var Reflux = require('reflux');
+var _ = require('underscore');
+
+Actions = exports.Actions = Reflux.createActions([
 	'active', // active song
 	'error',
 	'playlist',
@@ -9,10 +15,10 @@ var Actions = Reflux.createActions([
 	'tracks',
 ]);
 
-var Stores = {};
+Stores = exports.Stores = {};
 
-_.each(Actions, function(action, name) {
-	Stores[name] = Reflux.createStore({
+_.each(exports.Actions, function(action, name) {
+	exports.Stores[name] = Reflux.createStore({
 		init: function() {
 			this.listenTo(action, this.update);
 		},
@@ -23,7 +29,7 @@ _.each(Actions, function(action, name) {
 	});
 });
 
-function POST(path, params, success) {
+var POST = exports.POST = function(path, params, success) {
 	var data = new(FormData);
 	if (_.isArray(params)) {
 		_.each(params, function(v) {
@@ -56,14 +62,18 @@ function POST(path, params, success) {
 	return f;
 }
 
-function mkcmd(cmds) {
+exports.mkcmd = function(cmds) {
 	return _.map(cmds, function(val) {
 		return {
 			"name": "c",
 			"value": val
 		};
 	});
-}
+};
+
+exports.mkIcon = function(name) {
+	return 'icon fa fa-border fa-lg clickable ' + name;
+};
 
 document.addEventListener('keydown', function(e) {
 	if (document.activeElement != document.body) {
@@ -87,7 +97,7 @@ document.addEventListener('keydown', function(e) {
 	e.preventDefault();
 });
 
-var Time = React.createClass({
+exports.Time = React.createClass({
 	render: function() {
 		var t = this.props.time / 1e9;
 		var m = Math.floor(t / 60);
@@ -98,7 +108,3 @@ var Time = React.createClass({
 		return <span>{m}:{s}</span>;
 	}
 });
-
-function mkIcon(name) {
-	return 'icon fa fa-border fa-lg clickable ' + name;
-}

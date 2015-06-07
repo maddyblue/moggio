@@ -1,6 +1,12 @@
 // @flow
 
-var Protocols = React.createClass({
+var exports = module.exports = {};
+
+var React = require('react');
+var Reflux = require('reflux');
+var _ = require('underscore');
+
+exports.Protocols = React.createClass({
 	mixins: [Reflux.listenTo(Stores.protocols, 'setState')],
 	getInitialState: function() {
 		var d = {
@@ -69,7 +75,7 @@ var Protocol = React.createClass({
 			name: 'protocol',
 			value: this.props.protocol,
 		});
-		POST('/api/protocol/add', params, function() {
+		Mog.POST('/api/protocol/add', params, function() {
 			this.setState(this.getInitialState());
 		}.bind(this));
 	},
@@ -113,13 +119,13 @@ var Protocol = React.createClass({
 
 var ProtocolRow = React.createClass({
 	remove: function() {
-		POST('/api/protocol/remove', {
+		Mog.POST('/api/protocol/remove', {
 			protocol: this.props.protocol,
 			key: this.props.name,
 		});
 	},
 	refresh: function() {
-		POST('/api/protocol/refresh', {
+		Mog.POST('/api/protocol/refresh', {
 			protocol: this.props.protocol,
 			key: this.props.name,
 		});

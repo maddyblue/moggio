@@ -48,8 +48,8 @@ func main() {
 		watch(".", "*.go", quit)
 		base := filepath.Join("server", "static")
 		src := filepath.Join(base, "src")
-		watch(src, "*.js", jsx)
-		go jsx()
+		watch(src, "*.js", browserify)
+		go browserify()
 	}
 	redir := DefaultAddr
 	if strings.HasPrefix(redir, ":") {
@@ -100,48 +100,26 @@ func quit() {
 	os.Exit(0)
 }
 
-func jsx() {
+func browserify() {
 	base := filepath.Join("server", "static")
 	src := filepath.Join(base, "src")
 	js := filepath.Join(base, "js")
-	log.Println("running jsx")
-	res := new(bytes.Buffer)
-	files := []string{
-		"mog.js",
-
-		"list.js",
-		"protocol.js",
-		"playlist.js",
-
-		"nav.js",
-	}
-	for _, name := range files {
-		fname := filepath.Join(src, name)
-		f, err := os.Open(fname)
-		if err != nil {
-			panic(err)
-		}
-		c := exec.Command("jsx")
-		c.Stdin = io.MultiReader(f)
-		c.Stdout = res
-		buf := new(bytes.Buffer)
-		c.Stderr = buf
-		if err := c.Start(); err != nil {
-			log.Fatal(err)
-		}
-		if err := c.Wait(); err != nil {
-			log.Printf("jsx error: %v", fname)
-			fmt.Println(strip(buf.String()))
-		}
-		f.Close()
-	}
-	of, err := os.Create(filepath.Join(js, "mog.js"))
-	if err != nil {
+	log.Println("running browserify")
+	c := exec.Command("browserify",
+		"-t", "reactify",
+		filepath.Join(src, "nav.js"),
+		"-o", filepath.Join(js, "mog.js"),
+	)
+	buf := new(bytes.Buffer)
+	c.Stderr = buf
+	if err := c.Start(); err != nil {
 		log.Fatal(err)
 	}
-	of.Write(res.Bytes())
-	of.Close()
-	log.Println("jsx complete")
+	if err := c.Wait(); err != nil {
+		log.Printf("browserify error: %v", err)
+		fmt.Println(strip(buf.String()))
+	}
+	log.Println("browserify complete")
 }
 
 // strip removes non-ASCII chars from s.

@@ -1,15 +1,23 @@
 // @flow
 
-var Queue = React.createClass({
+var exports = module.exports = {};
+
+var List = require('./list.js');
+var Mog = require('./mog.js');
+var React = require('react');
+var Reflux = require('reflux');
+var _ = require('underscore');
+
+exports.Queue = React.createClass({
 	mixins: [Reflux.listenTo(Stores.playlist, 'setState')],
 	getInitialState: function() {
 		return Stores.playlist.data || {};
 	},
 	clear: function() {
-		var params = mkcmd([
+		var params = Mog.mkcmd([
 			'clear',
 		]);
-		POST('/api/queue/change', params);
+		Mog.POST('/api/queue/change', params);
 	},
 	save: function() {
 		var name = prompt("Playlist name:");
@@ -25,7 +33,7 @@ var Queue = React.createClass({
 			return 'add-' + t.ID.UID;
 		});
 		params.unshift('clear');
-		POST('/api/playlist/change/' + name, mkcmd(params));
+		Mog.POST('/api/playlist/change/' + name, Mog.mkcmd(params));
 	},
 	render: function() {
 		return (
@@ -34,13 +42,13 @@ var Queue = React.createClass({
 				<button onClick={this.clear}>clear</button>
 				&nbsp;
 				<button onClick={this.save}>save</button>
-				<Tracks tracks={this.state.Queue} noIdx={true} isqueue={true} />
+				<List.Tracks tracks={this.state.Queue} noIdx={true} isqueue={true} />
 			</div>
 		);
 	}
 });
 
-var Playlist = React.createClass({
+exports.Playlist = React.createClass({
 	mixins: [Reflux.listenTo(Stores.playlist, 'setState')],
 	getInitialState: function() {
 		return Stores.playlist.data || {
@@ -51,17 +59,17 @@ var Playlist = React.createClass({
 		if (!confirm("Delete playlist?")) {
 			return;
 		}
-		var params = mkcmd([
+		var params = Mog.mkcmd([
 			'clear',
 		]);
-		POST('/api/playlist/change/' + this.props.params.Playlist, params);
+		Mog.POST('/api/playlist/change/' + this.props.params.Playlist, params);
 	},
 	render: function() {
 		return (
 			<div>
 				<h4>{this.props.params.Playlist}</h4>
 				<button onClick={this.clear}>delete playlist</button>
-				<Tracks tracks={this.state.Playlists[this.props.params.Playlist]} useIdxAsNum={true} />
+				<List.Tracks tracks={this.state.Playlists[this.props.params.Playlist]} useIdxAsNum={true} />
 			</div>
 		);
 	}

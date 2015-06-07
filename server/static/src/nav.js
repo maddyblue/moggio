@@ -1,12 +1,21 @@
 // @flow
 
-var Router = ReactRouter;
+var React = require('react');
+var Reflux = require('reflux');
+var Router = require('react-router');
+var _ = require('underscore');
+
 var Route = Router.Route;
 var NotFoundRoute = Router.NotFoundRoute;
 var DefaultRoute = Router.DefaultRoute;
 var Link = Router.Link;
 var RouteHandler = Router.RouteHandler;
 var Redirect = Router.Redirect;
+
+var Mog = require('./mog.js');
+var List = require('./list.js');
+var Playlist = require('./playlist.js');
+var Protocol = require('./protocol.js');
 
 var App = React.createClass({
 	mixins: [
@@ -90,7 +99,7 @@ var Player = React.createClass({
 	mixins: [Reflux.listenTo(Stores.status, 'setStatus')],
 	cmd: function(cmd) {
 		return function() {
-			POST('/api/cmd/' + cmd);
+			Mog.POST('/api/cmd/' + cmd);
 		};
 	},
 	getInitialState: function() {
@@ -116,7 +125,7 @@ var Player = React.createClass({
 		}
 		var pos = event.screenX / window.innerWidth;
 		var s = pos * this.state.Time;
-		POST('/api/cmd/seek?pos=' + s + 'ns');
+		Mog.POST('/api/cmd/seek?pos=' + s + 'ns');
 	},
 	render: function() {
 		var status;
@@ -144,8 +153,8 @@ var Player = React.createClass({
 			status = (
 				<span>
 					<span>
-						<Time time={this.state.Elapsed} /> /
-						<Time time={this.state.Time} />
+						<Mog.Time time={this.state.Elapsed} /> /
+						<Mog.Time time={this.state.Time} />
 					</span>
 					{song}
 				</span>
@@ -183,12 +192,12 @@ var Player = React.createClass({
 
 var routes = (
 	<Route name="app" path="/" handler={App}>
-		<DefaultRoute handler={TrackList} />
-		<Route name="album" path="/album/:Album" handler={Album} />
-		<Route name="artist" path="/artist/:Artist" handler={Artist} />
-		<Route name="playlist" path="/playlist/:Playlist" handler={Playlist} />
-		<Route name="protocols" handler={Protocols} />
-		<Route name="queue" handler={Queue} />
+		<DefaultRoute handler={List.TrackList} />
+		<Route name="album" path="/album/:Album" handler={List.Album} />
+		<Route name="artist" path="/artist/:Artist" handler={List.Artist} />
+		<Route name="playlist" path="/playlist/:Playlist" handler={Playlist.Playlist} />
+		<Route name="protocols" handler={Protocol.Protocols} />
+		<Route name="queue" handler={Playlist.Queue} />
 	</Route>
 );
 
