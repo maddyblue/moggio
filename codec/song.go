@@ -17,10 +17,10 @@ type Song interface {
 }
 
 type SongInfo struct {
-	Time      time.Duration
-	Artist    string
-	Title     string
-	Album     string
-	Track     float64
-	ImageURL  string `json:",omitempty"`
+	Time     time.Duration
+	Artist   string
+	Title    string
+	Album    string
+	Track    float64
+	ImageURL string `json:",omitempty"`
 }
