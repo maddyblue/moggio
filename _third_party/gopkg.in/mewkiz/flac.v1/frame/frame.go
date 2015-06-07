@@ -244,7 +244,7 @@ func (frame *Frame) parseHeader() error {
 	if err != nil {
 		return unexpected(err)
 	}
-	if x != 0 {
+	if x == 0 {
 		frame.HasFixedBlockSize = true
 	}
 

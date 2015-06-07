@@ -104,20 +104,20 @@ func TestEmpty(t *testing.T) {
 
 func TestID3v220(t *testing.T) {
 	testFile(t, fileTest{"test_220.mp3", File{ID3v2Header{2, 0, false, false, false, false, 226741},
-		"There There", "Radiohead", "Hail To The Thief", "2003", "9", "", "Alternative", ""}})
+		"There There", "Radiohead", "Hail To The Thief", "2003", "9", "", "Alternative", "", nil}})
 }
 
 func TestID3v230(t *testing.T) {
 	testFile(t, fileTest{"test_230.mp3", File{ID3v2Header{3, 0, false, false, false, false, 150717},
-		"Everything In Its Right Place", "Radiohead", "Kid A", "2000", "1", "", "Alternative", ""}})
+		"Everything In Its Right Place", "Radiohead", "Kid A", "2000", "1", "", "Alternative", "", nil}})
 }
 
 func TestID3v240(t *testing.T) {
 	testFile(t, fileTest{"test_240.mp3", File{ID3v2Header{4, 0, false, false, false, false, 165126},
-		"Give Up The Ghost", "Radiohead", "The King Of Limbs", "2011", "07/08", "1/1", "Alternative", ""}})
+		"Give Up The Ghost", "Radiohead", "The King Of Limbs", "2011", "07/08", "1/1", "Alternative", "", nil}})
 }
 
 func TestISO8859_1(t *testing.T) {
 	testFile(t, fileTest{"test_iso8859_1.mp3", File{ID3v2Header{3, 0, false, false, false, false, 273649},
-		"Pompeii Am Götterdämmerung", "The Flaming Lips", "At War With The Mystics", "2006", "11", "1/1", "Unknown", ""}})
+		"Pompeii Am Götterdämmerung", "The Flaming Lips", "At War With The Mystics", "2006", "11", "1/1", "Unknown", "", nil}})
 }
