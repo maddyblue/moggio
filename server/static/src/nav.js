@@ -4,6 +4,11 @@ var React = require('react');
 var Reflux = require('reflux');
 var Router = require('react-router');
 var _ = require('underscore');
+var mui = require('material-ui');
+var ThemeManager = new mui.Styles.ThemeManager();
+
+var injectTapEventPlugin = require('react-tap-event-plugin');
+injectTapEventPlugin();
 
 var Route = Router.Route;
 var NotFoundRoute = Router.NotFoundRoute;
@@ -17,11 +22,22 @@ var List = require('./list.js');
 var Playlist = require('./playlist.js');
 var Protocol = require('./protocol.js');
 
+var { AppBar, LeftNav, MenuItem, IconButton } = mui;
+
 var App = React.createClass({
 	mixins: [
 		Reflux.listenTo(Stores.playlist, 'setState'),
-		Reflux.listenTo(Stores.error, 'error')
+		Reflux.listenTo(Stores.error, 'error'),
+		Router.Navigation
 	],
+	childContextTypes: {
+		muiTheme: React.PropTypes.object
+	},
+	getChildContext: function() {
+		return {
+			muiTheme: ThemeManager.getCurrentTheme()
+		};
+	},
 	componentDidMount: function() {
 		this.startWS();
 	},
@@ -50,6 +66,12 @@ var App = React.createClass({
 	clearError: function() {
 		this.setState({error: null});
 	},
+	leftNavToggle: function() {
+		this.refs.leftNav.toggle();
+	},
+	leftNavChange: function(e, key, payload) {
+		this.transitionTo(payload.route, payload.params);
+	},
 	render: function() {
 		var overlay;
 		if (!this.state.connected) {
@@ -63,8 +85,13 @@ var App = React.createClass({
 				</div>
 			);
 		}
-		var playlists = _.map(this.state.Playlists, function(_, key) {
-			return <li key={key}><Link to="playlist" params={{Playlist: key}}>{key}</Link></li>;
+		var menuItems = _.clone(navMenuItems);
+		_.each(this.state.Playlists, function(_, key) {
+			menuItems.push({
+				route: 'playlist',
+				params: {Playlist: key},
+				text: {key}
+			});
 		});
 		var error;
 		if (this.state.error) {
@@ -74,19 +101,18 @@ var App = React.createClass({
 		return (
 			<div>
 				{overlay}
-				<header>
-					<ul>
-						<li><Link to="app">Music</Link></li>
-						<li><Link to="protocols">Sources</Link></li>
-						<li><Link to="queue">Queue</Link></li>
-					</ul>
-					<h4>Playlists</h4>
-					<ul>{playlists}</ul>
-				</header>
-				<main>
-					{error}
-					<RouteHandler {...this.props}/>
-				</main>
+				{error}
+				<AppBar
+					title={'mog'}
+					onLeftIconButtonTouchTap={this.leftNavToggle}
+					/>
+				<LeftNav
+					ref="leftNav"
+					docked={false}
+					menuItems={menuItems}
+					onChange={this.leftNavChange}
+					/>
+				<RouteHandler {...this.props}/>
 				<footer>
 					<Player/>
 				</footer>
@@ -94,6 +120,13 @@ var App = React.createClass({
 		);
 	}
 });
+
+var navMenuItems = [
+	{ route: 'app', text: 'Music' },
+	{ route: 'protocols', text: 'Sources' },
+	{ route: 'queue', text: 'Queue' },
+	{ type: MenuItem.Types.SUBHEADER, text: 'Playlists' },
+];
 
 var Player = React.createClass({
 	mixins: [Reflux.listenTo(Stores.status, 'setStatus')],
@@ -160,30 +193,30 @@ var Player = React.createClass({
 				</span>
 			);
 		};
-
-		var play = 'fa-stop';
-		switch(this.state.State) {
-			case 0:
-				play = 'fa-pause';
-				break;
-			case 2:
-			default:
-				play = 'fa-play';
-				break;
-		}
-		var icon = 'fa fa-fw fa-border fa-2x clickable ';
-		var repeat = this.state.Repeat ? 'highlight ' : '';
-		var random = this.state.Random ? 'highlight ' : '';
+		var play = this.state.State == 0 ? 'pause' : 'play_arrow';
+		var primary = {color: ThemeManager.getCurrentTheme().palette.accent1Color};
+		var repeat = this.state.Repeat ? primary : {};
+		var random = this.state.Random ? primary : {}
 		return (
 			<div>
 				<div id="seek" onClick={this.seek}>
 					<div id="seek-pos" style={{width: pos}}/>
 				</div>
-				<span><i className={icon + repeat + 'fa-repeat'} onClick={this.cmd('repeat')} /></span>
-				<span><i className={icon + 'fa-fast-backward'} onClick={this.cmd('prev')} /></span>
-				<span><i className={icon + play} onClick={this.cmd('pause')} /></span>
-				<span><i className={icon + 'fa-fast-forward'} onClick={this.cmd('next')} /></span>
-				<span><i className={icon + random + 'fa-random'} onClick={this.cmd('random')} /></span>
+				<IconButton onClick={this.cmd('repeat')} style={repeat}>
+					<i className='material-icons'>repeat</i>
+				</IconButton>
+				<IconButton onClick={this.cmd('prev')}>
+					<i className='material-icons'>skip_previous</i>
+				</IconButton>
+				<IconButton onClick={this.cmd('pause')}>
+					<i className='material-icons'>{play}</i>
+				</IconButton>
+				<IconButton onClick={this.cmd('next')}>
+					<i className='material-icons'>skip_next</i>
+				</IconButton>
+				<IconButton onClick={this.cmd('random')} style={random}>
+					<i className='material-icons'>shuffle</i>
+				</IconButton>
 				<span>{status}</span>
 			</div>
 		);

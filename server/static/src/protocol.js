@@ -2,9 +2,13 @@
 
 var exports = module.exports = {};
 
+var Mog = require('./mog.js');
 var React = require('react');
 var Reflux = require('reflux');
 var _ = require('underscore');
+var mui = require('material-ui');
+
+var { DropDownMenu, FlatButton, IconButton, RaisedButton, TextField } = mui;
 
 exports.Protocols = React.createClass({
 	mixins: [Reflux.listenTo(Stores.protocols, 'setState')],
@@ -16,15 +20,22 @@ exports.Protocols = React.createClass({
 		};
 		return _.extend(d, Stores.protocols.data);
 	},
-	handleChange: function(event) {
-		this.setState({Selected: event.target.value});
+	handleChange: function(e, idx, item) {
+		this.setState({
+			Selected: item.text,
+			SelectedIndex: idx,
+		});
 	},
 	render: function() {
 		var keys = Object.keys(this.state.Available) || [];
 		keys.sort();
 		var options = keys.map(function(protocol) {
-			return <option key={protocol}>{protocol}</option>;
-		}.bind(this));
+			return { text: protocol };
+		});
+		var dropdown;
+		if (options.length) {
+			dropdown = <DropDownMenu onChange={this.handleChange} selectedIndex={this.state.SelectedIndex} menuItems={options} />
+		}
 		var protocols = [];
 		_.each(this.state.Current, function(instances, protocol) {
 			_.each(instances, function(key) {
@@ -37,7 +48,7 @@ exports.Protocols = React.createClass({
 		}
 		return <div>
 			<h2>New Protocol</h2>
-			<select onChange={this.handleChange} value={this.state.Selected}>{options}</select>
+			{dropdown}
 			{selected}
 			<h2>Existing Protocols</h2>
 			<table>
@@ -94,23 +105,25 @@ var Protocol = React.createClass({
 						save: true,
 					});
 				}.bind(this);
-				return (
-					<li key={idx}>
-						{param}: <input type="text" style={{width: '75%'}} onChange={change} value={this.state.params[idx]} />
-					</li>
-				);
+				return <TextField key={idx} style={{width: '75%'}} onChange={change} value={this.state.params[idx]} floatingLabelText={param} />;
 			}.bind(this));
 		}
 		if (this.props.params.OAuthURL) {
-			params.push(<li key={'oauth'}><a href={this.props.params.OAuthURL}>connect</a></li>);
+			params.push(<FlatButton
+				key='oauth'
+				primary={true}
+				linkButton={true}
+				href={this.props.params.OAuthURL}
+				label='connect'
+				/>);
 		}
 		var save;
 		if (this.state.save) {
-			save = <button onClick={this.save}>save</button>;
+			save = <RaisedButton onClick={this.save} label='save' />;
 		}
 		return (
 			<div>
-				<ul>{params}</ul>
+				{params}
 				{save}
 			</div>
 		);
@@ -131,13 +144,20 @@ var ProtocolRow = React.createClass({
 		});
 	},
 	render: function() {
-		var icon = 'fa fa-fw fa-border fa-2x clickable ';
 		return (
 			<tr>
 				<td>{this.props.protocol}</td>
 				<td>{this.props.name}</td>
-				<td><i className={icon + 'fa-times'} onClick={this.remove} /></td>
-				<td><i className={icon + 'fa-repeat'} onClick={this.refresh} /></td>
+				<td>
+					<IconButton onClick={this.remove}>
+						<i className="material-icons">clear</i>
+					</IconButton>
+				</td>
+				<td>
+					<IconButton onClick={this.refresh}>
+						<i className="material-icons">refresh</i>
+					</IconButton>
+				</td>
 			</tr>
 		);
 	}

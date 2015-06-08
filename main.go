@@ -1,9 +1,7 @@
 package main
 
 import (
-	"bytes"
 	"flag"
-	"fmt"
 	"io"
 	"log"
 	"os"
@@ -46,9 +44,6 @@ func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	if *flagWatch {
 		watch(".", "*.go", quit)
-		base := filepath.Join("server", "static")
-		src := filepath.Join(base, "src")
-		watch(src, "*.js", browserify)
 		go browserify()
 	}
 	redir := DefaultAddr
@@ -104,45 +99,21 @@ func browserify() {
 	base := filepath.Join("server", "static")
 	src := filepath.Join(base, "src")
 	js := filepath.Join(base, "js")
-	log.Println("running browserify")
-	c := exec.Command("browserify",
-		"-t", "reactify",
+	log.Println("starting watchify")
+	c := exec.Command("watchify",
+		"-t", "[", "reactify", "--es6", "]",
 		filepath.Join(src, "nav.js"),
 		"-o", filepath.Join(js, "mog.js"),
+		"--verbose",
 	)
-	buf := new(bytes.Buffer)
-	c.Stderr = buf
+	c.Stderr = os.Stderr
+	c.Stdout = os.Stdout
 	if err := c.Start(); err != nil {
 		log.Fatal(err)
 	}
 	if err := c.Wait(); err != nil {
 		log.Printf("browserify error: %v", err)
-		fmt.Println(strip(buf.String()))
 	}
-	log.Println("browserify complete")
-}
-
-// strip removes non-ASCII chars from s.
-func strip(s string) string {
-	b := new(bytes.Buffer)
-	ignore := false
-	for _, c := range s {
-		switch c {
-		case 27:
-			ignore = true
-		case 'm':
-			if ignore {
-				ignore = false
-			} else {
-				b.WriteRune(c)
-			}
-		default:
-			if !ignore {
-				b.WriteRune(c)
-			}
-		}
-	}
-	return b.String()
 }
 
 func run(name string, arg ...string) func() {

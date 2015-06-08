@@ -71,10 +71,6 @@ exports.mkcmd = function(cmds) {
 	});
 };
 
-exports.mkIcon = function(name) {
-	return 'icon fa fa-border fa-lg clickable ' + name;
-};
-
 document.addEventListener('keydown', function(e) {
 	if (document.activeElement != document.body) {
 		return;
@@ -95,6 +91,16 @@ document.addEventListener('keydown', function(e) {
 	}
 	POST('/api/cmd/' + cmd);
 	e.preventDefault();
+});
+
+exports.Icon = React.createClass({
+	render: function() {
+		var cn = 'material-icons';
+		if (this.props.className) {
+			cn += ' ' + this.props.className;
+		}
+		return <i {...this.props} className={cn} >{this.props.name}</i>;
+	}
 });
 
 exports.Time = React.createClass({

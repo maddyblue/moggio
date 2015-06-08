@@ -1,51 +1,57 @@
-/* latin */
 @font-face {
-	font-family: 'Raleway';
-	font-style: normal;
-	font-weight: 300;
-	src: local('Raleway Light'), local('Raleway-Light'), url(/static/fonts/raleway-300.woff) format('woff');
-	unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2212, U+2215, U+E0FF, U+EFFD, U+F000;
-}
-
-/* latin */
-@font-face {
-	font-family: 'Raleway';
+	font-family: 'Material Icons';
 	font-style: normal;
 	font-weight: 400;
-	src: local('Raleway'), url(/static/fonts/raleway-400.woff) format('woff');
-	unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2212, U+2215, U+E0FF, U+EFFD, U+F000;
+	src: url(/static/fonts/MaterialIcons-Regular.eot); /* For IE6-8 */
+	src: local('Material Icons'),
+		 local('MaterialIcons-Regular'),
+		 url(/static/fonts/MaterialIcons-Regular.woff2) format('woff2'),
+		 url(/static/fonts/MaterialIcons-Regular.woff) format('woff'),
+		 url(/static/fonts/MaterialIcons-Regular.ttf) format('truetype');
 }
 
-/* latin */
-@font-face {
-	font-family: 'Raleway';
+.material-icons {
+	font-family: 'Material Icons';
+	font-weight: normal;
 	font-style: normal;
-	font-weight: 600;
-	src: local('Raleway SemiBold'), local('Raleway-SemiBold'), url(/static/fonts/raleway-600.woff) format('woff');
-	unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2212, U+2215, U+E0FF, U+EFFD, U+F000;
+	font-size: 24px;	/* Preferred icon size */
+	display: inline-block;
+	width: 1em;
+	height: 1em;
+	line-height: 1;
+	text-transform: none;
+	letter-spacing: normal;
+
+	/* Support for all WebKit browsers. */
+	-webkit-font-smoothing: antialiased;
+	/* Support for Safari and Chrome. */
+	text-rendering: optimizeLegibility;
+
+	/* Support for Firefox. */
+	-moz-osx-font-smoothing: grayscale;
+
+	/* Support for IE. */
+	font-feature-settings: 'liga';
 }
 
-header {
-	position: absolute;
-	top: 10px;
-	left: 10px;
-	right: 220px;
-	bottom: 80px;
-	overflow-y: auto;
+html {
+	font-family: 'Roboto', sans-serif;
 }
 
-main {
-	position: absolute;
-	left: 225px;
-	top: 0;
-	right: 0;
-	bottom: 80px;
+h2 {
+	font-weight: 500;
+}
+
+th {
+	font-weight: 500;
 }
 
 footer {
+	font-size: smaller;
 	position: fixed;
 	bottom: 0;
-	width: 100%;
+	left: 0;
+	right: 0;
 	height: 60px;
 	background-color: #f5f5f5;
 }
@@ -104,10 +110,6 @@ table.tracks button {
 	padding-left: 5px;
 }
 
-.highlight {
-	color: #33C3F0;
-}
-
 .clickable:hover {
 	cursor: pointer;
 }
@@ -116,6 +118,10 @@ table.tracks button {
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
+}
+
+.public_fixedDataTable_header .public_fixedDataTableCell_main {
+	font-weight: 500;
 }
 
 .public_fixedDataTable_bodyRow .nowrap div:after {
@@ -144,10 +150,6 @@ table.tracks button {
 	display: none;
 }
 
-.icon {
-	background-color: white;
-}
-
 .pull-right {
 	float: right;
 	position: absolute;
@@ -156,7 +158,7 @@ table.tracks button {
 }
 
 .active .public_fixedDataTableCell_cellContent {
-	font-weight: bold;
+	font-weight: 700;
 }
 
 #overlay {

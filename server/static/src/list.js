@@ -8,11 +8,13 @@ var React = require('react');
 var Reflux = require('reflux');
 var Router = require('react-router');
 var _ = require('underscore');
+var mui = require('material-ui');
+
+var { IconButton } = mui;
 
 var Column = FixedDataTable.Column;
 var Link = Router.Link;
 var Table = FixedDataTable.Table;
-
 
 var Tracks = exports.Tracks = React.createClass({
 	mixins: [Reflux.listenTo(Stores.active, 'setActive')],
@@ -172,7 +174,7 @@ var Tracks = exports.Tracks = React.createClass({
 	},
 	timeHeader: function() {
 		return function() {
-			return <i className={"fa fa-clock-o " + this.sortClass('Time')} onClick={this.sort('Time')} />;
+			return <Mog.Icon name='av_timer' className={this.sortClass('Time')} onClick={this.sort('Time')} />;
 		}.bind(this);
 	},
 	mkHeader: function(name, text) {
@@ -198,7 +200,11 @@ var Tracks = exports.Tracks = React.createClass({
 		return (
 			<div>
 				<span className="nohover">{track}</span>
-				<span className="hover"><i className={Mog.mkIcon('fa-play')} onClick={this.playTrack(index)} /></span>
+				<span className="hover">
+					<IconButton onClick={this.playTrack(index)}>
+						<Mog.Icon name="play_arrow"/>
+					</IconButton>
+				</span>
 			</div>
 		);
 	},
@@ -211,7 +217,11 @@ var Tracks = exports.Tracks = React.createClass({
 			<div className="track-title">
 				{image}
 				{data.Info.Title}
-				<span className="hover pull-right"><i className={Mog.mkIcon(this.props.isqueue ? 'fa-times' : 'fa-plus')} onClick={this.appendTrack(index)} /></span>
+				<span className="hover pull-right">
+					<IconButton onClick={this.appendTrack(index)}>
+						<Mog.Icon name={this.props.isqueue ? 'clear' : 'add'} />
+					</IconButton>
+				</span>
 			</div>
 		);
 	},
@@ -241,20 +251,20 @@ var Tracks = exports.Tracks = React.createClass({
 		if (!this.props.isqueue) {
 			queue = (
 				<div>
-					<button onClick={this.play}>play</button>
+					<mui.RaisedButton onClick={this.play} primary={true} label="play" />
 					&nbsp;
-					<button onClick={this.add}>add</button>
+					<mui.RaisedButton onClick={this.add} secondary={true} label="add" />
 					&nbsp;
 					({this.state.tracks.length} tracks)
 				</div>
 			);
 		};
 		var track = this.props.isqueue ? <th></th> : <th className={this.sortClass('Track')} onClick={this.sort('Track')}>#</th>;
-		var tableWidth = window.innerWidth - 227;
+		var tableWidth = window.innerWidth - 16;
 		return (
 			<div>
 				{queue}
-				<div><input type="search" style={{width: tableWidth - 2}} placeholder="search" onChange={this.search} value={this.state.search} /></div>
+				<mui.TextField style={{width: tableWidth - 2}} hintText="search" onChange={this.search} value={this.state.search} />
 				<Table ref="table"
 					headerHeight={50}
 					rowHeight={50}
@@ -280,7 +290,7 @@ var Tracks = exports.Tracks = React.createClass({
 						cellRenderer={this.titleCellRenderer}
 					/>
 					<Column
-						width={50}
+						width={65}
 						dataKey={'Time'}
 						cellRenderer={this.timeCellRenderer}
 						headerRenderer={this.timeHeader()}
@@ -322,7 +332,7 @@ exports.TrackList = React.createClass({
 	render: function() {
 		return (
 			<div>
-				<h4>Music</h4>
+				<h2>Music</h2>
 				<Tracks tracks={this.state.Tracks} />
 			</div>
 		);
