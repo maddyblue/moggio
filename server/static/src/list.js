@@ -120,6 +120,11 @@ var Tracks = exports.Tracks = React.createClass({
 		window.removeEventListener('resize', this.handleResize);
 	},
 	update: function(obj, next) {
+		if (this.refs && this.refs.table) {
+			var d = this.refs.table.getDOMNode();
+			height = window.innerHeight - d.offsetTop - 82;
+			this.setState({height: height});
+		}
 		if (obj) {
 			this.setState(obj);
 		}
@@ -242,11 +247,7 @@ var Tracks = exports.Tracks = React.createClass({
 		return null;
 	},
 	render: function() {
-		var height = 0;
-		if (this.refs.table) {
-			var d = this.refs.table.getDOMNode();
-			height = window.innerHeight - d.offsetTop - 82;
-		}
+		var height = this.state.height || 0;
 		var queue;
 		if (!this.props.isqueue) {
 			queue = (
