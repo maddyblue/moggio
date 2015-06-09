@@ -120,6 +120,9 @@ var Tracks = exports.Tracks = React.createClass({
 		window.removeEventListener('resize', this.handleResize);
 	},
 	update: function(obj, next) {
+		if (!this.isMounted()) {
+			return;
+		}
 		if (this.refs && this.refs.table) {
 			var d = this.refs.table.getDOMNode();
 			height = window.innerHeight - d.offsetTop - 82;
