@@ -92,7 +92,7 @@ var App = React.createClass({
 			menuItems.push({
 				route: 'playlist',
 				params: {Playlist: key},
-				text: {key}
+				text: key
 			});
 		});
 		var error;

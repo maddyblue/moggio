@@ -47288,7 +47288,7 @@ var App = React.createClass({displayName: "App",
 			menuItems.push({
 				route: 'playlist',
 				params: {Playlist: key},
-				text: {key:key}
+				text: key
 			});
 		});
 		var error;
