@@ -47262,8 +47262,10 @@ var App = React.createClass({displayName: "App",
 	leftNavToggle: function() {
 		this.refs.leftNav.toggle();
 	},
-	leftNavChange: function(e, key, payload) {
-		this.transitionTo(payload.route, payload.params);
+	leftNavChange: function(e, selectedIndex, menuItem) {
+		// TODO: correctly set navIndex on initial load
+		this.setState({navIndex: selectedIndex});
+		this.transitionTo(menuItem.route, menuItem.params);
 	},
 	render: function() {
 		var overlay;
@@ -47303,7 +47305,8 @@ var App = React.createClass({displayName: "App",
 					ref: "leftNav", 
 					docked: false, 
 					menuItems: menuItems, 
-					onChange: this.leftNavChange}
+					onChange: this.leftNavChange, 
+					selectedIndex: this.state.navIndex}
 					), 
 				React.createElement(RouteHandler, React.__spread({},  this.props)), 
 				React.createElement("footer", null, 
