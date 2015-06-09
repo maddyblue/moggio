@@ -47392,8 +47392,17 @@ var Player = React.createClass({displayName: "Player",
 			);
 			pos = this.state.Elapsed / this.state.Time;
 			pos = (pos * 100) + '%';
+			var istyle = {
+				height: '80px',
+				width: '80px',
+				position: 'absolute',
+				bottom: '0',
+				left: '0',
+			};
 			if (info.ImageURL) {
-				img = React.createElement("img", {style: {height: '80px', position: 'absolute', bottom: '0', left: '0'}, src: info.ImageURL});
+				img = React.createElement("img", {style: istyle, src: info.ImageURL});
+			} else {
+				img = React.createElement("div", {style: _.extend({backgroundColor: 'white'}, istyle)});
 			}
 		};
 		var play = this.state.State == 0 ? 'pause' : 'play_circle_filled';
