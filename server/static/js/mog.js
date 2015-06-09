@@ -47218,7 +47218,7 @@ var List = require('./list.js');
 var Playlist = require('./playlist.js');
 var Protocol = require('./protocol.js');
 
-var $__0=       mui,AppBar=$__0.AppBar,LeftNav=$__0.LeftNav,MenuItem=$__0.MenuItem,IconButton=$__0.IconButton;
+var $__0=        mui,AppBar=$__0.AppBar,LeftNav=$__0.LeftNav,MenuItem=$__0.MenuItem,IconButton=$__0.IconButton,FloatingActionButton=$__0.FloatingActionButton;
 
 var App = React.createClass({displayName: "App",
 	mixins: [
@@ -47328,7 +47328,10 @@ var navMenuItems = [
 ];
 
 var Player = React.createClass({displayName: "Player",
-	mixins: [Reflux.listenTo(Stores.status, 'setStatus')],
+	mixins: [
+		Reflux.listenTo(Stores.status, 'setStatus'),
+		Router.Navigation
+	],
 	cmd: function(cmd) {
 		return function() {
 			Mog.POST('/api/cmd/' + cmd);
@@ -47359,64 +47362,107 @@ var Player = React.createClass({displayName: "Player",
 		var s = pos * this.state.Time;
 		Mog.POST('/api/cmd/seek?pos=' + s + 'ns');
 	},
+	openQueue: function() {
+		this.transitionTo('queue');
+	},
 	render: function() {
-		var status;
+		var title, album;
 		var pos = 0;
+		var img;
 		if (this.state.Song && this.state.Song.ID) {
 			var info = this.state.SongInfo;
 			var song = this.state.Song.UID;
-			var album;
+			title = React.createElement("div", {style: {fontWeight: '500'}}, info.Title);
+			var ialbum, iartist, joiner;
 			if (info.Album) {
-				album = React.createElement("span", null, "- ", React.createElement(Link, {to: "album", params: info}, info.Album));
+				ialbum = React.createElement(Link, {to: "album", params: info}, info.Album);
+				if (info.Artist) {
+					joiner = ' - ';
+				}
 			}
-			var artist;
 			if (info.Artist) {
-				artist = React.createElement("span", null, "- ", React.createElement(Link, {to: "artist", params: info}, info.Artist));
+				iartist = React.createElement(Link, {to: "artist", params: info}, info.Artist);
 			}
-			song = (
-				React.createElement("span", null, 
-					info.Title, 
-					album, 
-					artist
+			album = (
+				React.createElement("div", null, 
+					iartist, 
+					joiner, 
+					ialbum
 				)
 			);
 			pos = this.state.Elapsed / this.state.Time;
 			pos = (pos * 100) + '%';
-			status = (
-				React.createElement("span", null, 
-					React.createElement("span", null, 
-						React.createElement(Mog.Time, {time: this.state.Elapsed}), " /", 
-						React.createElement(Mog.Time, {time: this.state.Time})
-					), 
-					song
-				)
-			);
+			if (info.ImageURL) {
+				img = React.createElement("img", {style: {height: '80px', position: 'absolute', bottom: '0', left: '0'}, src: info.ImageURL});
+			}
 		};
-		var play = this.state.State == 0 ? 'pause' : 'play_arrow';
+		var play = this.state.State == 0 ? 'pause' : 'play_circle_filled';
 		var primary = {color: ThemeManager.getCurrentTheme().palette.accent1Color};
 		var repeat = this.state.Repeat ? primary : {};
-		var random = this.state.Random ? primary : {}
+		var random = this.state.Random ? primary : {};
+		var ctrlStyle = {
+			position: 'absolute',
+			left: '50%',
+			width: '240px',
+			transform: 'translateX(-50%)',
+			bottom: '0',
+			height: '70px',
+			textAlign: 'center'
+		};
+		var btnStyle = {
+			position: 'relative',
+			top: '50%',
+			transform: 'translateY(-50%)',
+			backgroundColor: '#f5f5f5'
+		};
+		var statusStyle = {
+			position: 'absolute',
+			left: '5px',
+			textAlign: 'left',
+			top: '20px',
+			width: '50%',
+			whiteSpace: 'nowrap',
+			overflow: 'hidden'
+		};
+		var rightStyle = {
+			position: 'absolute',
+			right: '5px',
+			height: '70px'
+		};
 		return (
 			React.createElement("div", null, 
 				React.createElement("div", {id: "seek", onClick: this.seek}, 
 					React.createElement("div", {id: "seek-pos", style: {width: pos}})
 				), 
-				React.createElement(IconButton, {onClick: this.cmd('repeat'), style: repeat}, 
-					React.createElement("i", {className: "material-icons"}, "repeat")
-				), 
-				React.createElement(IconButton, {onClick: this.cmd('prev')}, 
-					React.createElement("i", {className: "material-icons"}, "skip_previous")
-				), 
-				React.createElement(IconButton, {onClick: this.cmd('pause')}, 
-					React.createElement("i", {className: "material-icons"}, play)
-				), 
-				React.createElement(IconButton, {onClick: this.cmd('next')}, 
-					React.createElement("i", {className: "material-icons"}, "skip_next")
-				), 
-				React.createElement(IconButton, {onClick: this.cmd('random'), style: random}, 
-					React.createElement("i", {className: "material-icons"}, "shuffle")
-				), 
-				React.createElement("span", null, status)
+				img, 
+				React.createElement("div", {style: {position: 'absolute', left: '80px', bottom: '0', right: '0', height: '70px', textAlign: 'center'}}, 
+					React.createElement("div", {style: statusStyle}, 
+						title, 
+						album
+					), 
+					React.createElement("div", {style: rightStyle}, 
+						React.createElement(IconButton, {onClick: this.openQueue, style: btnStyle}, 
+							React.createElement("i", {className: "material-icons"}, "queue_music")
+						)
+					), 
+					React.createElement("div", {style: ctrlStyle}, 
+						React.createElement(IconButton, {onClick: this.cmd('repeat'), style: _.extend({}, btnStyle, repeat)}, 
+							React.createElement("i", {className: "material-icons"}, "repeat")
+						), 
+						React.createElement(IconButton, {onClick: this.cmd('prev'), style: btnStyle}, 
+							React.createElement("i", {className: "material-icons"}, "skip_previous")
+						), 
+						React.createElement(IconButton, {onClick: this.cmd('pause'), style: btnStyle}, 
+							React.createElement("i", {className: "material-icons"}, play)
+						), 
+						React.createElement(IconButton, {onClick: this.cmd('next'), style: btnStyle}, 
+							React.createElement("i", {className: "material-icons"}, "skip_next")
+						), 
+						React.createElement(IconButton, {onClick: this.cmd('random'), style: _.extend({}, btnStyle, random)}, 
+							React.createElement("i", {className: "material-icons"}, "shuffle")
+						)
+					)
+				)
 			)
 		);
 	}

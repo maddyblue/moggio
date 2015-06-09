@@ -52,25 +52,15 @@ footer {
 	bottom: 0;
 	left: 0;
 	right: 0;
-	height: 60px;
+	height: 70px;
 	background-color: #f5f5f5;
-}
-
-footer > div {
-	padding-top: 10px;
-	padding-right: 15px;
-	padding-left: 15px;
-}
-
-footer span {
-	margin-right: 10px;
 }
 
 #seek {
 	position: fixed;
-	bottom: 60px;
-	height: 20px;
-	left: 0;
+	bottom: 70px;
+	height: 10px;
+	left: 80px;
 	right: 0;
 	background-color: grey;
 	cursor: pointer;
@@ -78,9 +68,9 @@ footer span {
 
 #seek-pos {
 	position: fixed;
-	bottom: 60px;
-	height: 20px;
-	left: 0;
+	bottom: 70px;
+	height: 10px;
+	left: 80px;
 	background-color: orange;
 }
 

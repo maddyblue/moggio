@@ -22,7 +22,7 @@ var List = require('./list.js');
 var Playlist = require('./playlist.js');
 var Protocol = require('./protocol.js');
 
-var { AppBar, LeftNav, MenuItem, IconButton } = mui;
+var { AppBar, LeftNav, MenuItem, IconButton, FloatingActionButton } = mui;
 
 var App = React.createClass({
 	mixins: [
@@ -132,7 +132,10 @@ var navMenuItems = [
 ];
 
 var Player = React.createClass({
-	mixins: [Reflux.listenTo(Stores.status, 'setStatus')],
+	mixins: [
+		Reflux.listenTo(Stores.status, 'setStatus'),
+		Router.Navigation
+	],
 	cmd: function(cmd) {
 		return function() {
 			Mog.POST('/api/cmd/' + cmd);
@@ -163,64 +166,107 @@ var Player = React.createClass({
 		var s = pos * this.state.Time;
 		Mog.POST('/api/cmd/seek?pos=' + s + 'ns');
 	},
+	openQueue: function() {
+		this.transitionTo('queue');
+	},
 	render: function() {
-		var status;
+		var title, album;
 		var pos = 0;
+		var img;
 		if (this.state.Song && this.state.Song.ID) {
 			var info = this.state.SongInfo;
 			var song = this.state.Song.UID;
-			var album;
+			title = <div style={{fontWeight: '500'}}>{info.Title}</div>;
+			var ialbum, iartist, joiner;
 			if (info.Album) {
-				album = <span>- <Link to="album" params={info}>{info.Album}</Link></span>;
+				ialbum = <Link to="album" params={info}>{info.Album}</Link>;
+				if (info.Artist) {
+					joiner = ' - ';
+				}
 			}
-			var artist;
 			if (info.Artist) {
-				artist = <span>- <Link to="artist" params={info}>{info.Artist}</Link></span>;
+				iartist = <Link to="artist" params={info}>{info.Artist}</Link>;
 			}
-			song = (
-				<span>
-					{info.Title}
-					{album}
-					{artist}
-				</span>
+			album = (
+				<div>
+					{iartist}
+					{joiner}
+					{ialbum}
+				</div>
 			);
 			pos = this.state.Elapsed / this.state.Time;
 			pos = (pos * 100) + '%';
-			status = (
-				<span>
-					<span>
-						<Mog.Time time={this.state.Elapsed} /> /
-						<Mog.Time time={this.state.Time} />
-					</span>
-					{song}
-				</span>
-			);
+			if (info.ImageURL) {
+				img = <img style={{height: '80px', position: 'absolute', bottom: '0', left: '0'}} src={info.ImageURL}/>;
+			}
 		};
-		var play = this.state.State == 0 ? 'pause' : 'play_arrow';
+		var play = this.state.State == 0 ? 'pause' : 'play_circle_filled';
 		var primary = {color: ThemeManager.getCurrentTheme().palette.accent1Color};
 		var repeat = this.state.Repeat ? primary : {};
-		var random = this.state.Random ? primary : {}
+		var random = this.state.Random ? primary : {};
+		var ctrlStyle = {
+			position: 'absolute',
+			left: '50%',
+			width: '240px',
+			transform: 'translateX(-50%)',
+			bottom: '0',
+			height: '70px',
+			textAlign: 'center'
+		};
+		var btnStyle = {
+			position: 'relative',
+			top: '50%',
+			transform: 'translateY(-50%)',
+			backgroundColor: '#f5f5f5'
+		};
+		var statusStyle = {
+			position: 'absolute',
+			left: '5px',
+			textAlign: 'left',
+			top: '20px',
+			width: '50%',
+			whiteSpace: 'nowrap',
+			overflow: 'hidden'
+		};
+		var rightStyle = {
+			position: 'absolute',
+			right: '5px',
+			height: '70px'
+		};
 		return (
 			<div>
 				<div id="seek" onClick={this.seek}>
 					<div id="seek-pos" style={{width: pos}}/>
 				</div>
-				<IconButton onClick={this.cmd('repeat')} style={repeat}>
-					<i className='material-icons'>repeat</i>
-				</IconButton>
-				<IconButton onClick={this.cmd('prev')}>
-					<i className='material-icons'>skip_previous</i>
-				</IconButton>
-				<IconButton onClick={this.cmd('pause')}>
-					<i className='material-icons'>{play}</i>
-				</IconButton>
-				<IconButton onClick={this.cmd('next')}>
-					<i className='material-icons'>skip_next</i>
-				</IconButton>
-				<IconButton onClick={this.cmd('random')} style={random}>
-					<i className='material-icons'>shuffle</i>
-				</IconButton>
-				<span>{status}</span>
+				{img}
+				<div style={{position: 'absolute', left: '80px', bottom: '0', right: '0', height: '70px', textAlign: 'center'}}>
+					<div style={statusStyle}>
+						{title}
+						{album}
+					</div>
+					<div style={rightStyle}>
+						<IconButton onClick={this.openQueue} style={btnStyle}>
+							<i className='material-icons'>queue_music</i>
+						</IconButton>
+					</div>
+					<div style={ctrlStyle}>
+						<IconButton onClick={this.cmd('repeat')} style={_.extend({}, btnStyle, repeat)}>
+							<i className='material-icons'>repeat</i>
+						</IconButton>
+						<IconButton onClick={this.cmd('prev')} style={btnStyle}>
+							<i className='material-icons'>skip_previous</i>
+						</IconButton>
+						<IconButton onClick={this.cmd('pause')} style={btnStyle}>
+							<i className='material-icons'>{play}</i>
+						</IconButton>
+						<IconButton onClick={this.cmd('next')} style={btnStyle}>
+							<i className='material-icons'>skip_next</i>
+						</IconButton>
+						<IconButton onClick={this.cmd('random')} style={_.extend({}, btnStyle, random)}>
+							<i className='material-icons'>shuffle</i>
+						</IconButton>
+					</div>
+				</div>
 			</div>
 		);
 	}
