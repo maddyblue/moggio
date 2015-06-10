@@ -182,7 +182,7 @@ var Tracks = exports.Tracks = React.createClass({
 	},
 	timeHeader: function() {
 		return function() {
-			return <Mog.Icon name='av_timer' className={this.sortClass('Time')} onClick={this.sort('Time')} />;
+			return <Mog.Icon name='schedule' className={this.sortClass('Time')} onClick={this.sort('Time')} />;
 		}.bind(this);
 	},
 	mkHeader: function(name, text) {

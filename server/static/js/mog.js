@@ -46892,7 +46892,7 @@ var Tracks = exports.Tracks = React.createClass({displayName: "Tracks",
 	},
 	timeHeader: function() {
 		return function() {
-			return React.createElement(Mog.Icon, {name: "av_timer", className: this.sortClass('Time'), onClick: this.sort('Time')});
+			return React.createElement(Mog.Icon, {name: "schedule", className: this.sortClass('Time'), onClick: this.sort('Time')});
 		}.bind(this);
 	},
 	mkHeader: function(name, text) {
