@@ -46,6 +46,11 @@ th {
 	font-weight: 500;
 }
 
+a {
+	color: #3f51b5;
+	text-decoration: none;
+}
+
 footer {
 	font-size: smaller;
 	position: fixed;
