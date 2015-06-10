@@ -46916,8 +46916,8 @@ var Tracks = exports.Tracks = React.createClass({displayName: "Tracks",
 			track = '';
 		}
 		return (
-			React.createElement("div", null, 
-				React.createElement("span", {className: "nohover"}, track), 
+			React.createElement("div", {style: {padding: '0'}}, 
+				React.createElement("span", {className: "nohover", style: {padding: '12px'}}, track), 
 				React.createElement("span", {className: "hover"}, 
 					React.createElement(IconButton, {onClick: this.playTrack(index)}, 
 						React.createElement(Mog.Icon, {name: "play_arrow"})

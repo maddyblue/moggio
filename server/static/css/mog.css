@@ -144,6 +144,7 @@ table.tracks button {
 	float: right;
 	position: absolute;
 	right: 5px;
+	top: 0px;
 	z-index: 10;
 }
 

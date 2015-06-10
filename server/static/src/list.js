@@ -206,8 +206,8 @@ var Tracks = exports.Tracks = React.createClass({
 			track = '';
 		}
 		return (
-			<div>
-				<span className="nohover">{track}</span>
+			<div style={{padding: '0'}}>
+				<span className="nohover" style={{padding: '12px'}}>{track}</span>
 				<span className="hover">
 					<IconButton onClick={this.playTrack(index)}>
 						<Mog.Icon name="play_arrow"/>
