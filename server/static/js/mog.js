@@ -47067,7 +47067,12 @@ function searchClass(field, sort) {
 					tracks.push(val);
 				}
 			});
-			return React.createElement(Tracks, {tracks: tracks, initSort: sort});
+			return (
+				React.createElement("div", null, 
+					React.createElement("h2", null, React.createElement(Link, {to: "app"}, "Music"), " > ", {prop:prop}), 
+					React.createElement(Tracks, {tracks: tracks, initSort: sort})
+				)
+			);
 		}
 	});
 }

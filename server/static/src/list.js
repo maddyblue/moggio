@@ -357,7 +357,12 @@ function searchClass(field, sort) {
 					tracks.push(val);
 				}
 			});
-			return <Tracks tracks={tracks} initSort={sort} />;
+			return (
+				<div>
+					<h2><Link to="app">Music</Link> &gt; {{prop}}</h2>
+					<Tracks tracks={tracks} initSort={sort} />
+				</div>
+			);
 		}
 	});
 }
