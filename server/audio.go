@@ -359,12 +359,15 @@ func (srv *Server) audio() {
 			case controlCmd:
 				switch c {
 				case cmdPlay:
+					save = false
 					play()
 				case cmdStop:
+					save = false
 					stop()
 				case cmdNext:
 					next()
 				case cmdPause:
+					save = false
 					pause()
 				case cmdPrev:
 					prev()
@@ -386,8 +389,10 @@ func (srv *Server) audio() {
 			case cmdPlaylistChange:
 				playlistChange(c)
 			case cmdNewWS:
+				save = false
 				newWS(c)
 			case cmdDeleteWS:
+				save = false
 				deleteWS(c)
 			case cmdDoSave:
 				save = false
@@ -395,6 +400,7 @@ func (srv *Server) audio() {
 			case cmdAddOAuth:
 				addOAuth(c)
 			case cmdSeek:
+				save = false
 				doSeek(c)
 			case cmdMinDuration:
 				setMinDuration(c)
