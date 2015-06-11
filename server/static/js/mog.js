@@ -47623,14 +47623,13 @@ exports.Protocols = React.createClass({displayName: "Protocols",
 		var d = {
 			Available: {},
 			Current: {},
-			Selected: 'file',
+			Selected: 'gmusic',
 		};
 		return _.extend(d, Stores.protocols.data);
 	},
 	handleChange: function(e, idx, item) {
 		this.setState({
 			Selected: item.text,
-			SelectedIndex: idx,
 		});
 	},
 	render: function() {
@@ -47639,9 +47638,10 @@ exports.Protocols = React.createClass({displayName: "Protocols",
 		var options = keys.map(function(protocol) {
 			return { text: protocol };
 		});
+		var selectedIndex = _.indexOf(keys, this.state.Selected);
 		var dropdown;
 		if (options.length) {
-			dropdown = React.createElement(DropDownMenu, {onChange: this.handleChange, selectedIndex: this.state.SelectedIndex, menuItems: options})
+			dropdown = React.createElement(DropDownMenu, {onChange: this.handleChange, selectedIndex: selectedIndex, menuItems: options})
 		}
 		var protocols = [];
 		_.each(this.state.Current, function(instances, protocol) {
@@ -47712,7 +47712,7 @@ var Protocol = React.createClass({displayName: "Protocol",
 						save: true,
 					});
 				}.bind(this);
-				return React.createElement(TextField, {key: idx, style: {width: '75%'}, onChange: change, value: this.state.params[idx], floatingLabelText: param});
+				return React.createElement(TextField, {key: idx, style: {width: '75%'}, onChange: change, value: this.state.params[idx], floatingLabelText: param, type: param});
 			}.bind(this));
 		}
 		if (this.props.params.OAuthURL) {
@@ -47726,7 +47726,7 @@ var Protocol = React.createClass({displayName: "Protocol",
 		}
 		var save;
 		if (this.state.save) {
-			save = React.createElement(RaisedButton, {onClick: this.save, label: "save"});
+			save = React.createElement("div", null, React.createElement(RaisedButton, {onClick: this.save, label: "save"}));
 		}
 		return (
 			React.createElement("div", null, 

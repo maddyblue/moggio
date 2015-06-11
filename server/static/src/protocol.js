@@ -16,14 +16,13 @@ exports.Protocols = React.createClass({
 		var d = {
 			Available: {},
 			Current: {},
-			Selected: 'file',
+			Selected: 'gmusic',
 		};
 		return _.extend(d, Stores.protocols.data);
 	},
 	handleChange: function(e, idx, item) {
 		this.setState({
 			Selected: item.text,
-			SelectedIndex: idx,
 		});
 	},
 	render: function() {
@@ -32,9 +31,10 @@ exports.Protocols = React.createClass({
 		var options = keys.map(function(protocol) {
 			return { text: protocol };
 		});
+		var selectedIndex = _.indexOf(keys, this.state.Selected);
 		var dropdown;
 		if (options.length) {
-			dropdown = <DropDownMenu onChange={this.handleChange} selectedIndex={this.state.SelectedIndex} menuItems={options} />
+			dropdown = <DropDownMenu onChange={this.handleChange} selectedIndex={selectedIndex} menuItems={options} />
 		}
 		var protocols = [];
 		_.each(this.state.Current, function(instances, protocol) {
@@ -105,7 +105,7 @@ var Protocol = React.createClass({
 						save: true,
 					});
 				}.bind(this);
-				return <TextField key={idx} style={{width: '75%'}} onChange={change} value={this.state.params[idx]} floatingLabelText={param} />;
+				return <TextField key={idx} style={{width: '75%'}} onChange={change} value={this.state.params[idx]} floatingLabelText={param} type={param} />;
 			}.bind(this));
 		}
 		if (this.props.params.OAuthURL) {
@@ -119,7 +119,7 @@ var Protocol = React.createClass({
 		}
 		var save;
 		if (this.state.save) {
-			save = <RaisedButton onClick={this.save} label='save' />;
+			save = <div><RaisedButton onClick={this.save} label='save' /></div>;
 		}
 		return (
 			<div>
