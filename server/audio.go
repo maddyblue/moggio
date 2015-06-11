@@ -186,7 +186,7 @@ func (srv *Server) audio() {
 			srv.elapsed = 0
 			dur = time.Second / (time.Duration(sr * ch))
 			seek = NewSeek(srv.info.Time > 0, dur, srv.song.Play)
-			log.Println("playing", srv.info, sr, ch, dur, time.Duration(expected)*dur)
+			log.Println("playing", srv.info.Title, sr, ch, dur, time.Duration(expected)*dur)
 			t = make(chan interface{})
 			close(t)
 			srv.state = statePlay
