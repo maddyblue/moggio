@@ -190,6 +190,7 @@ func (srv *Server) audio() {
 			t = make(chan interface{})
 			close(t)
 			srv.state = statePlay
+			broadcast(waitStatus)
 		}
 		next, err := seek.Read(expected)
 		if err == nil {
@@ -199,17 +200,18 @@ func (srv *Server) audio() {
 			}
 			select {
 			case <-timer:
+				// Check for updated song info.
 				if info, err := inst.Info(sid.ID); err != nil {
 					broadcastErr(err)
-				} else {
+				} else if srv.info != *info {
 					srv.info = *info
+					broadcast(waitStatus)
 				}
-				broadcast(waitStatus)
 				timer = nil
 			default:
 			}
 			if timer == nil {
-				timer = time.After(time.Millisecond * 500)
+				timer = time.After(time.Second)
 			}
 		}
 		if len(next) < expected || err != nil {

@@ -47206,6 +47206,7 @@ var Reflux = require('reflux');
 var Router = require('react-router');
 var _ = require('underscore');
 var mui = require('material-ui');
+var Colors = mui.Styles.Colors;
 var ThemeManager = new mui.Styles.ThemeManager();
 
 var injectTapEventPlugin = require('react-tap-event-plugin');
@@ -47372,8 +47373,11 @@ var Player = React.createClass({displayName: "Player",
 	},
 	render: function() {
 		var title, album;
+		var animation = '';
 		var pos = 0;
+		var dur = '0s';
 		var img;
+		var palette = ThemeManager.getCurrentTheme().palette;
 		if (this.state.Song && this.state.Song.ID) {
 			var info = this.state.SongInfo;
 			var song = this.state.Song.UID;
@@ -47395,8 +47399,15 @@ var Player = React.createClass({displayName: "Player",
 					ialbum
 				)
 			);
-			pos = this.state.Elapsed / this.state.Time;
-			pos = (pos * 100) + '%';
+			pos = this.state.Elapsed / this.state.Time * 100;
+			dur = (this.state.Time - this.state.Elapsed) / 1e9 + 's';
+			if (this.state.State == 0) {
+				// If a song is playing, swap the animation (they are identical). This
+				// triggers an animation restart which we need on song change.
+				this.toggle = !this.toggle;
+				var anicount = this.toggle ? '1' : '2';
+				animation = 'seek' + anicount;
+			}
 			var istyle = {
 				height: '80px',
 				width: '80px',
@@ -47407,11 +47418,11 @@ var Player = React.createClass({displayName: "Player",
 			if (info.ImageURL) {
 				img = React.createElement("img", {style: istyle, src: info.ImageURL});
 			} else {
-				img = React.createElement("div", {style: _.extend({backgroundColor: 'white'}, istyle)});
+				img = React.createElement("div", {style: _.extend({backgroundColor: Colors.grey300}, istyle)});
 			}
 		};
 		var play = this.state.State == 0 ? 'pause' : 'play_circle_filled';
-		var primary = {color: ThemeManager.getCurrentTheme().palette.accent1Color};
+		var primary = {color: palette.accent1Color};
 		var repeat = this.state.Repeat ? primary : {};
 		var random = this.state.Random ? primary : {};
 		var ctrlStyle = {
@@ -47421,32 +47432,46 @@ var Player = React.createClass({displayName: "Player",
 			transform: 'translateX(-50%)',
 			bottom: '0',
 			height: '70px',
-			textAlign: 'center'
+			textAlign: 'center',
 		};
 		var btnStyle = {
 			position: 'relative',
 			top: '50%',
 			transform: 'translateY(-50%)',
-			backgroundColor: '#f5f5f5'
+			backgroundColor: Colors.grey100,
 		};
 		var statusStyle = {
 			position: 'absolute',
 			left: '5px',
 			textAlign: 'left',
-			top: '20px',
+			top: '16px',
 			width: '50%',
 			whiteSpace: 'nowrap',
-			overflow: 'hidden'
+			overflow: 'hidden',
 		};
 		var rightStyle = {
 			position: 'absolute',
 			right: '5px',
-			height: '70px'
+			height: '70px',
+		};
+		var seekPosStyle = {
+			position: 'absolute',
+			bottom: '0',
+			top: '0',
+			left: '0',
+			animationTimingFunction: 'linear',
+			width: animation == '' ? 0 : '100%',
+			animationName: animation,
+			animationDuration: dur,
+			backgroundColor: Colors.orange500,
 		};
 		return (
 			React.createElement("div", null, 
 				React.createElement("div", {id: "seek", onClick: this.seek}, 
-					React.createElement("div", {id: "seek-pos", style: {width: pos}})
+					React.createElement("div", {style: {position: 'absolute', left: '0', width: pos + '%', bottom: '0', top: '0', backgroundColor: seekPosStyle.backgroundColor}}), 
+					React.createElement("div", {style: {position: 'absolute', right: '0', width: (100 - pos) + '%', bottom: '0', top: '0', backgroundColor: Colors.grey500}}, 
+						React.createElement("div", {style: seekPosStyle})
+					)
 				), 
 				img, 
 				React.createElement("div", {style: {position: 'absolute', left: '80px', bottom: '0', right: '0', height: '70px', textAlign: 'center'}}, 
