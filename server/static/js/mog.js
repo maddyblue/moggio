@@ -47137,7 +47137,10 @@ var POST = exports.POST = function(path, params, success) {
 		}
 	});
 	f.catch(function(err) {
-		alert(err);
+		Actions.error({
+			Error: err,
+			Time: new Date(),
+		});
 	});
 	if (success) {
 		f.then(success);
