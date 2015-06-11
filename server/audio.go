@@ -389,8 +389,6 @@ func (srv *Server) audio() {
 				newWS(c)
 			case cmdDeleteWS:
 				deleteWS(c)
-			case cmdQueueSave:
-				queueSave()
 			case cmdDoSave:
 				save = false
 				doSave()
@@ -444,8 +442,6 @@ type cmdPlaylistChange struct {
 	form url.Values
 	name string
 }
-
-type cmdQueueSave struct{}
 
 type cmdDoSave struct{}
 
