@@ -23,7 +23,7 @@ var List = require('./list.js');
 var Playlist = require('./playlist.js');
 var Protocol = require('./protocol.js');
 
-var { AppBar, LeftNav, MenuItem, IconButton, FloatingActionButton } = mui;
+var { AppBar, LeftNav, MenuItem, IconButton, FloatingActionButton, RaisedButton } = mui;
 
 var App = React.createClass({
 	mixins: [
@@ -99,7 +99,14 @@ var App = React.createClass({
 		var error;
 		if (this.state.error) {
 			var time = new Date(this.state.error.Time);
-			error = <div><a href="#" onClick={this.clearError}>[clear]</a> error at {time.toString()}: {this.state.error.Error}</div>;
+			error = (
+				<div style={{paddingBottom: '10px'}}>
+					<RaisedButton onClick={this.clearError} primary={true} label='clear'/>
+					<span style={{paddingLeft: '10px'}}>
+						error at {time.toString()}: {this.state.error.Error}
+					</span>
+				</div>
+			);
 		}
 		return (
 			<div>

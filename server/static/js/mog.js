@@ -47227,7 +47227,7 @@ var List = require('./list.js');
 var Playlist = require('./playlist.js');
 var Protocol = require('./protocol.js');
 
-var $__0=        mui,AppBar=$__0.AppBar,LeftNav=$__0.LeftNav,MenuItem=$__0.MenuItem,IconButton=$__0.IconButton,FloatingActionButton=$__0.FloatingActionButton;
+var $__0=         mui,AppBar=$__0.AppBar,LeftNav=$__0.LeftNav,MenuItem=$__0.MenuItem,IconButton=$__0.IconButton,FloatingActionButton=$__0.FloatingActionButton,RaisedButton=$__0.RaisedButton;
 
 var App = React.createClass({displayName: "App",
 	mixins: [
@@ -47303,7 +47303,14 @@ var App = React.createClass({displayName: "App",
 		var error;
 		if (this.state.error) {
 			var time = new Date(this.state.error.Time);
-			error = React.createElement("div", null, React.createElement("a", {href: "#", onClick: this.clearError}, "[clear]"), " error at ", time.toString(), ": ", this.state.error.Error);
+			error = (
+				React.createElement("div", {style: {paddingBottom: '10px'}}, 
+					React.createElement(RaisedButton, {onClick: this.clearError, primary: true, label: "clear"}), 
+					React.createElement("span", {style: {paddingLeft: '10px'}}, 
+						"error at ", time.toString(), ": ", this.state.error.Error
+					)
+				)
+			);
 		}
 		return (
 			React.createElement("div", null, 
