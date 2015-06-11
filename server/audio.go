@@ -345,6 +345,9 @@ func (srv *Server) audio() {
 			broadcastErr(err)
 		}
 	}
+	setMinDuration := func(c cmdMinDuration) {
+		srv.MinDuration = time.Duration(c)
+	}
 	for {
 		select {
 		case <-t:
@@ -395,6 +398,8 @@ func (srv *Server) audio() {
 				addOAuth(c)
 			case cmdSeek:
 				doSeek(c)
+			case cmdMinDuration:
+				setMinDuration(c)
 			default:
 				panic(c)
 			}
@@ -449,3 +454,5 @@ type cmdAddOAuth struct {
 	r    *http.Request
 	done chan error
 }
+
+type cmdMinDuration time.Duration

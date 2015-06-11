@@ -116,9 +116,10 @@ type Server struct {
 	Queue     Playlist
 	Playlists map[string]Playlist
 
-	Repeat    bool
-	Random    bool
-	Protocols map[string]map[string]protocol.Instance
+	Repeat      bool
+	Random      bool
+	Protocols   map[string]map[string]protocol.Instance
+	MinDuration time.Duration
 
 	// Current song data.
 	PlaylistIndex int
@@ -151,10 +152,11 @@ var dir = filepath.Join("server")
 
 func New(stateFile string) (*Server, error) {
 	srv := Server{
-		ch:        make(chan interface{}),
-		songs:     make(map[SongID]*codec.SongInfo),
-		Protocols: make(map[string]map[string]protocol.Instance),
-		Playlists: make(map[string]Playlist),
+		ch:          make(chan interface{}),
+		songs:       make(map[SongID]*codec.SongInfo),
+		Protocols:   make(map[string]map[string]protocol.Instance),
+		Playlists:   make(map[string]Playlist),
+		MinDuration: time.Second * 30,
 	}
 	for name := range protocol.Get() {
 		srv.Protocols[name] = make(map[string]protocol.Instance)
@@ -279,6 +281,11 @@ func (srv *Server) protocolRefresh(protocol, key string, list bool) error {
 	songs, err := f()
 	if err != nil {
 		return err
+	}
+	for k, v := range songs {
+		if v.Time > 0 && v.Time < srv.MinDuration {
+			delete(songs, k)
+		}
 	}
 	srv.ch <- cmdRefresh{
 		protocol: protocol,

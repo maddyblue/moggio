@@ -145,6 +145,12 @@ func (srv *Server) Cmd(form url.Values, ps httprouter.Params) (interface{}, erro
 			return nil, err
 		}
 		srv.ch <- cmdSeek(d)
+	case "min_duration":
+		d, err := time.ParseDuration(form.Get("d"))
+		if err != nil {
+			return nil, err
+		}
+		srv.ch <- cmdMinDuration(d)
 	default:
 		return nil, fmt.Errorf("unknown command: %v", cmd)
 	}
