@@ -7,6 +7,7 @@ import (
 	"math/rand"
 	"net/http"
 	"net/url"
+	"runtime/debug"
 	"time"
 
 	"github.com/mjibson/mog/_third_party/golang.org/x/net/websocket"
@@ -353,6 +354,10 @@ func (srv *Server) audio() {
 		case <-t:
 			tick()
 		case c := <-srv.ch:
+			timer := time.AfterFunc(time.Second, func() {
+				log.Println("delay timer expired")
+				debug.PrintStack()
+			})
 			save := true
 			log.Printf("%T\n", c)
 			switch c := c.(type) {
@@ -411,6 +416,7 @@ func (srv *Server) audio() {
 			if save {
 				queueSave()
 			}
+			timer.Stop()
 		}
 	}
 }
