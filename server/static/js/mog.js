@@ -46708,8 +46708,6 @@ exports.throwIf = function(val,msg){
 }.call(this));
 
 },{}],391:[function(require,module,exports){
-// @flow
-
 var exports = module.exports = {};
 
 var FixedDataTable = require('fixed-data-table');
@@ -47081,8 +47079,6 @@ exports.Artist = searchClass('Artist', 'Album');
 exports.Album = searchClass('Album', 'Track');
 
 },{"./mog.js":392,"fixed-data-table":51,"material-ui":78,"react":369,"react-router":178,"reflux":370,"underscore":390}],392:[function(require,module,exports){
-// @flow
-
 var exports = module.exports = {};
 
 var React = require('react');
@@ -47202,8 +47198,6 @@ exports.Time = React.createClass({displayName: "Time",
 });
 
 },{"react":369,"reflux":370,"underscore":390}],393:[function(require,module,exports){
-// @flow
-
 var React = require('react');
 var Reflux = require('reflux');
 var Router = require('react-router');
@@ -47534,8 +47528,6 @@ Router.run(routes, Router.HistoryLocation, function (Handler, state) {
 });
 
 },{"./list.js":391,"./mog.js":392,"./playlist.js":394,"./protocol.js":395,"material-ui":78,"react":369,"react-router":178,"react-tap-event-plugin":196,"reflux":370,"underscore":390}],394:[function(require,module,exports){
-// @flow
-
 var exports = module.exports = {};
 
 var List = require('./list.js');
@@ -47615,8 +47607,6 @@ exports.Playlist = React.createClass({displayName: "Playlist",
 });
 
 },{"./list.js":391,"./mog.js":392,"material-ui":78,"react":369,"reflux":370,"underscore":390}],395:[function(require,module,exports){
-// @flow
-
 var exports = module.exports = {};
 
 var Mog = require('./mog.js');

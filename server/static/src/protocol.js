@@ -1,5 +1,3 @@
-// @flow
-
 var exports = module.exports = {};
 
 var Mog = require('./mog.js');

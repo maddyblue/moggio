@@ -1,5 +1,3 @@
-// @flow
-
 var React = require('react');
 var Reflux = require('reflux');
 var Router = require('react-router');

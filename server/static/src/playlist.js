@@ -1,5 +1,3 @@
-// @flow
-
 var exports = module.exports = {};
 
 var List = require('./list.js');
