@@ -357,7 +357,7 @@ function searchClass(field, sort) {
 			});
 			return (
 				<div>
-					<h2><Link to="app">Music</Link> &gt; {{prop}}</h2>
+					<h2><Link to="app">Music</Link> &gt; {prop}</h2>
 					<Tracks tracks={tracks} initSort={sort} />
 				</div>
 			);
