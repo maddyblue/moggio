@@ -5,6 +5,7 @@ var Transitions = require('./styles/transitions');
 var UniqueId = require('./utils/unique-id');
 var WindowListenable = require('./mixins/window-listenable');
 var Spacing = require('./styles/spacing');
+var ClearFix = require('./clearfix');
 var FocusRipple = require('./ripples/focus-ripple');
 var TouchRipple = require('./ripples/touch-ripple');
 var Paper = require('./paper');
@@ -12,7 +13,7 @@ var Paper = require('./paper');
 var EnhancedSwitch = React.createClass({
 
   mixins: [WindowListenable, StylePropable],
-  
+
   contextTypes: {
     muiTheme: React.PropTypes.object
   },
@@ -62,7 +63,7 @@ var EnhancedSwitch = React.createClass({
 
   componentDidMount: function() {
     var inputNode = React.findDOMNode(this.refs.checkbox);
-    if (!this.props.switched || 
+    if (!this.props.switched ||
         inputNode.checked != this.props.switched) this.props.onParentShouldUpdate(inputNode.checked);
 
     window.addEventListener("resize", this._handleResize);
@@ -122,9 +123,13 @@ var EnhancedSwitch = React.createClass({
         height: '100%',
         zIndex: 2,
         left: 0,
-        boxSizing: 'border-box', 
+        boxSizing: 'border-box',
         padding: 0,
         margin: 0
+      },
+      controls: {
+        width: '100%',
+        height: '100%'
       },
       label: {
         float: 'left',
@@ -140,9 +145,9 @@ var EnhancedSwitch = React.createClass({
         position: 'relative',
         display: 'table-column',
         width: switchWidth,
-        marginRight: (this.props.labelPosition == 'right') ? 
+        marginRight: (this.props.labelPosition == 'right') ?
           Spacing.desktopGutterLess : 0,
-        marginLeft: (this.props.labelPosition == 'left') ? 
+        marginLeft: (this.props.labelPosition == 'left') ?
           Spacing.desktopGutterLess : 0
       },
       ripple: {
@@ -182,7 +187,7 @@ var EnhancedSwitch = React.createClass({
 
     var wrapStyles = this.mergeAndPrefix(styles.wrap, this.props.iconStyle);
     var rippleStyle = this.mergeAndPrefix(styles.ripple, this.props.rippleStyle);
-    var rippleColor = this.props.hasOwnProperty('rippleColor') ? this.props.rippleColor : 
+    var rippleColor = this.props.hasOwnProperty('rippleColor') ? this.props.rippleColor :
                       this.getTheme().primary1Color;
 
     if (this.props.thumbStyle) {
@@ -251,7 +256,7 @@ var EnhancedSwitch = React.createClass({
       this.props.disabled || disableFocusRipple ? null : focusRipple
     ];
 
-    // If toggle component (indicated by whether the style includes thumb) manually lay out 
+    // If toggle component (indicated by whether the style includes thumb) manually lay out
     // elements in order to nest ripple elements
     var switchElement = !this.props.thumbStyle ? (
         <div style={wrapStyles}>
@@ -262,7 +267,7 @@ var EnhancedSwitch = React.createClass({
         <div style={wrapStyles}>
           <div style={this.props.trackStyle}/>
           <Paper style={this.props.thumbStyle} zDepth={1} circle={true}> {ripples} </Paper>
-        </div>      
+        </div>
     );
 
     var labelPositionExist = this.props.labelPosition;
@@ -270,15 +275,15 @@ var EnhancedSwitch = React.createClass({
     // Position is left if not defined or invalid.
     var elementsInOrder = (labelPositionExist &&
       (this.props.labelPosition.toUpperCase() === "RIGHT")) ? (
-        <div>
+        <ClearFix style={this.mergeAndPrefix(styles.controls)}>
           {switchElement}
           {labelElement}
-        </div>
+        </ClearFix>
       ) : (
-        <div>
+        <ClearFix style={this.mergeAndPrefix(styles.controls)}>
           {labelElement}
           {switchElement}
-        </div>
+        </ClearFix>
     );
 
     return (
@@ -297,7 +302,7 @@ var EnhancedSwitch = React.createClass({
   // no callback here because there is no event
   setSwitched: function(newSwitchedValue) {
     if (!this.props.hasOwnProperty('checked') || this.props.checked === false) {
-      this.props.onParentShouldUpdate(newSwitchedValue);  
+      this.props.onParentShouldUpdate(newSwitchedValue);
       React.findDOMNode(this.refs.checkbox).checked = newSwitchedValue;
     } else if (process.env.NODE_ENV !== 'production') {
       var message = 'Cannot call set method while checked is defined as a property.';
@@ -351,11 +356,11 @@ var EnhancedSwitch = React.createClass({
     if (e.button === 0) this.refs.touchRipple.start(e);
   },
 
-  _handleMouseUp: function(e) {
+  _handleMouseUp: function() {
     this.refs.touchRipple.end();
   },
 
-  _handleMouseOut: function(e) {
+  _handleMouseOut: function() {
     this.refs.touchRipple.end();
   },
 
@@ -363,7 +368,7 @@ var EnhancedSwitch = React.createClass({
     this.refs.touchRipple.start(e);
   },
 
-  _handleTouchEnd: function(e) {
+  _handleTouchEnd: function() {
     this.refs.touchRipple.end();
   },
 
@@ -390,7 +395,7 @@ var EnhancedSwitch = React.createClass({
     if (this.props.onFocus) this.props.onFocus(e);
   },
 
-  _handleResize: function(e) {
+  _handleResize: function() {
     this.setState({parentWidth: this.getEvenWidth()});
   }
 

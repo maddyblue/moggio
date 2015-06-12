@@ -8,8 +8,6 @@ var React = require('react');
 var StylePropable = require('./mixins/style-propable');
 var Transitions = require('./styles/transitions');
 
-var easeInOut = 'cubic-bezier(0.35, 0, 0.25, 1)';
-
 var CircularProgress = React.createClass({
   displayName: 'CircularProgress',
 

@@ -115,7 +115,7 @@ var IconButton = React.createClass({
 
     var styles = this.getStyles();
 
-    if (this.props.tooltip) {
+    if (tooltip) {
       tooltipElement = React.createElement(Tooltip, {
         ref: 'tooltip',
         label: tooltip,

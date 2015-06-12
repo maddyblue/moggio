@@ -11,6 +11,7 @@ var Transitions = require('./styles/transitions');
 var UniqueId = require('./utils/unique-id');
 var WindowListenable = require('./mixins/window-listenable');
 var Spacing = require('./styles/spacing');
+var ClearFix = require('./clearfix');
 var FocusRipple = require('./ripples/focus-ripple');
 var TouchRipple = require('./ripples/touch-ripple');
 var Paper = require('./paper');
@@ -124,6 +125,10 @@ var EnhancedSwitch = React.createClass({
         boxSizing: 'border-box',
         padding: 0,
         margin: 0
+      },
+      controls: {
+        width: '100%',
+        height: '100%'
       },
       label: {
         float: 'left',
@@ -260,13 +265,13 @@ var EnhancedSwitch = React.createClass({
 
     // Position is left if not defined or invalid.
     var elementsInOrder = labelPositionExist && this.props.labelPosition.toUpperCase() === 'RIGHT' ? React.createElement(
-      'div',
-      null,
+      ClearFix,
+      { style: this.mergeAndPrefix(styles.controls) },
       switchElement,
       labelElement
     ) : React.createElement(
-      'div',
-      null,
+      ClearFix,
+      { style: this.mergeAndPrefix(styles.controls) },
       labelElement,
       switchElement
     );
@@ -340,11 +345,11 @@ var EnhancedSwitch = React.createClass({
     if (e.button === 0) this.refs.touchRipple.start(e);
   },
 
-  _handleMouseUp: function _handleMouseUp(e) {
+  _handleMouseUp: function _handleMouseUp() {
     this.refs.touchRipple.end();
   },
 
-  _handleMouseOut: function _handleMouseOut(e) {
+  _handleMouseOut: function _handleMouseOut() {
     this.refs.touchRipple.end();
   },
 
@@ -352,7 +357,7 @@ var EnhancedSwitch = React.createClass({
     this.refs.touchRipple.start(e);
   },
 
-  _handleTouchEnd: function _handleTouchEnd(e) {
+  _handleTouchEnd: function _handleTouchEnd() {
     this.refs.touchRipple.end();
   },
 
@@ -379,7 +384,7 @@ var EnhancedSwitch = React.createClass({
     if (this.props.onFocus) this.props.onFocus(e);
   },
 
-  _handleResize: function _handleResize(e) {
+  _handleResize: function _handleResize() {
     this.setState({ parentWidth: this.getEvenWidth() });
   }
 

@@ -213,7 +213,7 @@ var DateDisplay = React.createClass({
               direction: this.state.transitionDirection },
             React.createElement(
               'div',
-              { key: month, style: styles.month.title, onClick: this._handleMonthDayClick },
+              { key: month, style: styles.month.title, onTouchTap: this._handleMonthDayClick },
               month
             )
           ),
@@ -224,7 +224,7 @@ var DateDisplay = React.createClass({
               direction: this.state.transitionDirection },
             React.createElement(
               'div',
-              { key: day, style: styles.day.title, onClick: this._handleMonthDayClick },
+              { key: day, style: styles.day.title, onTouchTap: this._handleMonthDayClick },
               day
             )
           ),
@@ -235,7 +235,7 @@ var DateDisplay = React.createClass({
               direction: this.state.transitionDirection },
             React.createElement(
               'div',
-              { key: year, style: styles.year.title, onClick: this._handleYearClick },
+              { key: year, style: styles.year.title, onTouchTap: this._handleYearClick },
               year
             )
           )

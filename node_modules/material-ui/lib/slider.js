@@ -1,12 +1,10 @@
 'use strict';
 
 var React = require('react');
-var Paper = require('./paper');
 var StylePropable = require('./mixins/style-propable');
 var Draggable = require('react-draggable2');
 var Transitions = require('./styles/transitions.js');
 var FocusRipple = require('./ripples/focus-ripple');
-var Paper = require('./paper');
 
 var Slider = React.createClass({
   displayName: 'Slider',
@@ -222,7 +220,7 @@ var Slider = React.createClass({
       React.createElement(
         'div',
         { style: sliderStyles,
-          onClick: this._onClick,
+          onTouchTap: this._onClick,
           onFocus: this._onFocus,
           onBlur: this._onBlur,
           onMouseOver: this._onMouseOver,
@@ -292,7 +290,6 @@ var Slider = React.createClass({
     this._tabPressed = false;
     // let draggable handle the slider
     if (this.state.dragging || this.props.disabled) return;
-    var value = this.state.value;
     var node = React.findDOMNode(this.refs.track);
     var boundingClientRect = node.getBoundingClientRect();
     var offset = e.clientX - boundingClientRect.left;
@@ -309,19 +306,19 @@ var Slider = React.createClass({
     if (this.props.onBlur) this.props.onBlur(e);
   },
 
-  _onMouseOver: function _onMouseOver(e) {
+  _onMouseOver: function _onMouseOver() {
     this.setState({ hovered: true });
   },
 
-  _onMouseOut: function _onMouseOut(e) {
+  _onMouseOut: function _onMouseOut() {
     this.setState({ hovered: false });
   },
 
-  _onMouseUp: function _onMouseUp(e) {
+  _onMouseUp: function _onMouseUp() {
     if (!this.props.disabled) this.setState({ active: false });
   },
 
-  _onMouseDown: function _onMouseDown(e) {
+  _onMouseDown: function _onMouseDown() {
     if (!this.props.disabled) this.setState({ active: true });
   },
 

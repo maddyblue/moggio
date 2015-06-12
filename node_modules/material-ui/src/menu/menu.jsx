@@ -27,11 +27,10 @@ var NestedMenuItem = React.createClass({
     menuItems: React.PropTypes.array.isRequired,
     zDepth: React.PropTypes.number,
     disabled: React.PropTypes.bool,
-    onItemClick: React.PropTypes.func,
     onItemTap: React.PropTypes.func,
     menuItemStyle: React.PropTypes.object,
   },
-  
+
   getDefaultProps: function() {
     return {
       disabled: false
@@ -50,7 +49,7 @@ var NestedMenuItem = React.createClass({
     this._positionNestedMenu();
   },
 
-  componentDidUpdate: function(prevProps, prevState) {
+  componentDidUpdate: function() {
     this._positionNestedMenu();
   },
 
@@ -76,19 +75,19 @@ var NestedMenuItem = React.createClass({
 
     return (
       <div ref="root" style={styles} onMouseEnter={this._openNestedMenu} onMouseLeave={this._closeNestedMenu}>
-        <MenuItem 
+        <MenuItem
           index={index}
           style={menuItemStyle}
-          disabled={this.props.disabled} 
-          iconRightStyle={iconCustomArrowDropRight} 
-          iconRightClassName="muidocs-icon-custom-arrow-drop-right" 
-          onClick={this._onParentItemClick}>
+          disabled={this.props.disabled}
+          iconRightStyle={iconCustomArrowDropRight}
+          iconRightClassName="muidocs-icon-custom-arrow-drop-right"
+          onTouchTap={this._onParentItemTap}>
             {this.props.text}
         </MenuItem>
         <Menu {...other}
           ref="nestedMenu"
           menuItems={this.props.menuItems}
-          onItemClick={this._onMenuItemClick}
+          menuItemStyle={menuItemStyle}
           onItemTap={this._onMenuItemTap}
           hideable={true}
           visible={this.state.open}
@@ -103,28 +102,23 @@ var NestedMenuItem = React.createClass({
 
     nestedMenu.style.left = el.offsetWidth + 'px';
   },
-  
+
   _openNestedMenu: function() {
     if (!this.props.disabled) this.setState({ open: true });
   },
-  
+
   _closeNestedMenu: function() {
     this.setState({ open: false });
   },
-  
+
   _toggleNestedMenu: function() {
     if (!this.props.disabled) this.setState({ open: !this.state.open });
   },
 
-  _onParentItemClick: function() {
+  _onParentItemTap: function() {
     this._toggleNestedMenu();
   },
 
-  _onMenuItemClick: function(e, index, menuItem) {
-    if (this.props.onItemClick) this.props.onItemClick(e, index, menuItem);
-    this._closeNestedMenu();
-  },
-  
   _onMenuItemTap: function(e, index, menuItem) {
     if (this.props.onItemTap) this.props.onItemTap(e, index, menuItem);
     this._closeNestedMenu();
@@ -147,7 +141,6 @@ var Menu = React.createClass({
   propTypes: {
     autoWidth: React.PropTypes.bool,
     onItemTap: React.PropTypes.func,
-    onItemClick: React.PropTypes.func,
     onToggle: React.PropTypes.func,
     menuItems: React.PropTypes.array.isRequired,
     selectedIndex: React.PropTypes.number,
@@ -181,14 +174,14 @@ var Menu = React.createClass({
     //Set the menu width
     this._setKeyWidth(el);
 
-    //Save the initial menu height for later
-    this._initialMenuHeight = el.offsetHeight;
+    //Save the initial menu item height for later
+    this._initialMenuItemHeight = el.offsetHeight / Math.max(1, this.props.menuItems.length);
 
     //Show or Hide the menu according to visibility
     this._renderVisibility();
   },
 
-  componentDidUpdate: function(prevProps, prevState) {
+  componentDidUpdate: function(prevProps) {
     if (this.props.visible !== prevProps.visible) this._renderVisibility();
   },
 
@@ -226,9 +219,9 @@ var Menu = React.createClass({
   render: function() {
     var styles = this.getStyles();
     return (
-      <Paper 
-        ref="paperContainer" 
-        zDepth={this.props.zDepth} 
+      <Paper
+        ref="paperContainer"
+        zDepth={this.props.zDepth}
         style={this.mergeAndPrefix(
           styles.root,
           this.props.hideable && styles.hideable,
@@ -261,7 +254,7 @@ var Menu = React.createClass({
         attribute,
         number,
         toggle,
-        onClick,
+        onTouchTap,
         ...other
       } = menuItem;
 
@@ -269,11 +262,11 @@ var Menu = React.createClass({
 
         case MenuItem.Types.LINK:
           itemComponent = (
-            <LinkMenuItem 
+            <LinkMenuItem
               key={i}
               index={i}
               text={menuItem.text}
-              disabled={isDisabled} 
+              disabled={isDisabled}
               className={this.props.menuItemClassNameLink}
               style={this.props.menuItemStyleLink}
               payload={menuItem.payload}
@@ -283,7 +276,7 @@ var Menu = React.createClass({
 
         case MenuItem.Types.SUBHEADER:
           itemComponent = (
-            <SubheaderMenuItem 
+            <SubheaderMenuItem
               key={i}
               index={i}
               className={this.props.menuItemClassNameSubheader}
@@ -313,8 +306,7 @@ var Menu = React.createClass({
               menuItems={menuItem.items}
               menuItemStyle={this.props.menuItemStyle}
               zDepth={this.props.zDepth}
-              onItemClick={this._onNestedItemClick}
-              onItemTap={this._onNestedItemClick} />
+              onItemTap={this._onNestedItemTap} />
           );
           this._nestedChildren.push(i);
           break;
@@ -335,7 +327,6 @@ var Menu = React.createClass({
               toggle={menuItem.toggle}
               onToggle={this.props.onToggle}
               disabled={isDisabled}
-              onClick={this._onItemClick}
               onTouchTap={this._onItemTap}>
               {menuItem.text}
             </MenuItem>
@@ -358,17 +349,24 @@ var Menu = React.createClass({
     });
   },
 
+  _getCurrentHeight: function() {
+    var totalItens = Math.max(1, this.props.menuItems.length);
+    var newHeight = this._initialMenuItemHeight * totalItens;
+
+    return newHeight + KeyLine.Desktop.GUTTER_LESS;
+  },
+
   _renderVisibility: function() {
     var el;
 
-    if (this.props.hideable) {    
+    if (this.props.hideable) {
       el = React.findDOMNode(this);
       var container = React.findDOMNode(this.refs.paperContainer);
-      
+
       if (this.props.visible) {
         //Open the menu
         el.style.transition = Transitions.easeOut();
-        el.style.height = this._initialMenuHeight + 'px';
+        el.style.height = this._getCurrentHeight() + 'px';
 
         //Set the overflow to visible after the animation is done so
         //that other nested menus can be shown
@@ -389,16 +387,8 @@ var Menu = React.createClass({
     }
   },
 
-  _onNestedItemClick: function(e, index, menuItem) {
-    if (this.props.onItemClick) this.props.onItemClick(e, index, menuItem);
-  },
-
   _onNestedItemTap: function(e, index, menuItem) {
     if (this.props.onItemTap) this.props.onItemTap(e, index, menuItem);
-  },
-
-  _onItemClick: function(e, index) {
-    if (this.props.onItemClick) this.props.onItemClick(e, index, this.props.menuItems[index]);
   },
 
   _onItemTap: function(e, index) {

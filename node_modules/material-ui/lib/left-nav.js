@@ -111,7 +111,7 @@ var LeftNav = React.createClass({
       },
       menuItem: {
         height: this.context.muiTheme.spacing.desktopLeftNavMenuItemHeight,
-        lineDeight: this.context.muiTheme.spacing.desktopLeftNavMenuItemHeight
+        lineHeight: this.context.muiTheme.spacing.desktopLeftNavMenuItemHeight + 'px'
       },
       rootWhenOpenRight: {
         left: 'auto',
@@ -164,7 +164,7 @@ var LeftNav = React.createClass({
           menuItemStyleLink: this.mergeAndPrefix(styles.menuItemLink),
           menuItemStyleSubheader: this.mergeAndPrefix(styles.menuItemSubheader),
           selectedIndex: selectedIndex,
-          onItemClick: this._onMenuItemClick })
+          onItemTap: this._onMenuItemClick })
       )
     );
   },

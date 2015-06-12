@@ -29,7 +29,7 @@ var Tooltip = React.createClass({
     this._setRippleSize();
   },
 
-  componentDidUpdate: function componentDidUpdate(prevProps, prevState) {
+  componentDidUpdate: function componentDidUpdate() {
     this._setRippleSize();
   },
 

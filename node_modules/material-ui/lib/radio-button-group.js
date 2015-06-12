@@ -5,8 +5,6 @@ var _extends = Object.assign || function (target) { for (var i = 1; i < argument
 function _objectWithoutProperties(obj, keys) { var target = {}; for (var i in obj) { if (keys.indexOf(i) >= 0) continue; if (!Object.prototype.hasOwnProperty.call(obj, i)) continue; target[i] = obj[i]; } return target; }
 
 var React = require('react');
-var Paper = require('./paper');
-var EnhancedSwitch = require('./enhanced-switch');
 var RadioButton = require('./radio-button');
 
 var RadioButtonGroup = React.createClass({
@@ -71,7 +69,7 @@ var RadioButtonGroup = React.createClass({
 
     return React.createElement(
       'div',
-      null,
+      { style: this.props.style },
       options
     );
   },

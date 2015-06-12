@@ -1,6 +1,5 @@
 'use strict';
 
-var React = require('react');
 var Events = require('../utils/events');
 
 var Sizes = {
@@ -34,7 +33,7 @@ module.exports = {
     return this.state.deviceSize >= desiredSize;
   },
 
-  _updateDeviceSize: function _updateDeviceSize(e) {
+  _updateDeviceSize: function _updateDeviceSize() {
     var width = window.innerWidth;
     if (width >= 992) this.setState({ deviceSize: Sizes.LARGE });else if (width >= 768) this.setState({ deviceSize: Sizes.MEDIUM });else this.setState({ deviceSize: Sizes.SMALL }); // width >= 375
   },

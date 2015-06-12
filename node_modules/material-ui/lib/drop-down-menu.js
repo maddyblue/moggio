@@ -5,7 +5,6 @@ var StylePropable = require('./mixins/style-propable');
 var Transitions = require('./styles/transitions');
 var ClickAwayable = require('./mixins/click-awayable');
 var DropDownArrow = require('./svg-icons/drop-down-arrow');
-var KeyLine = require('./utils/key-line');
 var Paper = require('./paper');
 var Menu = require('./menu/menu');
 var ClearFix = require('./clearfix');
@@ -143,7 +142,7 @@ var DropDownMenu = React.createClass({
         style: this.mergeAndPrefix(styles.root, this.state.open && styles.rootWhenOpen, this.props.style) },
       React.createElement(
         ClearFix,
-        { style: this.mergeAndPrefix(styles.control), onClick: this._onControlClick },
+        { style: this.mergeAndPrefix(styles.control), onTouchTap: this._onControlClick },
         React.createElement(Paper, { style: this.mergeAndPrefix(styles.controlBg), zDepth: 0 }),
         React.createElement(
           'div',
@@ -161,7 +160,7 @@ var DropDownMenu = React.createClass({
         menuItemStyle: this.mergeAndPrefix(styles.menuItem, this.props.menuItemStyle),
         hideable: true,
         visible: this.state.open,
-        onItemClick: this._onMenuItemClick })
+        onItemTap: this._onMenuItemClick })
     );
   },
 
@@ -183,7 +182,7 @@ var DropDownMenu = React.createClass({
     this.setState({ selectedIndex: selectedIndex > -1 ? selectedIndex : 0 });
   },
 
-  _onControlClick: function _onControlClick(e) {
+  _onControlClick: function _onControlClick() {
     this.setState({ open: !this.state.open });
   },
 
@@ -195,11 +194,11 @@ var DropDownMenu = React.createClass({
     });
   },
 
-  _handleMouseOver: function _handleMouseOver(e) {
+  _handleMouseOver: function _handleMouseOver() {
     this.setState({ isHovered: true });
   },
 
-  _handleMouseOut: function _handleMouseOut(e) {
+  _handleMouseOut: function _handleMouseOut() {
     this.setState({ isHovered: false });
   }
 

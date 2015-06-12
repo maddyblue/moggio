@@ -125,7 +125,7 @@ var Input = React.createClass({
     if (this.props.onChange) this.props.onChange(e, value);
   },
 
-  _onPlaceholderClick: function _onPlaceholderClick(e) {
+  _onPlaceholderClick: function _onPlaceholderClick() {
     this.focus();
   },
 

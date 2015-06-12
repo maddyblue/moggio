@@ -37,7 +37,6 @@ var MenuItem = React.createClass({
     toggle: React.PropTypes.bool,
     disabled: React.PropTypes.bool,
     onTouchTap: React.PropTypes.func,
-    onClick: React.PropTypes.func,
     onToggle: React.PropTypes.func,
     selected: React.PropTypes.bool
   },
@@ -155,7 +154,7 @@ var MenuItem = React.createClass({
     if (this.props.toggle) {
       var _props = this.props;
       var toggle = _props.toggle;
-      var onClick = _props.onClick;
+      var onTouchTap = _props.onTouchTap;
       var onToggle = _props.onToggle;
       var onMouseOver = _props.onMouseOver;
       var onMouseOut = _props.onMouseOut;
@@ -163,7 +162,7 @@ var MenuItem = React.createClass({
       var label = _props.label;
       var style = _props.style;
 
-      var other = _objectWithoutProperties(_props, ['toggle', 'onClick', 'onToggle', 'onMouseOver', 'onMouseOut', 'children', 'label', 'style']);
+      var other = _objectWithoutProperties(_props, ['toggle', 'onTouchTap', 'onToggle', 'onMouseOver', 'onMouseOut', 'children', 'label', 'style']);
 
       toggleElement = React.createElement(Toggle, _extends({}, other, { onToggle: this._handleToggle, style: styles.toggle }));
     }
@@ -174,7 +173,6 @@ var MenuItem = React.createClass({
         key: this.props.index,
         className: this.props.className,
         onTouchTap: this._handleTouchTap,
-        onClick: this._handleOnClick,
         onMouseOver: this._handleMouseOver,
         onMouseOut: this._handleMouseOut,
         style: this.mergeAndPrefix(styles.root, this.props.selected && styles.rootWhenSelected, this.state.hovered && !this.props.disabled && styles.rootWhenHovered, this.props.style, this.props.disabled && styles.rootWhenDisabled) },
@@ -190,10 +188,6 @@ var MenuItem = React.createClass({
 
   _handleTouchTap: function _handleTouchTap(e) {
     if (!this.props.disabled && this.props.onTouchTap) this.props.onTouchTap(e, this.props.index);
-  },
-
-  _handleOnClick: function _handleOnClick(e) {
-    if (!this.props.disabled && this.props.onClick) this.props.onClick(e, this.props.index);
   },
 
   _handleToggle: function _handleToggle(e, toggled) {

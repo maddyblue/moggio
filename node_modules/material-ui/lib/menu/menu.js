@@ -34,7 +34,6 @@ var NestedMenuItem = React.createClass({
     menuItems: React.PropTypes.array.isRequired,
     zDepth: React.PropTypes.number,
     disabled: React.PropTypes.bool,
-    onItemClick: React.PropTypes.func,
     onItemTap: React.PropTypes.func,
     menuItemStyle: React.PropTypes.object },
 
@@ -56,7 +55,7 @@ var NestedMenuItem = React.createClass({
     this._positionNestedMenu();
   },
 
-  componentDidUpdate: function componentDidUpdate(prevProps, prevState) {
+  componentDidUpdate: function componentDidUpdate() {
     this._positionNestedMenu();
   },
 
@@ -91,13 +90,13 @@ var NestedMenuItem = React.createClass({
           disabled: this.props.disabled,
           iconRightStyle: iconCustomArrowDropRight,
           iconRightClassName: 'muidocs-icon-custom-arrow-drop-right',
-          onClick: this._onParentItemClick },
+          onTouchTap: this._onParentItemTap },
         this.props.text
       ),
       React.createElement(Menu, _extends({}, other, {
         ref: 'nestedMenu',
         menuItems: this.props.menuItems,
-        onItemClick: this._onMenuItemClick,
+        menuItemStyle: menuItemStyle,
         onItemTap: this._onMenuItemTap,
         hideable: true,
         visible: this.state.open,
@@ -124,13 +123,8 @@ var NestedMenuItem = React.createClass({
     if (!this.props.disabled) this.setState({ open: !this.state.open });
   },
 
-  _onParentItemClick: function _onParentItemClick() {
+  _onParentItemTap: function _onParentItemTap() {
     this._toggleNestedMenu();
-  },
-
-  _onMenuItemClick: function _onMenuItemClick(e, index, menuItem) {
-    if (this.props.onItemClick) this.props.onItemClick(e, index, menuItem);
-    this._closeNestedMenu();
   },
 
   _onMenuItemTap: function _onMenuItemTap(e, index, menuItem) {
@@ -155,7 +149,6 @@ var Menu = React.createClass({
   propTypes: {
     autoWidth: React.PropTypes.bool,
     onItemTap: React.PropTypes.func,
-    onItemClick: React.PropTypes.func,
     onToggle: React.PropTypes.func,
     menuItems: React.PropTypes.array.isRequired,
     selectedIndex: React.PropTypes.number,
@@ -187,14 +180,14 @@ var Menu = React.createClass({
     //Set the menu width
     this._setKeyWidth(el);
 
-    //Save the initial menu height for later
-    this._initialMenuHeight = el.offsetHeight;
+    //Save the initial menu item height for later
+    this._initialMenuItemHeight = el.offsetHeight / Math.max(1, this.props.menuItems.length);
 
     //Show or Hide the menu according to visibility
     this._renderVisibility();
   },
 
-  componentDidUpdate: function componentDidUpdate(prevProps, prevState) {
+  componentDidUpdate: function componentDidUpdate(prevProps) {
     if (this.props.visible !== prevProps.visible) this._renderVisibility();
   },
 
@@ -263,9 +256,9 @@ var Menu = React.createClass({
       var attribute = menuItem.attribute;
       var number = menuItem.number;
       var toggle = menuItem.toggle;
-      var onClick = menuItem.onClick;
+      var onTouchTap = menuItem.onTouchTap;
 
-      var other = _objectWithoutProperties(menuItem, ['icon', 'data', 'attribute', 'number', 'toggle', 'onClick']);
+      var other = _objectWithoutProperties(menuItem, ['icon', 'data', 'attribute', 'number', 'toggle', 'onTouchTap']);
 
       switch (menuItem.type) {
 
@@ -308,8 +301,7 @@ var Menu = React.createClass({
             menuItems: menuItem.items,
             menuItemStyle: this.props.menuItemStyle,
             zDepth: this.props.zDepth,
-            onItemClick: this._onNestedItemClick,
-            onItemTap: this._onNestedItemClick }));
+            onItemTap: this._onNestedItemTap }));
           this._nestedChildren.push(i);
           break;
 
@@ -329,7 +321,6 @@ var Menu = React.createClass({
               toggle: menuItem.toggle,
               onToggle: this.props.onToggle,
               disabled: isDisabled,
-              onClick: this._onItemClick,
               onTouchTap: this._onItemTap }),
             menuItem.text
           );
@@ -349,6 +340,13 @@ var Menu = React.createClass({
     });
   },
 
+  _getCurrentHeight: function _getCurrentHeight() {
+    var totalItens = Math.max(1, this.props.menuItems.length);
+    var newHeight = this._initialMenuItemHeight * totalItens;
+
+    return newHeight + KeyLine.Desktop.GUTTER_LESS;
+  },
+
   _renderVisibility: function _renderVisibility() {
     var el;
 
@@ -359,7 +357,7 @@ var Menu = React.createClass({
       if (this.props.visible) {
         //Open the menu
         el.style.transition = Transitions.easeOut();
-        el.style.height = this._initialMenuHeight + 'px';
+        el.style.height = this._getCurrentHeight() + 'px';
 
         //Set the overflow to visible after the animation is done so
         //that other nested menus can be shown
@@ -379,16 +377,8 @@ var Menu = React.createClass({
     }
   },
 
-  _onNestedItemClick: function _onNestedItemClick(e, index, menuItem) {
-    if (this.props.onItemClick) this.props.onItemClick(e, index, menuItem);
-  },
-
   _onNestedItemTap: function _onNestedItemTap(e, index, menuItem) {
     if (this.props.onItemTap) this.props.onItemTap(e, index, menuItem);
-  },
-
-  _onItemClick: function _onItemClick(e, index) {
-    if (this.props.onItemClick) this.props.onItemClick(e, index, this.props.menuItems[index]);
   },
 
   _onItemTap: function _onItemTap(e, index) {

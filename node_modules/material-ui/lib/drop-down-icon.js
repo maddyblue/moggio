@@ -9,8 +9,6 @@ var StylePropable = require('./mixins/style-propable');
 var Transitions = require('./styles/transitions');
 var Spacing = require('./styles/spacing');
 var ClickAwayable = require('./mixins/click-awayable');
-var KeyLine = require('./utils/key-line');
-var Paper = require('./paper');
 var FontIcon = require('./font-icon');
 var Menu = require('./menu/menu');
 
@@ -22,7 +20,7 @@ var DropDownIcon = React.createClass({
   propTypes: {
     onChange: React.PropTypes.func,
     menuItems: React.PropTypes.array.isRequired,
-    closeOnMenuItemClick: React.PropTypes.bool,
+    closeOnMenuItemTouchTap: React.PropTypes.bool,
     iconStyle: React.PropTypes.object,
     iconClassName: React.PropTypes.string },
 
@@ -33,7 +31,7 @@ var DropDownIcon = React.createClass({
 
   getDefaultProps: function getDefaultProps() {
     return {
-      closeOnMenuItemClick: true
+      closeOnMenuItemTouchTap: true
     };
   },
 
@@ -72,11 +70,11 @@ var DropDownIcon = React.createClass({
     var style = _props.style;
     var children = _props.children;
     var menuItems = _props.menuItems;
-    var closeOnMenuItemClick = _props.closeOnMenuItemClick;
+    var closeOnMenuItemTouchTap = _props.closeOnMenuItemTouchTap;
     var iconStyle = _props.iconStyle;
     var iconClassName = _props.iconClassName;
 
-    var other = _objectWithoutProperties(_props, ['style', 'children', 'menuItems', 'closeOnMenuItemClick', 'iconStyle', 'iconClassName']);
+    var other = _objectWithoutProperties(_props, ['style', 'children', 'menuItems', 'closeOnMenuItemTouchTap', 'iconStyle', 'iconClassName']);
 
     var styles = this.getStyles();
 
@@ -85,7 +83,7 @@ var DropDownIcon = React.createClass({
       _extends({}, other, { style: this.mergeAndPrefix(styles.root, this.props.style) }),
       React.createElement(
         'div',
-        { onClick: this._onControlClick },
+        { onTouchTap: this._onControlClick },
         React.createElement(FontIcon, {
           className: iconClassName,
           style: iconStyle }),
@@ -98,18 +96,18 @@ var DropDownIcon = React.createClass({
         menuItemStyle: styles.menuItem,
         hideable: true,
         visible: this.state.open,
-        onItemClick: this._onMenuItemClick })
+        onItemTap: this._onMenuItemClick })
     );
   },
 
-  _onControlClick: function _onControlClick(e) {
+  _onControlClick: function _onControlClick() {
     this.setState({ open: !this.state.open });
   },
 
   _onMenuItemClick: function _onMenuItemClick(e, key, payload) {
     if (this.props.onChange) this.props.onChange(e, key, payload);
 
-    if (this.props.closeOnMenuItemClick) {
+    if (this.props.closeOnMenuItemTouchTap) {
       this.setState({ open: false });
     }
   }

@@ -27,7 +27,7 @@ var Overlay = React.createClass({
     };
   },
 
-  componentDidUpdate: function componentDidUpdate(prevProps, prevState) {
+  componentDidUpdate: function componentDidUpdate() {
     if (this.props.autoLockScrolling) this.props.show ? this._preventScrolling() : this._allowScrolling();
   },
 

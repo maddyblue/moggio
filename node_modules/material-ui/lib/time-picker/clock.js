@@ -7,7 +7,6 @@ var TimeDisplay = require('./time-display');
 var ClockButton = require('./clock-button');
 var ClockHours = require('./clock-hours');
 var ClockMinutes = require('./clock-minutes');
-var SlideInTransitionGroup = require('../transition-groups/slide-in');
 
 var Clock = React.createClass({
   displayName: 'Clock',

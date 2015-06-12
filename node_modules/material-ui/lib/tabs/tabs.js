@@ -4,7 +4,6 @@ var React = require('react/addons');
 var TabTemplate = require('./tabTemplate');
 var InkBar = require('../ink-bar');
 var StylePropable = require('../mixins/style-propable.js');
-var Colors = require('../styles/colors.js');
 var Events = require('../utils/events');
 
 var Tabs = React.createClass({
@@ -63,9 +62,6 @@ var Tabs = React.createClass({
     var themeVariables = this.context.muiTheme.component.tabs;
 
     return {
-      root: {
-        position: 'relative'
-      },
       tabItemContainer: {
         margin: '0',
         padding: '0',
@@ -81,14 +77,23 @@ var Tabs = React.createClass({
   render: function render() {
     var styles = this.getStyles();
 
+    var tabContent = [];
     var width = this.state.fixedWidth ? 100 / this.props.children.length + '%' : this.props.tabWidth + 'px';
 
     var left = 'calc(' + width + '*' + this.state.selectedIndex + ')';
 
-    var currentTemplate;
     var tabs = React.Children.map(this.props.children, function (tab, index) {
       if (tab.type.displayName === 'Tab') {
-        if (this.state.selectedIndex === index) currentTemplate = tab.props.children;
+
+        if (tab.props.children) {
+          tabContent.push(React.createElement(TabTemplate, {
+            key: index,
+            selected: this.state.selectedIndex === index
+          }, tab.props.children));
+        } else {
+          tabContent.push(undefined);
+        }
+
         return React.addons.cloneWithProps(tab, {
           key: index,
           selected: this.state.selectedIndex === index,
@@ -101,10 +106,9 @@ var Tabs = React.createClass({
         throw 'Tabs only accepts Tab Components as children. Found ' + type + ' as child number ' + (index + 1) + ' of Tabs';
       }
     }, this);
-
     return React.createElement(
       'div',
-      { style: this.mergeAndPrefix(styles.root, this.props.style) },
+      { style: this.mergeAndPrefix(this.props.style) },
       React.createElement(
         'div',
         { style: this.mergeAndPrefix(styles.tabItemContainer, this.props.tabItemContainerStyle) },
@@ -112,9 +116,9 @@ var Tabs = React.createClass({
       ),
       React.createElement(InkBar, { left: left, width: width }),
       React.createElement(
-        TabTemplate,
+        'div',
         null,
-        currentTemplate
+        tabContent
       )
     );
   },

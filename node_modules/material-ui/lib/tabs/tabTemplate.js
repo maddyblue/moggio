@@ -8,15 +8,21 @@ var TabTemplate = React.createClass({
   render: function render() {
 
     var styles = {
-      'display': 'block',
+      'height': '0px',
+      'overflow': 'hidden',
       'width': '100%',
       'position': 'relative',
-      'text-align': 'initial'
+      'textAlign': 'initial'
     };
+
+    if (this.props.selected) {
+      delete styles.height;
+      delete styles.overflow;
+    }
 
     return React.createElement(
       'div',
-      { styles: styles },
+      { style: styles },
       this.props.children
     );
   } });

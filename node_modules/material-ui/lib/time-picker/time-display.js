@@ -9,8 +9,6 @@ function _objectWithoutProperties(obj, keys) { var target = {}; for (var i in ob
 var React = require('react');
 var StylePropable = require('../mixins/style-propable');
 
-var SlideInTransitionGroup = require('../transition-groups/slide-in');
-
 var TimeDisplay = React.createClass({
   displayName: 'TimeDisplay',
 
@@ -48,7 +46,7 @@ var TimeDisplay = React.createClass({
       });
     }
   },
-  sanitizeTime: function sanitizeTime(time) {
+  sanitizeTime: function sanitizeTime() {
     var hour = this.props.selectedTime.getHours();
     var min = this.props.selectedTime.getMinutes().toString();
 
@@ -103,9 +101,6 @@ var TimeDisplay = React.createClass({
 
     var hour = _sanitizeTime2[0];
     var min = _sanitizeTime2[1];
-
-    var hourClassName = '';
-    var minClassName = '';
 
     styles[mode].color = this.getTheme().accentColor;
 

@@ -1,4 +1,4 @@
-!function(e){if("object"==typeof exports&&"undefined"!=typeof module)module.exports=e();else if("function"==typeof define&&define.amd)define([],e);else{var f;"undefined"!=typeof window?f=window:"undefined"!=typeof global?f=global:"undefined"!=typeof self&&(f=self),f.Reflux=e()}}(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);throw new Error("Cannot find module '"+o+"'")}var f=n[o]={exports:{}};t[o][0].call(f.exports,function(e){var n=t[o][1][e];return s(n?n:e)},f,f.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(_dereq_,module,exports){
+(function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.Reflux = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 'use strict';
 
 /**
@@ -41,9 +41,10 @@ EventEmitter.prototype._events = undefined;
  */
 EventEmitter.prototype.listeners = function listeners(event) {
   if (!this._events || !this._events[event]) return [];
+  if (this._events[event].fn) return [this._events[event].fn];
 
-  for (var i = 0, l = this._events[event].length, ee = []; i < l; i++) {
-    ee.push(this._events[event][i].fn);
+  for (var i = 0, l = this._events[event].length, ee = new Array(l); i < l; i++) {
+    ee[i] = this._events[event][i].fn;
   }
 
   return ee;
@@ -60,30 +61,31 @@ EventEmitter.prototype.emit = function emit(event, a1, a2, a3, a4, a5) {
   if (!this._events || !this._events[event]) return false;
 
   var listeners = this._events[event]
-    , length = listeners.length
     , len = arguments.length
-    , ee = listeners[0]
     , args
-    , i, j;
+    , i;
 
-  if (1 === length) {
-    if (ee.once) this.removeListener(event, ee.fn, true);
+  if ('function' === typeof listeners.fn) {
+    if (listeners.once) this.removeListener(event, listeners.fn, true);
 
     switch (len) {
-      case 1: return ee.fn.call(ee.context), true;
-      case 2: return ee.fn.call(ee.context, a1), true;
-      case 3: return ee.fn.call(ee.context, a1, a2), true;
-      case 4: return ee.fn.call(ee.context, a1, a2, a3), true;
-      case 5: return ee.fn.call(ee.context, a1, a2, a3, a4), true;
-      case 6: return ee.fn.call(ee.context, a1, a2, a3, a4, a5), true;
+      case 1: return listeners.fn.call(listeners.context), true;
+      case 2: return listeners.fn.call(listeners.context, a1), true;
+      case 3: return listeners.fn.call(listeners.context, a1, a2), true;
+      case 4: return listeners.fn.call(listeners.context, a1, a2, a3), true;
+      case 5: return listeners.fn.call(listeners.context, a1, a2, a3, a4), true;
+      case 6: return listeners.fn.call(listeners.context, a1, a2, a3, a4, a5), true;
     }
 
     for (i = 1, args = new Array(len -1); i < len; i++) {
       args[i - 1] = arguments[i];
     }
 
-    ee.fn.apply(ee.context, args);
+    listeners.fn.apply(listeners.context, args);
   } else {
+    var length = listeners.length
+      , j;
+
     for (i = 0; i < length; i++) {
       if (listeners[i].once) this.removeListener(event, listeners[i].fn, true);
 
@@ -113,9 +115,16 @@ EventEmitter.prototype.emit = function emit(event, a1, a2, a3, a4, a5) {
  * @api public
  */
 EventEmitter.prototype.on = function on(event, fn, context) {
+  var listener = new EE(fn, context || this);
+
   if (!this._events) this._events = {};
-  if (!this._events[event]) this._events[event] = [];
-  this._events[event].push(new EE( fn, context || this ));
+  if (!this._events[event]) this._events[event] = listener;
+  else {
+    if (!this._events[event].fn) this._events[event].push(listener);
+    else this._events[event] = [
+      this._events[event], listener
+    ];
+  }
 
   return this;
 };
@@ -129,9 +138,16 @@ EventEmitter.prototype.on = function on(event, fn, context) {
  * @api public
  */
 EventEmitter.prototype.once = function once(event, fn, context) {
+  var listener = new EE(fn, context || this, true);
+
   if (!this._events) this._events = {};
-  if (!this._events[event]) this._events[event] = [];
-  this._events[event].push(new EE(fn, context || this, true ));
+  if (!this._events[event]) this._events[event] = listener;
+  else {
+    if (!this._events[event].fn) this._events[event].push(listener);
+    else this._events[event] = [
+      this._events[event], listener
+    ];
+  }
 
   return this;
 };
@@ -150,17 +166,25 @@ EventEmitter.prototype.removeListener = function removeListener(event, fn, once)
   var listeners = this._events[event]
     , events = [];
 
-  if (fn) for (var i = 0, length = listeners.length; i < length; i++) {
-    if (listeners[i].fn !== fn && listeners[i].once !== once) {
-      events.push(listeners[i]);
+  if (fn) {
+    if (listeners.fn && (listeners.fn !== fn || (once && !listeners.once))) {
+      events.push(listeners);
+    }
+    if (!listeners.fn) for (var i = 0, length = listeners.length; i < length; i++) {
+      if (listeners[i].fn !== fn || (once && !listeners[i].once)) {
+        events.push(listeners[i]);
+      }
     }
   }
 
   //
   // Reset the array, or remove it completely if we have no more listeners.
   //
-  if (events.length) this._events[event] = events;
-  else this._events[event] = null;
+  if (events.length) {
+    this._events[event] = events.length === 1 ? events[0] : events;
+  } else {
+    delete this._events[event];
+  }
 
   return this;
 };
@@ -174,7 +198,7 @@ EventEmitter.prototype.removeListener = function removeListener(event, fn, once)
 EventEmitter.prototype.removeAllListeners = function removeAllListeners(event) {
   if (!this._events) return this;
 
-  if (event) this._events[event] = null;
+  if (event) delete this._events[event];
   else this._events = {};
 
   return this;
@@ -200,20 +224,21 @@ EventEmitter.EventEmitter = EventEmitter;
 EventEmitter.EventEmitter2 = EventEmitter;
 EventEmitter.EventEmitter3 = EventEmitter;
 
-if ('object' === typeof module && module.exports) {
-  module.exports = EventEmitter;
-}
+//
+// Expose the module.
+//
+module.exports = EventEmitter;
 
-},{}],2:[function(_dereq_,module,exports){
+},{}],2:[function(require,module,exports){
 (function (global){
 /*! Native Promise Only
-    v0.7.6-a (c) Kyle Simpson
+    v0.7.8-a (c) Kyle Simpson
     MIT License: http://getify.mit-license.org
 */
-!function(t,n,e){n[t]=n[t]||e(),"undefined"!=typeof module&&module.exports?module.exports=n[t]:"function"==typeof define&&define.amd&&define(function(){return n[t]})}("Promise","undefined"!=typeof global?global:this,function(){"use strict";function t(t,n){l.add(t,n),h||(h=y(l.drain))}function n(t){var n,e=typeof t;return null==t||"object"!=e&&"function"!=e||(n=t.then),"function"==typeof n?n:!1}function e(){for(var t=0;t<this.chain.length;t++)o(this,1===this.state?this.chain[t].success:this.chain[t].failure,this.chain[t]);this.chain.length=0}function o(t,e,o){var r,i;try{e===!1?o.reject(t.msg):(r=e===!0?t.msg:e.call(void 0,t.msg),r===o.promise?o.reject(TypeError("Promise-chain cycle")):(i=n(r))?i.call(r,o.resolve,o.reject):o.resolve(r))}catch(c){o.reject(c)}}function r(o){var c,u,a=this;if(!a.triggered){a.triggered=!0,a.def&&(a=a.def);try{(c=n(o))?(u=new f(a),c.call(o,function(){r.apply(u,arguments)},function(){i.apply(u,arguments)})):(a.msg=o,a.state=1,a.chain.length>0&&t(e,a))}catch(s){i.call(u||new f(a),s)}}}function i(n){var o=this;o.triggered||(o.triggered=!0,o.def&&(o=o.def),o.msg=n,o.state=2,o.chain.length>0&&t(e,o))}function c(t,n,e,o){for(var r=0;r<n.length;r++)!function(r){t.resolve(n[r]).then(function(t){e(r,t)},o)}(r)}function f(t){this.def=t,this.triggered=!1}function u(t){this.promise=t,this.state=0,this.triggered=!1,this.chain=[],this.msg=void 0}function a(n){if("function"!=typeof n)throw TypeError("Not a function");if(0!==this.__NPO__)throw TypeError("Not a promise");this.__NPO__=1;var o=new u(this);this.then=function(n,r){var i={success:"function"==typeof n?n:!0,failure:"function"==typeof r?r:!1};return i.promise=new this.constructor(function(t,n){if("function"!=typeof t||"function"!=typeof n)throw TypeError("Not a function");i.resolve=t,i.reject=n}),o.chain.push(i),0!==o.state&&t(e,o),i.promise},this["catch"]=function(t){return this.then(void 0,t)};try{n.call(void 0,function(t){r.call(o,t)},function(t){i.call(o,t)})}catch(c){i.call(o,c)}}var s,h,l,p=Object.prototype.toString,y="undefined"!=typeof setImmediate?function(t){return setImmediate(t)}:setTimeout;try{Object.defineProperty({},"x",{}),s=function(t,n,e,o){return Object.defineProperty(t,n,{value:e,writable:!0,configurable:o!==!1})}}catch(d){s=function(t,n,e){return t[n]=e,t}}l=function(){function t(t,n){this.fn=t,this.self=n,this.next=void 0}var n,e,o;return{add:function(r,i){o=new t(r,i),e?e.next=o:n=o,e=o,o=void 0},drain:function(){var t=n;for(n=e=h=void 0;t;)t.fn.call(t.self),t=t.next}}}();var g=s({},"constructor",a,!1);return s(a,"prototype",g,!1),s(g,"__NPO__",0,!1),s(a,"resolve",function(t){var n=this;return t&&"object"==typeof t&&1===t.__NPO__?t:new n(function(n,e){if("function"!=typeof n||"function"!=typeof e)throw TypeError("Not a function");n(t)})}),s(a,"reject",function(t){return new this(function(n,e){if("function"!=typeof n||"function"!=typeof e)throw TypeError("Not a function");e(t)})}),s(a,"all",function(t){var n=this;return"[object Array]"!=p.call(t)?n.reject(TypeError("Not an array")):0===t.length?n.resolve([]):new n(function(e,o){if("function"!=typeof e||"function"!=typeof o)throw TypeError("Not a function");var r=t.length,i=Array(r),f=0;c(n,t,function(t,n){i[t]=n,++f===r&&e(i)},o)})}),s(a,"race",function(t){var n=this;return"[object Array]"!=p.call(t)?n.reject(TypeError("Not an array")):new n(function(e,o){if("function"!=typeof e||"function"!=typeof o)throw TypeError("Not a function");c(n,t,function(t,n){e(n)},o)})}),a});
+!function(t,n,e){n[t]=n[t]||e(),"undefined"!=typeof module&&module.exports?module.exports=n[t]:"function"==typeof define&&define.amd&&define(function(){return n[t]})}("Promise","undefined"!=typeof global?global:this,function(){"use strict";function t(t,n){l.add(t,n),h||(h=y(l.drain))}function n(t){var n,e=typeof t;return null==t||"object"!=e&&"function"!=e||(n=t.then),"function"==typeof n?n:!1}function e(){for(var t=0;t<this.chain.length;t++)o(this,1===this.state?this.chain[t].success:this.chain[t].failure,this.chain[t]);this.chain.length=0}function o(t,e,o){var r,i;try{e===!1?o.reject(t.msg):(r=e===!0?t.msg:e.call(void 0,t.msg),r===o.promise?o.reject(TypeError("Promise-chain cycle")):(i=n(r))?i.call(r,o.resolve,o.reject):o.resolve(r))}catch(c){o.reject(c)}}function r(o){var c,u,a=this;if(!a.triggered){a.triggered=!0,a.def&&(a=a.def);try{(c=n(o))?(u=new f(a),c.call(o,function(){r.apply(u,arguments)},function(){i.apply(u,arguments)})):(a.msg=o,a.state=1,a.chain.length>0&&t(e,a))}catch(s){i.call(u||new f(a),s)}}}function i(n){var o=this;o.triggered||(o.triggered=!0,o.def&&(o=o.def),o.msg=n,o.state=2,o.chain.length>0&&t(e,o))}function c(t,n,e,o){for(var r=0;r<n.length;r++)!function(r){t.resolve(n[r]).then(function(t){e(r,t)},o)}(r)}function f(t){this.def=t,this.triggered=!1}function u(t){this.promise=t,this.state=0,this.triggered=!1,this.chain=[],this.msg=void 0}function a(n){if("function"!=typeof n)throw TypeError("Not a function");if(0!==this.__NPO__)throw TypeError("Not a promise");this.__NPO__=1;var o=new u(this);this.then=function(n,r){var i={success:"function"==typeof n?n:!0,failure:"function"==typeof r?r:!1};return i.promise=new this.constructor(function(t,n){if("function"!=typeof t||"function"!=typeof n)throw TypeError("Not a function");i.resolve=t,i.reject=n}),o.chain.push(i),0!==o.state&&t(e,o),i.promise},this["catch"]=function(t){return this.then(void 0,t)};try{n.call(void 0,function(t){r.call(o,t)},function(t){i.call(o,t)})}catch(c){i.call(o,c)}}var s,h,l,p=Object.prototype.toString,y="undefined"!=typeof setImmediate?function(t){return setImmediate(t)}:setTimeout;try{Object.defineProperty({},"x",{}),s=function(t,n,e,o){return Object.defineProperty(t,n,{value:e,writable:!0,configurable:o!==!1})}}catch(d){s=function(t,n,e){return t[n]=e,t}}l=function(){function t(t,n){this.fn=t,this.self=n,this.next=void 0}var n,e,o;return{add:function(r,i){o=new t(r,i),e?e.next=o:n=o,e=o,o=void 0},drain:function(){var t=n;for(n=e=h=void 0;t;)t.fn.call(t.self),t=t.next}}}();var g=s({},"constructor",a,!1);return a.prototype=g,s(g,"__NPO__",0,!1),s(a,"resolve",function(t){var n=this;return t&&"object"==typeof t&&1===t.__NPO__?t:new n(function(n,e){if("function"!=typeof n||"function"!=typeof e)throw TypeError("Not a function");n(t)})}),s(a,"reject",function(t){return new this(function(n,e){if("function"!=typeof n||"function"!=typeof e)throw TypeError("Not a function");e(t)})}),s(a,"all",function(t){var n=this;return"[object Array]"!=p.call(t)?n.reject(TypeError("Not an array")):0===t.length?n.resolve([]):new n(function(e,o){if("function"!=typeof e||"function"!=typeof o)throw TypeError("Not a function");var r=t.length,i=Array(r),f=0;c(n,t,function(t,n){i[t]=n,++f===r&&e(i)},o)})}),s(a,"race",function(t){var n=this;return"[object Array]"!=p.call(t)?n.reject(TypeError("Not an array")):new n(function(e,o){if("function"!=typeof e||"function"!=typeof o)throw TypeError("Not a function");c(n,t,function(t,n){e(n)},o)})}),a});
 
-}).call(this,typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],3:[function(_dereq_,module,exports){
+}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
+},{}],3:[function(require,module,exports){
 /**
  * A module of methods that you want to include in all actions.
  * This module is consumed by `createAction`.
@@ -221,7 +246,7 @@ if ('object' === typeof module && module.exports) {
 module.exports = {
 };
 
-},{}],4:[function(_dereq_,module,exports){
+},{}],4:[function(require,module,exports){
 exports.createdStores = [];
 
 exports.createdActions = [];
@@ -235,9 +260,9 @@ exports.reset = function() {
     }
 };
 
-},{}],5:[function(_dereq_,module,exports){
-var _ = _dereq_('./utils'),
-    maker = _dereq_('./joins').instanceJoinCreator;
+},{}],5:[function(require,module,exports){
+var _ = require('./utils'),
+    maker = require('./joins').instanceJoinCreator;
 
 /**
  * Extract child listenables from a parent from their
@@ -457,9 +482,9 @@ module.exports = {
     joinStrict: maker("strict")
 };
 
-},{"./joins":15,"./utils":19}],6:[function(_dereq_,module,exports){
-var _ = _dereq_('./utils'),
-    ListenerMethods = _dereq_('./ListenerMethods');
+},{"./joins":15,"./utils":19}],6:[function(require,module,exports){
+var _ = require('./utils'),
+    ListenerMethods = require('./ListenerMethods');
 
 /**
  * A module meant to be consumed as a mixin by a React component. Supplies the methods from
@@ -476,8 +501,8 @@ module.exports = _.extend({
 
 }, ListenerMethods);
 
-},{"./ListenerMethods":5,"./utils":19}],7:[function(_dereq_,module,exports){
-var _ = _dereq_('./utils');
+},{"./ListenerMethods":5,"./utils":19}],7:[function(require,module,exports){
+var _ = require('./utils');
 
 /**
  * A module of methods for object that you want to be able to listen to.
@@ -659,7 +684,7 @@ module.exports = {
     }
 };
 
-},{"./utils":19}],8:[function(_dereq_,module,exports){
+},{"./utils":19}],8:[function(require,module,exports){
 /**
  * A module of methods that you want to include in all stores.
  * This module is consumed by `createStore`.
@@ -667,7 +692,7 @@ module.exports = {
 module.exports = {
 };
 
-},{}],9:[function(_dereq_,module,exports){
+},{}],9:[function(require,module,exports){
 module.exports = function(store, definition) {
   for (var name in definition) {
     if (Object.getOwnPropertyDescriptor && Object.defineProperty) {
@@ -692,9 +717,9 @@ module.exports = function(store, definition) {
   return store;
 };
 
-},{}],10:[function(_dereq_,module,exports){
-var Reflux = _dereq_('./index'),
-    _ = _dereq_('./utils');
+},{}],10:[function(require,module,exports){
+var Reflux = require('./index'),
+    _ = require('./utils');
 
 module.exports = function(listenable,key){
     return {
@@ -709,16 +734,20 @@ module.exports = function(listenable,key){
         },
         componentDidMount: function(){
             _.extend(this,Reflux.ListenerMethods);
-            var me = this, cb = (key === undefined ? this.setState : function(v){me.setState(_.object([key],[v]));});
+            var me = this, cb = (key === undefined ? this.setState : function(v){
+                if (typeof me.isMounted === "undefined" || me.isMounted() === true) {
+                    me.setState(_.object([key],[v]));    
+                }
+            });
             this.listenTo(listenable,cb);
         },
         componentWillUnmount: Reflux.ListenerMixin.componentWillUnmount
     };
 };
 
-},{"./index":14,"./utils":19}],11:[function(_dereq_,module,exports){
-var Reflux = _dereq_('./index'),
-  _ = _dereq_('./utils');
+},{"./index":14,"./utils":19}],11:[function(require,module,exports){
+var Reflux = require('./index'),
+  _ = require('./utils');
 
 module.exports = function(listenable, key, filterFunc) {
     filterFunc = _.isFunction(key) ? key : filterFunc;
@@ -757,10 +786,10 @@ module.exports = function(listenable, key, filterFunc) {
 };
 
 
-},{"./index":14,"./utils":19}],12:[function(_dereq_,module,exports){
-var _ = _dereq_('./utils'),
-    Reflux = _dereq_('./index'),
-    Keep = _dereq_('./Keep'),
+},{"./index":14,"./utils":19}],12:[function(require,module,exports){
+var _ = require('./utils'),
+    Reflux = require('./index'),
+    Keep = require('./Keep'),
     allowed = {preEmit:1,shouldEmit:1};
 
 /**
@@ -824,13 +853,13 @@ var createAction = function(definition) {
 
 module.exports = createAction;
 
-},{"./Keep":4,"./index":14,"./utils":19}],13:[function(_dereq_,module,exports){
-var _ = _dereq_('./utils'),
-    Reflux = _dereq_('./index'),
-    Keep = _dereq_('./Keep'),
-    mixer = _dereq_('./mixer'),
+},{"./Keep":4,"./index":14,"./utils":19}],13:[function(require,module,exports){
+var _ = require('./utils'),
+    Reflux = require('./index'),
+    Keep = require('./Keep'),
+    mixer = require('./mixer'),
     allowed = {preEmit:1,shouldEmit:1},
-    bindMethods = _dereq_('./bindMethods');
+    bindMethods = require('./bindMethods');
 
 /**
  * Creates an event emitting Data Store. It is mixed in with functions
@@ -887,31 +916,31 @@ module.exports = function(definition) {
     return store;
 };
 
-},{"./Keep":4,"./bindMethods":9,"./index":14,"./mixer":18,"./utils":19}],14:[function(_dereq_,module,exports){
-exports.ActionMethods = _dereq_('./ActionMethods');
+},{"./Keep":4,"./bindMethods":9,"./index":14,"./mixer":18,"./utils":19}],14:[function(require,module,exports){
+exports.ActionMethods = require('./ActionMethods');
 
-exports.ListenerMethods = _dereq_('./ListenerMethods');
+exports.ListenerMethods = require('./ListenerMethods');
 
-exports.PublisherMethods = _dereq_('./PublisherMethods');
+exports.PublisherMethods = require('./PublisherMethods');
 
-exports.StoreMethods = _dereq_('./StoreMethods');
+exports.StoreMethods = require('./StoreMethods');
 
-exports.createAction = _dereq_('./createAction');
+exports.createAction = require('./createAction');
 
-exports.createStore = _dereq_('./createStore');
+exports.createStore = require('./createStore');
 
-exports.connect = _dereq_('./connect');
+exports.connect = require('./connect');
 
-exports.connectFilter = _dereq_('./connectFilter');
+exports.connectFilter = require('./connectFilter');
 
-exports.ListenerMixin = _dereq_('./ListenerMixin');
+exports.ListenerMixin = require('./ListenerMixin');
 
-exports.listenTo = _dereq_('./listenTo');
+exports.listenTo = require('./listenTo');
 
-exports.listenToMany = _dereq_('./listenToMany');
+exports.listenToMany = require('./listenToMany');
 
 
-var maker = _dereq_('./joins').staticJoinCreator;
+var maker = require('./joins').staticJoinCreator;
 
 exports.joinTrailing = exports.all = maker("last"); // Reflux.all alias for backward compatibility
 
@@ -921,7 +950,7 @@ exports.joinStrict = maker("strict");
 
 exports.joinConcat = maker("all");
 
-var _ = _dereq_('./utils');
+var _ = require('./utils');
 
 exports.EventEmitter = _.EventEmitter;
 
@@ -950,7 +979,7 @@ exports.createActions = function(definitions) {
  * Sets the eventmitter that Reflux uses
  */
 exports.setEventEmitter = function(ctx) {
-    var _ = _dereq_('./utils');
+    var _ = require('./utils');
     exports.EventEmitter = _.EventEmitter = ctx;
 };
 
@@ -959,7 +988,7 @@ exports.setEventEmitter = function(ctx) {
  * Sets the Promise library that Reflux uses
  */
 exports.setPromise = function(ctx) {
-    var _ = _dereq_('./utils');
+    var _ = require('./utils');
     exports.Promise = _.Promise = ctx;
 };
 
@@ -969,7 +998,7 @@ exports.setPromise = function(ctx) {
  * @param {Function} factory has the signature `function(resolver) { return [new Promise]; }`
  */
 exports.setPromiseFactory = function(factory) {
-    var _ = _dereq_('./utils');
+    var _ = require('./utils');
     _.createPromise = factory;
 };
 
@@ -978,14 +1007,14 @@ exports.setPromiseFactory = function(factory) {
  * Sets the method used for deferring actions and stores
  */
 exports.nextTick = function(nextTick) {
-    var _ = _dereq_('./utils');
+    var _ = require('./utils');
     _.nextTick = nextTick;
 };
 
 /**
  * Provides the set of created actions and stores for introspection
  */
-exports.__keep = _dereq_('./Keep');
+exports.__keep = require('./Keep');
 
 /**
  * Warn if Function.prototype.bind not available
@@ -998,14 +1027,14 @@ if (!Function.prototype.bind) {
   );
 }
 
-},{"./ActionMethods":3,"./Keep":4,"./ListenerMethods":5,"./ListenerMixin":6,"./PublisherMethods":7,"./StoreMethods":8,"./connect":10,"./connectFilter":11,"./createAction":12,"./createStore":13,"./joins":15,"./listenTo":16,"./listenToMany":17,"./utils":19}],15:[function(_dereq_,module,exports){
+},{"./ActionMethods":3,"./Keep":4,"./ListenerMethods":5,"./ListenerMixin":6,"./PublisherMethods":7,"./StoreMethods":8,"./connect":10,"./connectFilter":11,"./createAction":12,"./createStore":13,"./joins":15,"./listenTo":16,"./listenToMany":17,"./utils":19}],15:[function(require,module,exports){
 /**
  * Internal module used to create static and instance join methods
  */
 
 var slice = Array.prototype.slice,
-    _ = _dereq_("./utils"),
-    createStore = _dereq_("./createStore"),
+    _ = require("./utils"),
+    createStore = require("./createStore"),
     strategyMethodNames = {
         strict: "joinStrict",
         first: "joinLeading",
@@ -1106,8 +1135,8 @@ function emitIfAllListenablesEmitted(join) {
     reset(join);
 }
 
-},{"./createStore":13,"./utils":19}],16:[function(_dereq_,module,exports){
-var Reflux = _dereq_('./index');
+},{"./createStore":13,"./utils":19}],16:[function(require,module,exports){
+var Reflux = require('./index');
 
 
 /**
@@ -1144,8 +1173,8 @@ module.exports = function(listenable,callback,initial){
     };
 };
 
-},{"./index":14}],17:[function(_dereq_,module,exports){
-var Reflux = _dereq_('./index');
+},{"./index":14}],17:[function(require,module,exports){
+var Reflux = require('./index');
 
 /**
  * A mixin factory for a React component. Meant as a more convenient way of using the `listenerMixin`,
@@ -1179,8 +1208,8 @@ module.exports = function(listenables){
     };
 };
 
-},{"./index":14}],18:[function(_dereq_,module,exports){
-var _ = _dereq_('./utils');
+},{"./index":14}],18:[function(require,module,exports){
+var _ = require('./utils');
 
 module.exports = function mix(def) {
     var composed = {
@@ -1238,7 +1267,7 @@ module.exports = function mix(def) {
     return updated;
 };
 
-},{"./utils":19}],19:[function(_dereq_,module,exports){
+},{"./utils":19}],19:[function(require,module,exports){
 /*
  * isObject, extend, isFunction, isArguments are taken from undescore/lodash in
  * order to remove the dependency
@@ -1271,7 +1300,7 @@ exports.isFunction = function(value) {
     return typeof value === 'function';
 };
 
-exports.EventEmitter = _dereq_('eventemitter3');
+exports.EventEmitter = require('eventemitter3');
 
 exports.nextTick = function(callback) {
     setTimeout(callback, 0);
@@ -1287,13 +1316,13 @@ exports.callbackName = function(string){
 
 exports.object = function(keys,vals){
     var o={}, i=0;
-    for(;i<keys.length;i++){
+    for(;i < keys.length; i++){
         o[keys[i]] = vals[i];
     }
     return o;
 };
 
-exports.Promise = _dereq_("native-promise-only");
+exports.Promise = require("native-promise-only");
 
 exports.createPromise = function(resolver) {
     return new exports.Promise(resolver);
@@ -1309,6 +1338,5 @@ exports.throwIf = function(val,msg){
     }
 };
 
-},{"eventemitter3":1,"native-promise-only":2}]},{},[14])
-(14)
+},{"eventemitter3":1,"native-promise-only":2}]},{},[14])(14)
 });
