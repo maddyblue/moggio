@@ -46886,7 +46886,7 @@ var Tracks = exports.Tracks = React.createClass({displayName: "Tracks",
 	},
 	componentDidMount: function() {
 		window.addEventListener('resize', this.handleResize);
-		this.update();
+		this.update(null, this.props.tracks);
 	},
 	componentWillUnmount: function() {
 		window.removeEventListener('resize', this.handleResize);
