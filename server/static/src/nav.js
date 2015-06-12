@@ -258,6 +258,7 @@ var Player = React.createClass({
 			right: '5px',
 			height: '70px',
 		};
+		var ad = animation + ' ' + dur;
 		var seekPosStyle = {
 			position: 'absolute',
 			bottom: '0',
@@ -265,8 +266,7 @@ var Player = React.createClass({
 			left: '0',
 			animationTimingFunction: 'linear',
 			width: animation == '' ? 0 : '100%',
-			animationName: animation,
-			animationDuration: dur,
+			animation: ad,
 			backgroundColor: Colors.orange500,
 		};
 		return (
