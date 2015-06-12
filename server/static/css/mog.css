@@ -134,11 +134,11 @@ table.tracks button {
 	right: 0;
 	height: 100%;
 	width: 15px;
-	background: linear-gradient(to right, rgba(0,0,0,0), #FFF);
+	background: linear-gradient(to right, rgba(255, 255, 255, 0), rgb(255, 255, 255));
 }
 
 .public_fixedDataTable_bodyRow.public_fixedDataTableRow_highlighted .nowrap div:after {
-	background: linear-gradient(to right, rgba(0,0,0,0), #f5f5f5);
+	background: linear-gradient(to right, rgba(245, 245, 245,0), rgb(245, 245, 245));
 }
 
 .fixedDataTableCellGroup_cellGroup .hover {
