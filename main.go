@@ -4,6 +4,7 @@ import (
 	"flag"
 	"io"
 	"log"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -11,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/mjibson/mog/_third_party/github.com/facebookgo/httpcontrol"
 	"github.com/mjibson/mog/_third_party/gopkg.in/fsnotify.v1"
 	"github.com/mjibson/mog/server"
 
@@ -42,6 +44,13 @@ var (
 func main() {
 	flag.Parse()
 	runtime.GOMAXPROCS(runtime.NumCPU())
+	http.DefaultClient = &http.Client{
+		Transport: &httpcontrol.Transport{
+			ResponseHeaderTimeout: time.Second * 3,
+			MaxTries:              3,
+			RetryAfterTimeout:     true,
+		},
+	}
 	if *flagWatch {
 		watch(".", "*.go", quit)
 		go browserify()
