@@ -7,7 +7,6 @@ import (
 	"math/rand"
 	"net/http"
 	"net/url"
-	"runtime/debug"
 	"time"
 
 	"github.com/mjibson/mog/_third_party/golang.org/x/net/websocket"
@@ -349,15 +348,21 @@ func (srv *Server) audio() {
 	setMinDuration := func(c cmdMinDuration) {
 		srv.MinDuration = time.Duration(c)
 	}
+	ch := make(chan interface{})
+	go func() {
+		for c := range srv.ch {
+			timer := time.AfterFunc(time.Second*10, func() {
+				panic("delay timer expired")
+			})
+			ch <- c
+			timer.Stop()
+		}
+	}()
 	for {
 		select {
 		case <-t:
 			tick()
-		case c := <-srv.ch:
-			timer := time.AfterFunc(time.Second, func() {
-				log.Println("delay timer expired")
-				debug.PrintStack()
-			})
+		case c := <-ch:
 			save := true
 			log.Printf("%T\n", c)
 			switch c := c.(type) {
@@ -416,7 +421,6 @@ func (srv *Server) audio() {
 			if save {
 				queueSave()
 			}
-			timer.Stop()
 		}
 	}
 }
