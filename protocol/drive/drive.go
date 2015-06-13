@@ -4,6 +4,7 @@ import (
 	"encoding/gob"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 
 	"github.com/mjibson/mog/_third_party/github.com/google/google-api-go-client/drive/v2"
@@ -91,7 +92,7 @@ func (d *Drive) GetSong(id string) (codec.Song, error) {
 
 func (d *Drive) reader(id string) codec.Reader {
 	return func() (io.ReadCloser, int64, error) {
-		fmt.Println("DRIVE", id)
+		log.Println("DRIVE", id)
 		service, client, err := d.getService()
 		if err != nil {
 			return nil, 0, err
