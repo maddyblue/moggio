@@ -14,7 +14,7 @@ func TestLogin(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	auth, err := Login(string(username), string(password), "sj")
+	auth, err := Login(string(username), string(password), GetNode(), "sj")
 	if err != nil {
 		t.Fatal(err)
 	}

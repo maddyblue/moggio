@@ -30,9 +30,15 @@ type GMusic struct {
 	Auth     string
 }
 
-// Login logs in with a username and password.
+// Login logs in with a username and password and androidID from a MAC
+// address of the machine.
 func Login(username, password string) (*GMusic, error) {
-	auth, err := gpsoauth.Login(username, password, serviceName)
+	return LoginAndroid(username, password, gpsoauth.GetNode())
+}
+
+// LoginAndroid logs in with a username and password and given androidID.
+func LoginAndroid(username, password, androidID string) (*GMusic, error) {
+	auth, err := gpsoauth.Login(username, password, androidID, serviceName)
 	if err != nil {
 		return nil, err
 	}

@@ -6,9 +6,11 @@ import (
 	"crypto/rsa"
 	"crypto/sha1"
 	"encoding/base64"
+	"encoding/hex"
 	"fmt"
 	"io/ioutil"
 	"math/big"
+	"net"
 	"net/http"
 	"net/url"
 	"strings"
@@ -64,16 +66,16 @@ func signature(email, password string) (string, error) {
 
 // Login fetches a token and gets an OAuth string for an email address and
 // password for the given services.
-func Login(email, password string, service ...string) (auth string, err error) {
-	token, err := GetToken(email, password)
+func Login(email, password, androidID string, service ...string) (auth string, err error) {
+	token, err := GetToken(email, password, androidID)
 	if err != nil {
 		return "", err
 	}
-	return OAuth(email, token, service...)
+	return OAuth(email, token, androidID, service...)
 }
 
 // GetToken fetches a token for an email address and password.
-func GetToken(email, password string) (token string, err error) {
+func GetToken(email, password, androidID string) (token string, err error) {
 	sig, err := signature(email, password)
 	if err != nil {
 		return "", err
@@ -82,6 +84,7 @@ func GetToken(email, password string) (token string, err error) {
 		"Email":           []string{email},
 		"add_account":     []string{"1"},
 		"EncryptedPasswd": []string{string(sig)},
+		"androidId":       []string{androidID},
 	}
 	resp, err := http.Post(authURL, "application/x-www-form-urlencoded", strings.NewReader(data.Encode()))
 	if err != nil {
@@ -109,11 +112,12 @@ func GetToken(email, password string) (token string, err error) {
 
 // OAuth fetches an OAuth string for an email address and token for the
 // given services.
-func OAuth(email, token string, service ...string) (auth string, err error) {
+func OAuth(email, token, androidID string, service ...string) (auth string, err error) {
 	data := url.Values{
 		"Email":           []string{email},
 		"EncryptedPasswd": []string{token},
 		"service":         service,
+		"androidId":       []string{androidID},
 	}
 	resp, err := http.Post(authURL, "application/x-www-form-urlencoded", strings.NewReader(data.Encode()))
 	if err != nil {
@@ -137,4 +141,25 @@ func OAuth(email, token string, service ...string) (auth string, err error) {
 		}
 	}
 	return "", fmt.Errorf("gpsoauth: no Auth found")
+}
+
+// GetNode returns the MAC address of an interface on the machine is a
+// 12-character string, or generates one if no MAC address exists. Designed
+// for use as the androidID parameter.
+func GetNode() string {
+	var addr []byte
+	ifs, _ := net.Interfaces()
+	for _, i := range ifs {
+		if len(i.HardwareAddr) < 6 {
+			continue
+		}
+		addr = i.HardwareAddr
+		break
+	}
+	if addr == nil {
+		addr = make([]byte, 6)
+		// Ignore errors.
+		_, _ = rand.Read(addr)
+	}
+	return hex.EncodeToString(addr[:6])
 }
