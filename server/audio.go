@@ -202,7 +202,6 @@ func (srv *Server) audio() {
 			t = make(chan interface{})
 			close(t)
 			srv.state = statePlay
-			broadcast(waitStatus)
 		}
 		next, err := seek.Read(expected)
 		if err == nil {
