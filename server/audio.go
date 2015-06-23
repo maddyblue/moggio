@@ -172,6 +172,7 @@ func (srv *Server) audio() {
 
 			srv.songID = srv.Queue[srv.PlaylistIndex]
 			sid = srv.songID
+			srv.info = *srv.songs[sid]
 			inst = srv.Protocols[sid.Protocol][sid.Key]
 			song, err := inst.GetSong(sid.ID)
 			if err != nil {
@@ -194,7 +195,6 @@ func (srv *Server) audio() {
 				sendNext()
 				return
 			}
-			srv.info = *srv.songs[sid]
 			srv.elapsed = 0
 			dur = time.Second / (time.Duration(sr * ch))
 			seek = NewSeek(srv.info.Time > 0, dur, srv.song.Play)
