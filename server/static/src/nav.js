@@ -25,9 +25,10 @@ var { AppBar, LeftNav, MenuItem, IconButton, FloatingActionButton, RaisedButton 
 
 var App = React.createClass({
 	mixins: [
-		Reflux.listenTo(Stores.playlist, 'setState'),
+		Reflux.listenTo(Stores.playlist, 'setPlaylist'),
 		Reflux.listenTo(Stores.error, 'error'),
-		Router.Navigation
+		Router.Navigation,
+		Router.State,
 	],
 	childContextTypes: {
 		muiTheme: React.PropTypes.object
@@ -41,7 +42,9 @@ var App = React.createClass({
 		this.startWS();
 	},
 	getInitialState: function() {
-		return {};
+		return {
+			menuItems: navMenuItems,
+		};
 	},
 	startWS: function() {
 		var ws = new WebSocket('ws://' + window.location.host + '/ws/');
@@ -69,9 +72,29 @@ var App = React.createClass({
 		this.refs.leftNav.toggle();
 	},
 	leftNavChange: function(e, selectedIndex, menuItem) {
-		// TODO: correctly set navIndex on initial load
-		this.setState({navIndex: selectedIndex});
 		this.transitionTo(menuItem.route, menuItem.params);
+	},
+	setPlaylist: function(ps) {
+		var menuItems = _.clone(navMenuItems);
+		_.each(ps.Playlists, function(_, key) {
+			menuItems.push({
+				route: 'playlist',
+				params: {Playlist: key},
+				text: key
+			});
+		});
+		ps.menuItems = menuItems;
+		this.setState(ps);
+	},
+	getSelectedIndex() {
+		var currentItem;
+		var menuItems = this.state.menuItems;
+		for (var i = menuItems.length - 1; i >= 0; i--) {
+			currentItem = menuItems[i];
+			if (currentItem.route && this.context.router.isActive(currentItem.route)) {
+				return i;
+			}
+		}
 	},
 	render: function() {
 		var overlay;
@@ -86,14 +109,6 @@ var App = React.createClass({
 				</div>
 			);
 		}
-		var menuItems = _.clone(navMenuItems);
-		_.each(this.state.Playlists, function(_, key) {
-			menuItems.push({
-				route: 'playlist',
-				params: {Playlist: key},
-				text: key
-			});
-		});
 		var error;
 		if (this.state.error) {
 			var time = new Date(this.state.error.Time);
@@ -117,9 +132,9 @@ var App = React.createClass({
 				<LeftNav
 					ref="leftNav"
 					docked={false}
-					menuItems={menuItems}
+					menuItems={this.state.menuItems}
 					onChange={this.leftNavChange}
-					selectedIndex={this.state.navIndex}
+					selectedIndex={this.getSelectedIndex()}
 					/>
 				<RouteHandler {...this.props}/>
 				<footer>

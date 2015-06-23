@@ -49891,9 +49891,10 @@ var $__0=         mui,AppBar=$__0.AppBar,LeftNav=$__0.LeftNav,MenuItem=$__0.Menu
 
 var App = React.createClass({displayName: "App",
 	mixins: [
-		Reflux.listenTo(Stores.playlist, 'setState'),
+		Reflux.listenTo(Stores.playlist, 'setPlaylist'),
 		Reflux.listenTo(Stores.error, 'error'),
-		Router.Navigation
+		Router.Navigation,
+		Router.State,
 	],
 	childContextTypes: {
 		muiTheme: React.PropTypes.object
@@ -49907,7 +49908,9 @@ var App = React.createClass({displayName: "App",
 		this.startWS();
 	},
 	getInitialState: function() {
-		return {};
+		return {
+			menuItems: navMenuItems,
+		};
 	},
 	startWS: function() {
 		var ws = new WebSocket('ws://' + window.location.host + '/ws/');
@@ -49935,9 +49938,29 @@ var App = React.createClass({displayName: "App",
 		this.refs.leftNav.toggle();
 	},
 	leftNavChange: function(e, selectedIndex, menuItem) {
-		// TODO: correctly set navIndex on initial load
-		this.setState({navIndex: selectedIndex});
 		this.transitionTo(menuItem.route, menuItem.params);
+	},
+	setPlaylist: function(ps) {
+		var menuItems = _.clone(navMenuItems);
+		_.each(ps.Playlists, function(_, key) {
+			menuItems.push({
+				route: 'playlist',
+				params: {Playlist: key},
+				text: key
+			});
+		});
+		ps.menuItems = menuItems;
+		this.setState(ps);
+	},
+	getSelectedIndex:function() {
+		var currentItem;
+		var menuItems = this.state.menuItems;
+		for (var i = menuItems.length - 1; i >= 0; i--) {
+			currentItem = menuItems[i];
+			if (currentItem.route && this.context.router.isActive(currentItem.route)) {
+				return i;
+			}
+		}
 	},
 	render: function() {
 		var overlay;
@@ -49952,14 +49975,6 @@ var App = React.createClass({displayName: "App",
 				)
 			);
 		}
-		var menuItems = _.clone(navMenuItems);
-		_.each(this.state.Playlists, function(_, key) {
-			menuItems.push({
-				route: 'playlist',
-				params: {Playlist: key},
-				text: key
-			});
-		});
 		var error;
 		if (this.state.error) {
 			var time = new Date(this.state.error.Time);
@@ -49983,9 +49998,9 @@ var App = React.createClass({displayName: "App",
 				React.createElement(LeftNav, {
 					ref: "leftNav", 
 					docked: false, 
-					menuItems: menuItems, 
+					menuItems: this.state.menuItems, 
 					onChange: this.leftNavChange, 
-					selectedIndex: this.state.navIndex}
+					selectedIndex: this.getSelectedIndex()}
 					), 
 				React.createElement(RouteHandler, React.__spread({},  this.props)), 
 				React.createElement("footer", null, 
