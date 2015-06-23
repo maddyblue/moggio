@@ -139,6 +139,11 @@ func (srv *Server) audio() {
 	}
 	var inst protocol.Instance
 	var sid SongID
+	sendNext := func() {
+		go func() {
+			srv.ch <- cmdNext
+		}()
+	}
 	nextOpen := time.After(0)
 	tick = func() {
 		const expected = 4096
@@ -172,7 +177,7 @@ func (srv *Server) audio() {
 			if err != nil {
 				forceNext = true
 				broadcastErr(err)
-				next()
+				sendNext()
 				return
 			}
 			srv.song = song
@@ -180,13 +185,13 @@ func (srv *Server) audio() {
 			if err != nil {
 				srv.song.Close()
 				broadcastErr(err)
-				next()
+				sendNext()
 				return
 			}
 			o, err = output.Get(sr, ch)
 			if err != nil {
 				broadcastErr(fmt.Errorf("mog: could not open audio (%v, %v): %v", sr, ch, err))
-				next()
+				sendNext()
 				return
 			}
 			srv.info = *srv.songs[sid]
