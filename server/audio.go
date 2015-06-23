@@ -117,11 +117,12 @@ func (srv *Server) audio() {
 		stop()
 		play()
 	}
+	var forceNext = false
 	stop = func() {
 		log.Println("stop")
 		srv.state = stateStop
 		t = nil
-		if srv.song != nil {
+		if srv.song != nil || forceNext {
 			if srv.Random && len(srv.Queue) > 1 {
 				n := srv.PlaylistIndex
 				for n == srv.PlaylistIndex {
@@ -132,6 +133,7 @@ func (srv *Server) audio() {
 				srv.PlaylistIndex++
 			}
 		}
+		forceNext = false
 		srv.song = nil
 		srv.elapsed = 0
 	}
@@ -164,6 +166,7 @@ func (srv *Server) audio() {
 			inst = srv.Protocols[sid.Protocol][sid.Key]
 			song, err := inst.GetSong(sid.ID)
 			if err != nil {
+				forceNext = true
 				broadcastErr(err)
 				next()
 				return
