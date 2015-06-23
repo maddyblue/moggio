@@ -139,6 +139,7 @@ func (srv *Server) audio() {
 	}
 	var inst protocol.Instance
 	var sid SongID
+	nextOpen := time.After(0)
 	tick = func() {
 		const expected = 4096
 		if false && srv.elapsed > srv.info.Time {
@@ -146,6 +147,9 @@ func (srv *Server) audio() {
 			stop()
 		}
 		if srv.song == nil {
+			<-nextOpen
+			nextOpen = time.After(time.Second / 2)
+			defer broadcast(waitStatus)
 			if len(srv.Queue) == 0 {
 				log.Println("empty queue")
 				stop()
