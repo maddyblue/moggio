@@ -77,18 +77,21 @@ var TimeDisplay = React.createClass({
         textAlign: 'center',
         position: 'relative',
         width: '280px',
-        height: '100%' },
+        height: '100%'
+      },
 
       time: {
         margin: '6px 0',
         lineHeight: '58px',
         height: '58px',
-        fontSize: '58px' },
+        fontSize: '58px'
+      },
 
       box: {
         padding: '16px 0',
         backgroundColor: this.getTheme().color,
-        color: this.getTheme().textColor },
+        color: this.getTheme().textColor
+      },
 
       hour: {},
 

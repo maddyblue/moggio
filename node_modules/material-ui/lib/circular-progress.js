@@ -115,7 +115,9 @@ var CircularProgress = React.createClass({
         margin: margin + 'px',
         display: 'inline-block',
         width: size,
-        height: size },
+        height: size
+
+      },
       wrapper: {
 
         width: size,

@@ -65,7 +65,8 @@ var DatePickerDialog = React.createClass({
       },
 
       actions: {
-        marginRight: 8 }
+        marginRight: 8
+      }
     };
 
     var actions = [React.createElement(FlatButton, {

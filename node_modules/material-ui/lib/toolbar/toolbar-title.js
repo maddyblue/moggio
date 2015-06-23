@@ -17,7 +17,8 @@ var ToolbarTitle = React.createClass({
   },
 
   propTypes: {
-    text: React.PropTypes.string },
+    text: React.PropTypes.string
+  },
 
   getTheme: function getTheme() {
     return this.context.muiTheme.component.toolbar;
@@ -35,7 +36,8 @@ var ToolbarTitle = React.createClass({
       lineHeight: this.getTheme().height + 'px',
       fontSize: this.getTheme().titleFontSize + 'px',
       display: 'inline-block',
-      position: 'relative' }, style);
+      position: 'relative'
+    }, style);
 
     return React.createElement(
       'span',

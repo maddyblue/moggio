@@ -16,7 +16,8 @@ var DarkTheme = {
     var cardColor = Colors.grey800;
     return {
       floatingActionButton: {
-        disabledColor: ColorManipulator.fade(palette.textColor, 0.12) },
+        disabledColor: ColorManipulator.fade(palette.textColor, 0.12)
+      },
       leftNav: {
         color: cardColor
       },
@@ -25,14 +26,17 @@ var DarkTheme = {
         containerBackgroundColor: cardColor
       },
       menuItem: {
-        hoverColor: 'rgba(255, 255, 255, .03)' },
+        hoverColor: 'rgba(255, 255, 255, .03)'
+      },
       menuSubheader: {
-        borderColor: 'rgba(255, 255, 255, 0.3)' },
+        borderColor: 'rgba(255, 255, 255, 0.3)'
+      },
       paper: {
         backgroundColor: cardColor
       },
       raisedButton: {
-        color: Colors.grey500 },
+        color: Colors.grey500
+      },
       toggle: {
         thumbOnColor: Colors.cyan200,
         thumbOffColor: Colors.grey400,
@@ -40,12 +44,15 @@ var DarkTheme = {
         thumbRequiredColor: Colors.cyan200,
         trackOnColor: ColorManipulator.fade(Colors.cyan200, 0.5),
         trackOffColor: 'rgba(255, 255, 255, 0.3)',
-        trackDisabledColor: 'rgba(255, 255, 255, 0.1)' },
+        trackDisabledColor: 'rgba(255, 255, 255, 0.1)'
+      },
       slider: {
         trackColor: Colors.minBlack,
         handleColorZero: cardColor,
         handleFillColor: cardColor,
-        selectionColor: Colors.cyan200 } };
+        selectionColor: Colors.cyan200
+      }
+    };
   }
 };
 

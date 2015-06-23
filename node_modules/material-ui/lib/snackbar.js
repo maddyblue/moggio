@@ -76,7 +76,8 @@ var Snackbar = React.createClass({
         left: -10000,
         opacity: 0,
         transform: 'translate3d(0, 20px, 0)',
-        transition: Transitions.easeOut('0ms', 'left', '400ms') + ',' + Transitions.easeOut('400ms', 'opacity') + ',' + Transitions.easeOut('400ms', 'transform') },
+        transition: Transitions.easeOut('0ms', 'left', '400ms') + ',' + Transitions.easeOut('400ms', 'opacity') + ',' + Transitions.easeOut('400ms', 'transform')
+      },
       action: {
         color: this.getTheme().actionColor,
         float: 'right',

@@ -63,7 +63,8 @@ module.exports = {
     var values = {
       r: parseInt(color.substr(1, 2), 16),
       g: parseInt(color.substr(3, 2), 16),
-      b: parseInt(color.substr(5, 2), 16) };
+      b: parseInt(color.substr(5, 2), 16)
+    };
 
     return 'rgb(' + values.r + ',' + values.g + ',' + values.b + ')';
   },
@@ -169,4 +170,6 @@ module.exports = {
       var range = levels[level].range;
       if (ratio >= range[0] && ratio <= range[1]) return level;
     }
-  } };
+  }
+
+};

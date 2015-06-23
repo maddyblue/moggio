@@ -74,7 +74,8 @@ var DayButton = React.createClass({
         borderRadius: '50%',
         transform: 'scale(0)',
         transition: Transition.easeOut(),
-        backgroundColor: this.getTheme().selectColor }
+        backgroundColor: this.getTheme().selectColor
+      }
     };
 
     if (this.state.hover) {

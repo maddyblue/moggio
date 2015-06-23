@@ -48,7 +48,8 @@ var Input = React.createClass({
       'mui-floating': this.props.inputStyle === 'floating',
       'mui-text': this.props.type === 'text',
       'mui-error': this.props.error || false,
-      'mui-disabled': !!this.props.disabled });
+      'mui-disabled': !!this.props.disabled
+    });
     var placeholder = this.props.inlinePlaceholder ? this.props.placeholder : '';
     var inputIsNotEmpty = !!this.state.value;
     var inputClassName = ClassNames({

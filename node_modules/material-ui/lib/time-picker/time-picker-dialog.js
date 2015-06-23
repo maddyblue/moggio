@@ -25,7 +25,8 @@ var TimePickerDialog = React.createClass({
     initialTime: React.PropTypes.object,
     onAccept: React.PropTypes.func,
     onShow: React.PropTypes.func,
-    onDismiss: React.PropTypes.func },
+    onDismiss: React.PropTypes.func
+  },
 
   windowListeners: {
     'keyup': '_handleWindowKeyUp'
@@ -45,9 +46,11 @@ var TimePickerDialog = React.createClass({
     var styles = {
       root: {
         fontSize: '14px',
-        color: this.getTheme().clockColor },
+        color: this.getTheme().clockColor
+      },
       dialogContent: {
-        width: '280px' }
+        width: '280px'
+      }
     };
 
     var actions = [React.createElement(FlatButton, {

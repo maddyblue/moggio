@@ -69,7 +69,9 @@ var ClockButton = React.createClass({
         borderRadius: '50%',
         transform: 'scale(0)',
         transition: Transitions.easeOut(),
-        backgroundColor: this.getTheme().accentColor } };
+        backgroundColor: this.getTheme().accentColor
+      }
+    };
 
     if (this.props.selected) {
       styles.label.color = this.getTheme().selectTextColor;

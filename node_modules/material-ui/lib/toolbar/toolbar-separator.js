@@ -29,7 +29,8 @@ var ToolbarSeparator = React.createClass({
       marginLeft: this.getSpacing().desktopGutter,
       position: 'relative',
       top: (this.getTheme().height - this.getSpacing().desktopGutterMore) / 2,
-      width: 1 }, this.props.style);
+      width: 1
+    }, this.props.style);
 
     return React.createElement('span', { className: this.props.className, style: styles });
   }

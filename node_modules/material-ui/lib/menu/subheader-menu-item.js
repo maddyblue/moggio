@@ -17,7 +17,8 @@ var SubheaderMenuItem = React.createClass({
     index: React.PropTypes.number.isRequired,
     text: React.PropTypes.string.isRequired,
     firstChild: React.PropTypes.bool,
-    className: React.PropTypes.string },
+    className: React.PropTypes.string
+  },
 
   getTheme: function getTheme() {
     return this.context.muiTheme.component.menuSubheader;

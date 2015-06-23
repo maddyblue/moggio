@@ -66,7 +66,8 @@ var Tooltip = React.createClass({
         top: -16,
         opacity: 1,
         transform: 'translate3d(0px, 16px, 0px)',
-        transition: Transitions.easeOut('0ms', 'top', '0ms') + ',' + Transitions.easeOut('450ms', 'transform', '0ms') + ',' + Transitions.easeOut('450ms', 'opacity', '0ms') },
+        transition: Transitions.easeOut('0ms', 'top', '0ms') + ',' + Transitions.easeOut('450ms', 'transform', '0ms') + ',' + Transitions.easeOut('450ms', 'opacity', '0ms')
+      },
       rootWhenTouched: {
         fontSize: '14px',
         lineHeight: '44px',

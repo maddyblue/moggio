@@ -75,7 +75,8 @@ var YearButton = React.createClass({
         borderRadius: '50%',
         transform: 'scale(0)',
         backgroundColor: this.getTheme().selectColor
-      } };
+      }
+    };
 
     if (this.state.hover) {
       styles.label.color = this.getTheme().selectTextColor;

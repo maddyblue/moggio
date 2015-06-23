@@ -114,7 +114,8 @@ var Clock = React.createClass({
 
       container: {
         height: '280px',
-        padding: '10px' }
+        padding: '10px'
+      }
     };
 
     if (this.state.mode == 'hour') {

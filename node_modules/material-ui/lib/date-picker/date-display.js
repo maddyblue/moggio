@@ -95,7 +95,8 @@ var DateDisplay = React.createClass({
         height: isLandscape ? this.props.weekCount * 40 + 36 + 'px' : '150px',
         padding: '16px 0',
         transition: Transitions.easeOut(),
-        boxSizing: 'border-box' },
+        boxSizing: 'border-box'
+      },
 
       date: {
         position: 'relative',

@@ -37,7 +37,8 @@ var FlatButton = React.createClass({
 
   getDefaultProps: function getDefaultProps() {
     return {
-      labelStyle: {} };
+      labelStyle: {}
+    };
   },
 
   getInitialState: function getInitialState() {
@@ -87,10 +88,12 @@ var FlatButton = React.createClass({
         margin: 0,
         //This is need so that ripples do not bleed past border radius.
         //See: http://stackoverflow.com/questions/17298739/css-overflow-hidden-not-working-in-chrome-when-parent-has-border-radius-and-chil
-        transform: 'translate3d(0, 0, 0)' },
+        transform: 'translate3d(0, 0, 0)'
+      },
       label: {
         position: 'relative',
-        padding: '0px ' + this.context.muiTheme.spacing.desktopGutterLess + 'px' },
+        padding: '0px ' + this.context.muiTheme.spacing.desktopGutterLess + 'px'
+      },
       rootWhenHovered: {
         backgroundColor: color.hover
       },
