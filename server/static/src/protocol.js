@@ -115,14 +115,10 @@ var Protocol = React.createClass({
 				label='connect'
 				/>);
 		}
-		var save;
-		if (this.state.save) {
-			save = <div><RaisedButton onClick={this.save} label='save' /></div>;
-		}
 		return (
 			<div>
 				{params}
-				{save}
+				<div><RaisedButton onClick={this.save} label='save' disabled={!this.state.save} /></div>
 			</div>
 		);
 	}
