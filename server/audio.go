@@ -42,7 +42,7 @@ func (srv *Server) audio() {
 		broadcastData(wd)
 	}
 	broadcastErr := func(err error) {
-		log.Println("err:", err)
+		printErr(err)
 		v := struct {
 			Time  time.Time
 			Error string
@@ -164,7 +164,7 @@ func (srv *Server) audio() {
 			inst = srv.Protocols[sid.Protocol][sid.Key]
 			song, err := inst.GetSong(sid.ID)
 			if err != nil {
-				printErr(err)
+				broadcastErr(err)
 				next()
 				return
 			}
@@ -172,13 +172,13 @@ func (srv *Server) audio() {
 			sr, ch, err := srv.song.Init()
 			if err != nil {
 				srv.song.Close()
-				printErr(err)
+				broadcastErr(err)
 				next()
 				return
 			}
 			o, err = output.Get(sr, ch)
 			if err != nil {
-				printErr(fmt.Errorf("mog: could not open audio (%v, %v): %v", sr, ch, err))
+				broadcastErr(fmt.Errorf("mog: could not open audio (%v, %v): %v", sr, ch, err))
 				next()
 				return
 			}
