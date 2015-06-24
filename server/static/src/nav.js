@@ -17,6 +17,7 @@ var RouteHandler = Router.RouteHandler;
 var Redirect = Router.Redirect;
 
 var Mog = require('./mog.js');
+var Group = require('./group.js');
 var List = require('./list.js');
 var Playlist = require('./playlist.js');
 var Protocol = require('./protocol.js');
@@ -149,6 +150,8 @@ var navMenuItems = [
 	{ route: 'app', text: 'Music' },
 	{ route: 'protocols', text: 'Sources' },
 	{ route: 'queue', text: 'Queue' },
+	{ route: 'artists', text: 'Artists' },
+	{ route: 'albums', text: 'Albums' },
 	{ type: MenuItem.Types.SUBHEADER, text: 'Playlists' },
 ];
 
@@ -330,7 +333,9 @@ var routes = (
 	<Route name="app" path="/" handler={App}>
 		<DefaultRoute handler={List.TrackList} />
 		<Route name="album" path="/album/:Album" handler={List.Album} />
+		<Route name="albums" path="/albums" handler={Group.Albums} />
 		<Route name="artist" path="/artist/:Artist" handler={List.Artist} />
+		<Route name="artists" path="/artists" handler={Group.Artists} />
 		<Route name="playlist" path="/playlist/:Playlist" handler={Playlist.Playlist} />
 		<Route name="protocols" handler={Protocol.Protocols} />
 		<Route name="queue" handler={Playlist.Queue} />
