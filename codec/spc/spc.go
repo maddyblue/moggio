@@ -3,6 +3,7 @@
 package spc
 
 import (
+	"io"
 	"io/ioutil"
 	"math"
 	"strconv"
@@ -16,6 +17,10 @@ import (
 func init() {
 	codec.RegisterCodec("SPC", "SNES-SPC", []string{"spc"}, NewSongs)
 }
+
+const (
+	spcChannels = 2
+)
 
 func NewSongs(rf codec.Reader) ([]codec.Song, error) {
 	s, err := NewSong(rf)
@@ -37,6 +42,8 @@ type SPC struct {
 	Reader codec.Reader
 	b      []byte
 	s      *spc.SPC
+	played time.Duration
+	info   codec.SongInfo
 }
 
 func (s *SPC) get() ([]byte, error) {
@@ -65,22 +72,21 @@ func (s *SPC) Init() (sampleRate, channels int, err error) {
 			return 0, 0, err
 		}
 		s.s = ss
+		var info codec.SongInfo
+		info.Title = clean(b[0x2e : 0x2e+32])
+		info.Album = clean(b[0x4e : 0x4e+32])
+		info.Artist = clean(b[0xb1 : 0xb1+32])
+		if i, _ := strconv.Atoi(clean(b[0xa9 : 0xa9+3])); i != 0 {
+			info.Time = time.Second * time.Duration(i)
+		}
+		s.info = info
+		s.played = 0
 	}
-	return spc.SampleRate(), 2, nil
+	return spc.SampleRate(), spcChannels, nil
 }
 
-func (s *SPC) Info() (info codec.SongInfo, err error) {
-	b, err := s.get()
-	if err != nil {
-		return
-	}
-	info.Title = clean(b[0x2e : 0x2e+32])
-	info.Album = clean(b[0x4e : 0x4e+32])
-	info.Artist = clean(b[0xb1 : 0xb1+32])
-	if i, _ := strconv.Atoi(clean(b[0xa9 : 0xa9+3])); i != 0 {
-		info.Time = time.Second * time.Duration(i)
-	}
-	return
+func (s *SPC) Info() (codec.SongInfo, error) {
+	return s.info, nil
 }
 
 func clean(b []byte) string {
@@ -89,6 +95,9 @@ func clean(b []byte) string {
 }
 
 func (s *SPC) Play(n int) ([]float32, error) {
+	if s.played > s.info.Time {
+		return nil, io.EOF
+	}
 	data := make([]int16, n)
 	if err := s.s.Play(data); err != nil {
 		return nil, err
@@ -97,6 +106,7 @@ func (s *SPC) Play(n int) ([]float32, error) {
 	for i, s := range data {
 		ret[i] = (float32(s) - math.MinInt16) / (math.MaxInt16 - math.MinInt16)
 	}
+	s.played += time.Second / time.Duration(spc.SampleRate()*spcChannels) * time.Duration(n)
 	return ret, nil
 }
 
