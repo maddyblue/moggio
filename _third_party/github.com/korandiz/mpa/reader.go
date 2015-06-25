@@ -131,7 +131,10 @@ func (r *Reader) refill() error {
 // result into the buffer, and updates 'unread' accordingly.
 func (r *Reader) convert(samples *[2][1152]float32) {
 	nSamples := r.Decoder.NSamples()
-	nChannels := r.Decoder.NChannels()
+	nChannels := 2
+	if r.Mono {
+		nChannels = 1
+	}
 
 	format := formatDescriptions[r.Format]
 	offset := float32(1)
