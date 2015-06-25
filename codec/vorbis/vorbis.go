@@ -6,7 +6,7 @@ import (
 	"bytes"
 	"io"
 
-	"github.com/mjibson/mog/_third_party/github.com/mjibson/vorbis-fork"
+	"github.com/mjibson/mog/_third_party/github.com/mccoyst/vorbis"
 	"github.com/mjibson/mog/codec"
 )
 
