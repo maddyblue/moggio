@@ -20,6 +20,7 @@ import (
 	_ "github.com/mjibson/mog/codec/flac"
 	_ "github.com/mjibson/mog/codec/mpa"
 	_ "github.com/mjibson/mog/codec/nsf"
+	_ "github.com/mjibson/mog/codec/spc"
 	_ "github.com/mjibson/mog/codec/vorbis"
 	_ "github.com/mjibson/mog/codec/wav"
 
