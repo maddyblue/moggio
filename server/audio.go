@@ -172,7 +172,14 @@ func (srv *Server) audio() {
 
 			srv.songID = srv.Queue[srv.PlaylistIndex]
 			sid = srv.songID
-			srv.info = *srv.songs[sid]
+			if info := srv.songs[sid]; info == nil {
+				broadcastErr(fmt.Errorf("unknown id: %v", sid))
+				forceNext = true
+				sendNext()
+				return
+			} else {
+				srv.info = *info
+			}
 			inst = srv.Protocols[sid.Protocol()][sid.Key()]
 			song, err := inst.GetSong(sid.ID())
 			if err != nil {
