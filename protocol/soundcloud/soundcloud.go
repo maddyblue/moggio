@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/mjibson/mog/_third_party/github.com/google/google-api-go-client/googleapi"
@@ -46,7 +45,7 @@ func (s *Soundcloud) getService() (*soundcloud.Service, *http.Client, error) {
 
 type Soundcloud struct {
 	Token     *oauth2.Token
-	Favorites map[string]*soundcloud.Favorite
+	Favorites map[codec.ID]*soundcloud.Favorite
 }
 
 func New(params []string, token *oauth2.Token) (protocol.Instance, error) {
@@ -62,7 +61,7 @@ func (s *Soundcloud) Key() string {
 	return s.Token.AccessToken
 }
 
-func (s *Soundcloud) Info(id string) (*codec.SongInfo, error) {
+func (s *Soundcloud) Info(id codec.ID) (*codec.SongInfo, error) {
 	f := s.Favorites[id]
 	if f == nil {
 		return nil, fmt.Errorf("could not find %v", id)
@@ -94,7 +93,7 @@ func (s *Soundcloud) List() (protocol.SongList, error) {
 	return s.SongList(), nil
 }
 
-func (s *Soundcloud) GetSong(id string) (codec.Song, error) {
+func (s *Soundcloud) GetSong(id codec.ID) (codec.Song, error) {
 	fmt.Println("SOUNDCLOUD", id)
 	_, client, err := s.getService()
 	if err != nil {
@@ -125,9 +124,9 @@ func (s *Soundcloud) Refresh() (protocol.SongList, error) {
 	if err != nil {
 		return nil, err
 	}
-	favs := make(map[string]*soundcloud.Favorite)
+	favs := make(map[codec.ID]*soundcloud.Favorite)
 	for _, f := range favorites {
-		favs[strconv.FormatInt(f.ID, 10)] = f
+		favs[codec.Int64(f.ID)] = f
 	}
 	s.Favorites = favs
 	return s.SongList(), err

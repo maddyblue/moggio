@@ -12,7 +12,6 @@ import (
 	"math"
 	"math/big"
 	"math/rand"
-	"net/url"
 	"path/filepath"
 	"runtime"
 	"strconv"
@@ -80,36 +79,39 @@ func (s State) String() string {
 
 type Playlist []SongID
 
-type SongID struct {
-	Protocol string
-	Key      string
-	ID       string
-}
-
-func ParseSongID(s string) (id SongID, err error) {
-	sp := strings.SplitN(s, "|", 3)
-	if len(sp) != 3 {
-		return id, fmt.Errorf("bad songid: %v", s)
-	}
-	return SongID{sp[0], sp[1], sp[2]}, nil
-}
-
-func (s SongID) String() string {
-	return fmt.Sprintf("%s|%s|%s", s.Protocol, s.Key, s.ID)
-}
+type SongID codec.ID
 
 func (s SongID) MarshalJSON() ([]byte, error) {
+	sp := strings.SplitN(string(s), codec.IdSep, 3)
+	if len(sp) != 3 {
+		return json.Marshal("")
+	}
 	return json.Marshal(struct {
 		Protocol string
 		Key      string
 		ID       string
 		UID      string
 	}{
-		Protocol: s.Protocol,
-		Key:      s.Key,
-		ID:       s.ID,
-		UID:      s.String(),
+		sp[0],
+		sp[1],
+		sp[2],
+		string(s),
 	})
+}
+
+func (s SongID) Protocol() string {
+	return codec.ID(s).Top()
+}
+
+func (s SongID) Key() string {
+	_, c := codec.ID(s).Pop()
+	return c.Top()
+}
+
+func (s SongID) ID() codec.ID {
+	_, c := codec.ID(s).Pop()
+	_, c = c.Pop()
+	return c
 }
 
 type Server struct {
@@ -295,42 +297,41 @@ func (srv *Server) protocolRefresh(protocol, key string, list bool) error {
 	return err
 }
 
-func (srv *Server) playlistChange(p Playlist, form url.Values, isq bool) (pl Playlist, cleared bool, err error) {
-	m := make([]*SongID, len(p))
-	for i, v := range p {
-		v := v
-		m[i] = &v
-	}
-	for _, c := range form["c"] {
-		sp := strings.SplitN(c, "-", 2)
-		switch sp[0] {
+type PlaylistChange [][]string
+
+func (srv *Server) playlistChange(p Playlist, plc PlaylistChange, isq bool) (pl Playlist, cleared bool, err error) {
+	m := make([]SongID, len(p))
+	copy(m, p)
+	for _, c := range plc {
+		cmd := c[0]
+		var arg string
+		if len(c) > 1 {
+			arg = c[1]
+		}
+		switch cmd {
 		case "clear":
 			cleared = true
 			for i := range m {
-				m[i] = nil
+				m[i] = ""
 			}
 		case "rem":
-			i, err := strconv.Atoi(sp[1])
+			i, err := strconv.Atoi(arg)
 			if err != nil {
 				return nil, false, err
 			}
 			if len(m) <= i {
 				return nil, false, fmt.Errorf("unknown index: %v", i)
 			}
-			m[i] = nil
+			m[i] = ""
 		case "add":
-			id, err := ParseSongID(sp[1])
-			if err != nil {
-				return nil, false, err
-			}
-			m = append(m, &id)
+			m = append(m, SongID(arg))
 		default:
-			return nil, false, fmt.Errorf("unknown command: %v", sp[0])
+			return nil, false, fmt.Errorf("unknown command: %v", cmd)
 		}
 	}
 	for _, id := range m {
-		if id != nil {
-			pl = append(pl, *id)
+		if id != "" {
+			pl = append(pl, id)
 		}
 	}
 	return

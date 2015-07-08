@@ -55,7 +55,7 @@ func (d *Dropbox) Key() string {
 	return d.Token.AccessToken
 }
 
-func (d *Dropbox) Info(id string) (*codec.SongInfo, error) {
+func (d *Dropbox) Info(id codec.ID) (*codec.SongInfo, error) {
 	s := d.Songs[id]
 	if s == nil {
 		return nil, fmt.Errorf("could not find %v", id)
@@ -70,23 +70,13 @@ func (d *Dropbox) List() (protocol.SongList, error) {
 	return d.Songs, nil
 }
 
-func (d *Dropbox) GetSong(id string) (codec.Song, error) {
-	path, num, err := protocol.ParseID(id)
-	if err != nil {
-		return nil, err
-	}
+func (d *Dropbox) GetSong(id codec.ID) (codec.Song, error) {
+	path, child := id.Pop()
 	f := d.Files[path]
 	if f == nil {
 		return nil, fmt.Errorf("missing %v", path)
 	}
-	ss, _, err := codec.ByExtension(f.Path, d.reader(path, f.Bytes))
-	if err != nil {
-		return nil, err
-	}
-	if len(ss) < num+1 {
-		return nil, fmt.Errorf("missing %v", id)
-	}
-	return ss[num], nil
+	return codec.ByExtensionID(path, child, d.reader(path, f.Bytes))
 }
 
 func (d *Dropbox) reader(id string, size int64) codec.Reader {
@@ -111,7 +101,7 @@ func (d *Dropbox) Refresh() (protocol.SongList, error) {
 	}
 	files := make(map[string]*dropbox.ListContent)
 	songs := make(protocol.SongList)
-	var ss []codec.Song
+	var ss codec.Songs
 	dirs := []string{""}
 	for {
 		if len(dirs) == 0 {
@@ -134,7 +124,6 @@ func (d *Dropbox) Refresh() (protocol.SongList, error) {
 			}
 			files[f.Path] = f
 			for i, v := range ss {
-				id := fmt.Sprintf("%v-%v", i, f.Path)
 				info, _ := v.Info()
 				if info.Title == "" {
 					title := path.Base(f.Path)
@@ -146,7 +135,7 @@ func (d *Dropbox) Refresh() (protocol.SongList, error) {
 				if info.Album == "" {
 					info.Album = path.Base(dir)
 				}
-				songs[id] = &info
+				songs[codec.NewID(f.Path, string(i))] = &info
 			}
 		}
 	}

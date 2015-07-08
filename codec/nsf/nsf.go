@@ -4,17 +4,18 @@ package nsf
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/mjibson/mog/_third_party/github.com/mjibson/nsf"
 	"github.com/mjibson/mog/codec"
 )
 
 func init() {
-	codec.RegisterCodec("NSF", "NESM\u001a", []string{"nsf"}, ReadNSFSongs)
-	codec.RegisterCodec("NSFE", "NSFE", []string{"nsfe"}, ReadNSFSongs)
+	codec.RegisterCodec("NSF", []string{"NESM\u001a"}, []string{"nsf"}, ReadNSFSongs, Get)
+	codec.RegisterCodec("NSFE", []string{"NSFE"}, []string{"nsfe"}, ReadNSFSongs, Get)
 }
 
-func ReadNSFSongs(rf codec.Reader) ([]codec.Song, error) {
+func ReadNSFSongs(rf codec.Reader) (codec.Songs, error) {
 	r, _, err := rf()
 	if err != nil {
 		return nil, err
@@ -24,15 +25,26 @@ func ReadNSFSongs(rf codec.Reader) ([]codec.Song, error) {
 	if err != nil {
 		return nil, err
 	}
-	songs := make([]codec.Song, len(n.Songs))
-	for i := range songs {
-		songs[i] = &NSFSong{
+	songs := make(codec.Songs, len(n.Songs))
+	for i := 0; i < len(n.Songs); i++ {
+		songs[codec.Int(i)] = &NSFSong{
 			NSF:    n,
 			Index:  i + 1,
 			Reader: rf,
 		}
 	}
 	return songs, nil
+}
+
+func Get(rf codec.Reader, id codec.ID) (codec.Song, error) {
+	i, err := strconv.Atoi(string(id))
+	if err != nil {
+		return nil, err
+	}
+	return &NSFSong{
+		Index:  i + 1,
+		Reader: rf,
+	}, nil
 }
 
 type NSFSong struct {

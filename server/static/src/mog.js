@@ -27,22 +27,14 @@ _.each(exports.Actions, function(action, name) {
 	});
 });
 
-var POST = exports.POST = function(path, params, success) {
-	var data = new(FormData);
-	if (_.isArray(params)) {
-		_.each(params, function(v) {
-			data.append(v.name, v.value);
-		});
-	} else if (_.isObject(params)) {
-		_.each(params, function(v, k) {
-			data.append(k, v);
-		});
-	} else if (params) {
-		data = params;
-	}
+var POST = exports.POST = function(path, body, success) {
 	var f = fetch(path, {
 		method: 'post',
-		body: data
+		headers: {
+			'Accept': 'application/json',
+			'Content-Type': 'application/json'
+		},
+		body: JSON.stringify(body)
 	});
 	f.then(function(response) {
 		if (response.status >= 200 && response.status < 300) {
@@ -62,15 +54,6 @@ var POST = exports.POST = function(path, params, success) {
 	}
 	return f;
 }
-
-exports.mkcmd = function(cmds) {
-	return _.map(cmds, function(val) {
-		return {
-			"name": "c",
-			"value": val
-		};
-	});
-};
 
 document.addEventListener('keydown', function(e) {
 	if (document.activeElement != document.body) {

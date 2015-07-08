@@ -6,15 +6,16 @@ import (
 	"io"
 	"io/ioutil"
 	"math"
+	"strconv"
 
 	"github.com/mjibson/mog/_third_party/github.com/mjibson/gme"
 	"github.com/mjibson/mog/codec"
 )
 
 func init() {
-	codec.RegisterCodec("SPC", "SNES-SPC", []string{"spc"}, NewSongs)
-	codec.RegisterCodec("NSF", "NESM\u001a", []string{"nsf"}, NewSongs)
-	codec.RegisterCodec("NSFE", "NSFE", []string{"nsfe"}, NewSongs)
+	codec.RegisterCodec("SPC", []string{"SNES-SPC"}, []string{"spc"}, NewSongs, GetSong)
+	codec.RegisterCodec("NSF", []string{"NESM\u001a"}, []string{"nsf"}, NewSongs, GetSong)
+	codec.RegisterCodec("NSFE", []string{"NSFE"}, []string{"nsfe"}, NewSongs, GetSong)
 }
 
 const (
@@ -22,7 +23,18 @@ const (
 	defaultSampleRate = 44100
 )
 
-func NewSongs(rf codec.Reader) ([]codec.Song, error) {
+func GetSong(rf codec.Reader, id codec.ID) (codec.Song, error) {
+	i, err := strconv.Atoi(string(id))
+	if err != nil {
+		return nil, err
+	}
+	return &Track{
+		r:     &reader{r: rf},
+		track: i,
+	}, nil
+}
+
+func NewSongs(rf codec.Reader) (codec.Songs, error) {
 	d := reader{
 		r: rf,
 	}
@@ -34,9 +46,9 @@ func NewSongs(rf codec.Reader) ([]codec.Song, error) {
 	if err != nil {
 		return nil, err
 	}
-	songs := make([]codec.Song, gg.Tracks())
-	for i := range songs {
-		songs[i] = &Track{
+	songs := make(codec.Songs)
+	for i, tr := 0, gg.Tracks(); i < tr; i++ {
+		songs[codec.Int(i)] = &Track{
 			r:     &d,
 			track: i,
 		}

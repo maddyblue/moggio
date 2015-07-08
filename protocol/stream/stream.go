@@ -180,7 +180,7 @@ func (s *Stream) Key() string {
 
 func (s *Stream) List() (protocol.SongList, error) {
 	return protocol.SongList{
-		s.URL: s.info(),
+		codec.ID(s.URL): s.info(),
 	}, nil
 }
 
@@ -188,11 +188,11 @@ func (s *Stream) Refresh() (protocol.SongList, error) {
 	return s.List()
 }
 
-func (s *Stream) Info(string) (*codec.SongInfo, error) {
+func (s *Stream) Info(codec.ID) (*codec.SongInfo, error) {
 	return s.info(), nil
 }
 
-func (s *Stream) GetSong(string) (codec.Song, error) {
+func (s *Stream) GetSong(codec.ID) (codec.Song, error) {
 	return mpa.NewSong(s.reader())
 }
 

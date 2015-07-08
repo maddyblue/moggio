@@ -56,7 +56,7 @@ func (d *Drive) Key() string {
 	return d.Token.AccessToken
 }
 
-func (d *Drive) Info(id string) (*codec.SongInfo, error) {
+func (d *Drive) Info(id codec.ID) (*codec.SongInfo, error) {
 	s := d.Songs[id]
 	if s == nil {
 		return nil, fmt.Errorf("could not find %v", id)
@@ -71,23 +71,13 @@ func (d *Drive) List() (protocol.SongList, error) {
 	return d.Songs, nil
 }
 
-func (d *Drive) GetSong(id string) (codec.Song, error) {
-	path, num, err := protocol.ParseID(id)
-	if err != nil {
-		return nil, err
-	}
+func (d *Drive) GetSong(id codec.ID) (codec.Song, error) {
+	path, child := id.Pop()
 	f := d.Files[path]
 	if f == nil {
 		return nil, fmt.Errorf("missing %v", path)
 	}
-	ss, _, err := codec.ByExtension(f.FileExtension, d.reader(path))
-	if err != nil {
-		return nil, err
-	}
-	if len(ss) < num+1 {
-		return nil, fmt.Errorf("missing %v", id)
-	}
-	return ss[num], nil
+	return codec.ByExtensionID(f.FileExtension, child, d.reader(path))
 }
 
 func (d *Drive) reader(id string) codec.Reader {
@@ -121,7 +111,7 @@ func (d *Drive) Refresh() (protocol.SongList, error) {
 	files := make(map[string]*drive.File)
 	songs := make(protocol.SongList)
 	var nextPage string
-	var ss []codec.Song
+	var ss codec.Songs
 	for {
 		fl, err := service.Files.
 			List().
@@ -140,7 +130,6 @@ func (d *Drive) Refresh() (protocol.SongList, error) {
 			}
 			files[f.Id] = f
 			for i, v := range ss {
-				id := fmt.Sprintf("%v-%v", i, f.Id)
 				info, _ := v.Info()
 				if info.Title == "" {
 					title := f.Title
@@ -149,7 +138,7 @@ func (d *Drive) Refresh() (protocol.SongList, error) {
 					}
 					info.Title = title
 				}
-				songs[id] = &info
+				songs[codec.NewID(f.Id, string(i))] = &info
 			}
 		}
 		if nextPage == "" {

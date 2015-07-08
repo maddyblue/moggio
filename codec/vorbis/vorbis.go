@@ -11,15 +11,15 @@ import (
 )
 
 func init() {
-	codec.RegisterCodec("VORBIS", "OggS", []string{"ogg"}, NewSongs)
+	codec.RegisterCodec("VORBIS", []string{"OggS"}, []string{"ogg"}, NewSongs, nil)
 }
 
-func NewSongs(rf codec.Reader) ([]codec.Song, error) {
+func NewSongs(rf codec.Reader) (codec.Songs, error) {
 	s, err := NewSong(rf)
 	if err != nil {
 		return nil, err
 	}
-	return []codec.Song{s}, nil
+	return codec.Songs{codec.None: s}, nil
 }
 
 func NewSong(rf codec.Reader) (codec.Song, error) {

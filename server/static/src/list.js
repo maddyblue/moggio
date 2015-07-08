@@ -42,19 +42,19 @@ var Tracks = exports.Tracks = React.createClass({
 	},
 	mkparams: function() {
 		return _.map(this.state.tracks, function(t, i) {
-			return 'add-' + t.ID.UID;
+			return ['add', t.ID.UID];
 		});
 	},
 	play: function() {
 		var params = this.mkparams();
-		params.unshift('clear');
-		Mog.POST('/api/queue/change', Mog.mkcmd(params), function() {
+		params.unshift(['clear']);
+		Mog.POST('/api/queue/change', params, function() {
 			Mog.POST('/api/cmd/play');
 		});
 	},
 	add: function() {
 		var params = this.mkparams();
-		Mog.POST('/api/queue/change', Mog.mkcmd(params));
+		Mog.POST('/api/queue/change', params);
 	},
 	playTrack: function(index) {
 		return function() {
@@ -63,10 +63,10 @@ var Tracks = exports.Tracks = React.createClass({
 				Mog.POST('/api/cmd/play_idx?idx=' + idx);
 			} else {
 				var params = [
-					'clear',
-					'add-' + this.getter(index).ID.UID
+					['clear'],
+					['add', this.getter(index).ID.UID]
 				];
-				Mog.POST('/api/queue/change', Mog.mkcmd(params), function() {
+				Mog.POST('/api/queue/change', params, function() {
 					Mog.POST('/api/cmd/play');
 				});
 			}
@@ -78,14 +78,14 @@ var Tracks = exports.Tracks = React.createClass({
 			if (this.props.isqueue) {
 				var idx = this.getIdx(index);
 				params = [
-					'rem-' + idx
+					['rem', idx.toString()],
 				];
 			} else {
 				params = [
-					'add-' + this.getter(index).ID.UID
+					['add', this.getter(index).ID.UID]
 				];
 			}
-			Mog.POST('/api/queue/change', Mog.mkcmd(params));
+			Mog.POST('/api/queue/change', params);
 		}.bind(this);
 	},
 	sort: function(field) {

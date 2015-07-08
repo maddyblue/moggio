@@ -7,41 +7,89 @@ package codec
 import (
 	"bufio"
 	"errors"
+	"fmt"
 	"io"
 	"path/filepath"
+	"strconv"
 	"strings"
 )
 
 // ErrFormat indicates that decoding encountered an unknown format.
 var ErrFormat = errors.New("codec: unknown format")
 
-type codec struct {
-	name, magic string
-	extensions  []string
-	decode      func(Reader) ([]Song, error)
+type Songs map[ID]Song
+
+type ID string
+
+const None ID = ""
+
+const IdSep = "\n"
+
+func NewID(s ...string) ID {
+	return ID(strings.Join(s, IdSep))
 }
 
-// Codecs is the list of registered codecs.
-var codecs []codec
+func Int(i int) ID {
+	return ID(strconv.Itoa(i))
+}
 
-var allExtensions = make(map[string]codec)
+func Int64(i int64) ID {
+	return ID(strconv.FormatInt(i, 10))
+}
+
+func (i ID) Top() string {
+	return strings.SplitN(string(i), IdSep, 2)[0]
+}
+
+func (i ID) Pop() (string, ID) {
+	s := strings.SplitN(string(i), IdSep, 2)
+	if len(s) == 1 {
+		return s[0], ""
+	}
+	return s[0], ID(s[1])
+}
+
+func (i ID) Push(s string) ID {
+	return i + IdSep + ID(s)
+}
+
+type codec struct {
+	name       string
+	magic      []string
+	extensions []string
+	decode     func(Reader) (Songs, error)
+	get        func(Reader, ID) (Song, error)
+}
+
+var (
+	// Codecs is the list of registered codecs.
+	codecs        = make(map[string]*codec)
+	allExtensions = make(map[string]*codec)
+)
 
 // RegisterCodec registers an audio codec for use by Decode.
 // Name is the name of the format, like "nsf" or "wav".
 // Magic is the magic prefix that identifies the codec's encoding. The magic
 // string can contain "?" wildcards that each match any one byte.
 // Decode is the function that decodes the encoded codec.
-func RegisterCodec(name, magic string, extensions []string, decode func(Reader) ([]Song, error)) {
-	c := codec{
+func RegisterCodec(name string, magic, extensions []string, decode func(Reader) (Songs, error), get func(Reader, ID) (Song, error)) {
+	if _, ok := codecs[name]; ok {
+		panic(fmt.Errorf("%v already registered", name))
+	}
+	c := &codec{
 		name:       name,
 		magic:      magic,
 		extensions: extensions,
 		decode:     decode,
+		get:        get,
 	}
 	for _, e := range extensions {
+		if v, ok := allExtensions[e]; ok {
+			panic(fmt.Errorf("%v already owns extension %v", v.name, e))
+		}
 		allExtensions[e] = c
 	}
-	codecs = append(codecs, c)
+	codecs[name] = c
 }
 
 // A reader is an io.Reader that can also peek ahead.
@@ -72,14 +120,16 @@ func match(magic string, b []byte) bool {
 }
 
 // Sniff determines the format of r's data.
-func sniff(r reader) codec {
-	for _, f := range codecs {
-		b, err := r.Peek(len(f.magic))
-		if err == nil && match(f.magic, b) {
-			return f
+func sniff(r reader) *codec {
+	for _, c := range codecs {
+		for _, m := range c.magic {
+			b, err := r.Peek(len(m))
+			if err == nil && match(m, b) {
+				return c
+			}
 		}
 	}
-	return codec{}
+	return nil
 }
 
 // Reader returns a file reader and the file size in bytes (or 0 if streamed
@@ -90,7 +140,7 @@ type Reader func() (io.ReadCloser, int64, error)
 // The string returned is the format name used during format registration.
 // Format registration is typically done by the init method of the codec-
 // specific package.
-func Decode(rf Reader) ([]Song, string, error) {
+func Decode(rf Reader) (Songs, string, error) {
 	r, _, err := rf()
 	if err != nil {
 		return nil, "", err
@@ -98,14 +148,14 @@ func Decode(rf Reader) ([]Song, string, error) {
 	defer r.Close()
 	rr := asReader(r)
 	f := sniff(rr)
-	if f.decode == nil {
+	if f == nil {
 		return nil, "", ErrFormat
 	}
 	m, err := f.decode(rf)
 	return m, f.name, err
 }
 
-func ByExtension(path string, rf Reader) ([]Song, string, error) {
+func extension(path string) (*codec, error) {
 	ext := filepath.Ext(path)
 	ext = strings.Trim(ext, ".")
 	if ext == "" {
@@ -113,8 +163,35 @@ func ByExtension(path string, rf Reader) ([]Song, string, error) {
 	}
 	c, ok := allExtensions[ext]
 	if !ok {
-		return nil, "", nil
+		return nil, fmt.Errorf("extension not found: %v", ext)
+	}
+	return c, nil
+}
+
+func ByExtension(path string, rf Reader) (Songs, string, error) {
+	c, err := extension(path)
+	if err != nil {
+		return nil, "", err
 	}
 	songs, err := c.decode(rf)
 	return songs, c.name, err
+}
+
+func ByExtensionID(path string, id ID, rf Reader) (Song, error) {
+	c, err := extension(path)
+	if err != nil {
+		return nil, err
+	}
+	if c.get != nil {
+		return c.get(rf, id)
+	}
+	songs, err := c.decode(rf)
+	if err != nil {
+		return nil, err
+	}
+	song, ok := songs[id]
+	if !ok {
+		return nil, fmt.Errorf("song not found: %v", id)
+	}
+	return song, nil
 }

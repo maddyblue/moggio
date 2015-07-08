@@ -15,9 +15,7 @@ exports.Queue = React.createClass({
 		return Stores.playlist.data || {};
 	},
 	clear: function() {
-		var params = Mog.mkcmd([
-			'clear',
-		]);
+		var params = [['clear']];
 		Mog.POST('/api/queue/change', params);
 	},
 	save: function() {
@@ -31,10 +29,10 @@ exports.Queue = React.createClass({
 			}
 		}
 		var params = _.map(this.state.Queue, function(t) {
-			return 'add-' + t.ID.UID;
+			return ['add', t.ID.UID];
 		});
-		params.unshift('clear');
-		Mog.POST('/api/playlist/change/' + name, Mog.mkcmd(params));
+		params.unshift(['clear']);
+		Mog.POST('/api/playlist/change/' + name, params);
 	},
 	render: function() {
 		return (
@@ -60,9 +58,7 @@ exports.Playlist = React.createClass({
 		if (!confirm("Delete playlist?")) {
 			return;
 		}
-		var params = Mog.mkcmd([
-			'clear',
-		]);
+		var params = [['clear']];
 		Mog.POST('/api/playlist/change/' + this.props.params.Playlist, params);
 	},
 	render: function() {

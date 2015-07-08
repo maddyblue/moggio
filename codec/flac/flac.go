@@ -17,14 +17,14 @@ import (
 )
 
 func init() {
-	codec.RegisterCodec("FLAC", "fLaC", []string{"flac"}, New)
+	codec.RegisterCodec("FLAC", []string{"fLaC"}, []string{"flac"}, New, nil)
 }
 
-func New(rf codec.Reader) ([]codec.Song, error) {
+func New(rf codec.Reader) (codec.Songs, error) {
 	f := Flac{
 		Reader: rf,
 	}
-	return []codec.Song{&f}, nil
+	return codec.Songs{codec.None: &f}, nil
 }
 
 type Flac struct {

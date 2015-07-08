@@ -14,21 +14,20 @@ import (
 )
 
 func init() {
-	exts := []string{"mp3"}
-	codec.RegisterCodec("MP3", "\xff\xfa", exts, NewSongs)
-	codec.RegisterCodec("MP3", "\xff\xfb", exts, NewSongs)
-	codec.RegisterCodec("MP3", "\xff\xfc", exts, NewSongs)
-	codec.RegisterCodec("MP3", "\xff\xfd", exts, NewSongs)
-	codec.RegisterCodec("MP3", "\xff\xfe", exts, NewSongs)
-	codec.RegisterCodec("MP3", "\xff\xff", exts, NewSongs)
+	codec.RegisterCodec("MP3",
+		[]string{"\xff\xfb", string([]byte{49, 44, 33})},
+		[]string{"mp3"},
+		NewSongs,
+		nil,
+	)
 }
 
-func NewSongs(rf codec.Reader) ([]codec.Song, error) {
+func NewSongs(rf codec.Reader) (codec.Songs, error) {
 	s, err := NewSong(rf)
 	if err != nil {
 		return nil, err
 	}
-	return []codec.Song{s}, nil
+	return codec.Songs{codec.None: s}, nil
 }
 
 type Song struct {

@@ -6,11 +6,11 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
-	"net/url"
 	"time"
 
 	"github.com/mjibson/mog/_third_party/golang.org/x/net/websocket"
 	"github.com/mjibson/mog/_third_party/golang.org/x/oauth2"
+	"github.com/mjibson/mog/codec"
 	"github.com/mjibson/mog/output"
 	"github.com/mjibson/mog/protocol"
 )
@@ -173,8 +173,8 @@ func (srv *Server) audio() {
 			srv.songID = srv.Queue[srv.PlaylistIndex]
 			sid = srv.songID
 			srv.info = *srv.songs[sid]
-			inst = srv.Protocols[sid.Protocol][sid.Key]
-			song, err := inst.GetSong(sid.ID)
+			inst = srv.Protocols[sid.Protocol()][sid.Key()]
+			song, err := inst.GetSong(sid.ID())
 			if err != nil {
 				forceNext = true
 				broadcastErr(err)
@@ -212,7 +212,7 @@ func (srv *Server) audio() {
 			select {
 			case <-timer:
 				// Check for updated song info.
-				if info, err := inst.Info(sid.ID); err != nil {
+				if info, err := inst.Info(sid.ID()); err != nil {
 					broadcastErr(err)
 				} else if srv.info != *info {
 					srv.info = *info
@@ -253,16 +253,12 @@ func (srv *Server) audio() {
 	}
 	refresh := func(c cmdRefresh) {
 		for id := range srv.songs {
-			if id.Protocol == c.protocol && id.Key == c.key {
+			if id.Protocol() == c.protocol && id.Key() == c.key {
 				delete(srv.songs, id)
 			}
 		}
 		for id, s := range c.songs {
-			srv.songs[SongID{
-				Protocol: c.protocol,
-				Key:      c.key,
-				ID:       id,
-			}] = s
+			srv.songs[SongID(codec.NewID(c.protocol, c.key, string(id)))] = s
 		}
 		broadcast(waitTracks)
 		broadcast(waitProtocols)
@@ -270,7 +266,7 @@ func (srv *Server) audio() {
 	protocolRemove := func(c cmdProtocolRemove) {
 		delete(c.prots, c.key)
 		for id := range srv.songs {
-			if id.Protocol == c.protocol && id.Key == c.key {
+			if id.Protocol() == c.protocol && id.Key() == c.key {
 				delete(srv.songs, id)
 			}
 		}
@@ -278,7 +274,7 @@ func (srv *Server) audio() {
 		broadcast(waitProtocols)
 	}
 	queueChange := func(c cmdQueueChange) {
-		n, clear, err := srv.playlistChange(srv.Queue, url.Values(c), true)
+		n, clear, err := srv.playlistChange(srv.Queue, PlaylistChange(c), true)
 		if err != nil {
 			broadcastErr(err)
 			return
@@ -292,7 +288,7 @@ func (srv *Server) audio() {
 	}
 	playlistChange := func(c cmdPlaylistChange) {
 		p := srv.Playlists[c.name]
-		n, _, err := srv.playlistChange(p, c.form, false)
+		n, _, err := srv.playlistChange(p, c.plc, false)
 		if err != nil {
 			broadcastErr(err)
 			return
@@ -463,10 +459,10 @@ type cmdProtocolRemove struct {
 	prots         map[string]protocol.Instance
 }
 
-type cmdQueueChange url.Values
+type cmdQueueChange PlaylistChange
 
 type cmdPlaylistChange struct {
-	form url.Values
+	plc  PlaylistChange
 	name string
 }
 

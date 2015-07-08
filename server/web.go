@@ -3,12 +3,12 @@ package server
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/mjibson/mog/_third_party/github.com/julienschmidt/httprouter"
@@ -67,20 +67,13 @@ func serveError(w http.ResponseWriter, err error) {
 	http.Error(w, err.Error(), http.StatusInternalServerError)
 }
 
-func JSON(h func(url.Values, httprouter.Params) (interface{}, error)) httprouter.Handle {
+func JSON(h func(io.Reader, url.Values, httprouter.Params) (interface{}, error)) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-		if strings.HasPrefix(r.Header.Get("Content-Type"), "multipart/form-data") {
-			if err := r.ParseMultipartForm(1 << 20); err != nil {
-				serveError(w, err)
-				return
-			}
-		} else {
-			if err := r.ParseForm(); err != nil {
-				serveError(w, err)
-				return
-			}
+		if err := r.ParseForm(); err != nil {
+			serveError(w, err)
+			return
 		}
-		d, err := h(r.Form, ps)
+		d, err := h(r.Body, r.Form, ps)
 		if err != nil {
 			serveError(w, err)
 			return
@@ -113,11 +106,11 @@ func (srv *Server) OAuth(w http.ResponseWriter, r *http.Request, ps httprouter.P
 	http.Redirect(w, r, "/", http.StatusFound)
 }
 
-func (srv *Server) Data(form url.Values, ps httprouter.Params) (interface{}, error) {
+func (srv *Server) Data(body io.Reader, form url.Values, ps httprouter.Params) (interface{}, error) {
 	return srv.makeWaitData(waitType(ps.ByName("type")))
 }
 
-func (srv *Server) Cmd(form url.Values, ps httprouter.Params) (interface{}, error) {
+func (srv *Server) Cmd(body io.Reader, form url.Values, ps httprouter.Params) (interface{}, error) {
 	switch cmd := ps.ByName("cmd"); cmd {
 	case "play":
 		srv.ch <- cmdPlay
@@ -157,53 +150,78 @@ func (srv *Server) Cmd(form url.Values, ps httprouter.Params) (interface{}, erro
 	return nil, nil
 }
 
-func (srv *Server) QueueChange(form url.Values, ps httprouter.Params) (interface{}, error) {
-	srv.ch <- cmdQueueChange(form)
+func (srv *Server) QueueChange(body io.Reader, form url.Values, ps httprouter.Params) (interface{}, error) {
+	var plc PlaylistChange
+	if err := json.NewDecoder(body).Decode(&plc); err != nil {
+		return nil, err
+	}
+	srv.ch <- cmdQueueChange(plc)
 	return nil, nil
 }
 
-func (srv *Server) PlaylistChange(form url.Values, ps httprouter.Params) (interface{}, error) {
+func (srv *Server) PlaylistChange(body io.Reader, form url.Values, ps httprouter.Params) (interface{}, error) {
+	var plc PlaylistChange
+	if err := json.NewDecoder(body).Decode(&plc); err != nil {
+		return nil, err
+	}
 	srv.ch <- cmdPlaylistChange{
-		form: form,
+		plc:  plc,
 		name: ps.ByName("playlist"),
 	}
 	return nil, nil
 }
 
-func (srv *Server) ProtocolRefresh(form url.Values, ps httprouter.Params) (interface{}, error) {
-	return nil, srv.protocolRefresh(form.Get("protocol"), form.Get("key"), false)
+func (srv *Server) ProtocolRefresh(body io.Reader, form url.Values, ps httprouter.Params) (interface{}, error) {
+	var pd ProtocolData
+	if err := json.NewDecoder(body).Decode(&pd); err != nil {
+		return nil, err
+	}
+	return nil, srv.protocolRefresh(pd.Protocol, pd.Key, false)
 }
 
-func (srv *Server) ProtocolAdd(form url.Values, ps httprouter.Params) (interface{}, error) {
-	p := form.Get("protocol")
-	prot, err := protocol.ByName(p)
+func (srv *Server) ProtocolAdd(body io.Reader, form url.Values, ps httprouter.Params) (interface{}, error) {
+	var ap struct {
+		Protocol string
+		Params   []string
+	}
+	if err := json.NewDecoder(body).Decode(&ap); err != nil {
+		return nil, err
+	}
+	prot, err := protocol.ByName(ap.Protocol)
 	if err != nil {
 		return nil, err
 	}
-	inst, err := prot.NewInstance(form["params"], nil)
+	inst, err := prot.NewInstance(ap.Params, nil)
 	if err != nil {
 		return nil, err
 	}
-	srv.Protocols[p][inst.Key()] = inst
-	err = srv.protocolRefresh(p, inst.Key(), false)
+	srv.Protocols[ap.Protocol][inst.Key()] = inst
+	err = srv.protocolRefresh(ap.Protocol, inst.Key(), false)
 	if err != nil {
-		delete(srv.Protocols[p], inst.Key())
+		delete(srv.Protocols[ap.Protocol], inst.Key())
 		return nil, err
 	}
 	return nil, nil
 }
 
-func (srv *Server) ProtocolRemove(form url.Values, ps httprouter.Params) (interface{}, error) {
-	p := form.Get("protocol")
-	k := form.Get("key")
-	prots, ok := srv.Protocols[p]
+func (srv *Server) ProtocolRemove(body io.Reader, form url.Values, ps httprouter.Params) (interface{}, error) {
+	var pd ProtocolData
+	if err := json.NewDecoder(body).Decode(&pd); err != nil {
+		return nil, err
+	}
+	prots, ok := srv.Protocols[pd.Protocol]
 	if !ok {
-		return nil, fmt.Errorf("unknown protocol: %v", p)
+		return nil, fmt.Errorf("unknown protocol: %v", pd.Protocol)
 	}
 	srv.ch <- cmdProtocolRemove{
-		protocol: p,
-		key:      k,
+		protocol: pd.Protocol,
+		key:      pd.Key,
 		prots:    prots,
 	}
 	return nil, nil
+}
+
+type ProtocolData struct {
+	Protocol string
+	Key      string
 }

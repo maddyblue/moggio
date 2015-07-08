@@ -74,16 +74,10 @@ var Protocol = React.createClass({
 		};
 	},
 	save: function() {
-		var params = this.state.params.map(function(v) {
-			return {
-				name: 'params',
-				value: v,
-			};
-		});
-		params.push({
-			name: 'protocol',
-			value: this.props.protocol,
-		});
+		params = {
+			protocol: this.props.protocol,
+			params: this.state.params,
+		};
 		Mog.POST('/api/protocol/add', params, function() {
 			this.setState(this.getInitialState());
 		}.bind(this));

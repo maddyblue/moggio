@@ -2,8 +2,6 @@ package protocol
 
 import (
 	"fmt"
-	"strconv"
-	"strings"
 
 	"github.com/mjibson/mog/_third_party/golang.org/x/oauth2"
 	"github.com/mjibson/mog/codec"
@@ -28,12 +26,12 @@ type Instance interface {
 	// Refresh forces an update of the song list.
 	Refresh() (SongList, error)
 	// Info returns information about one song.
-	Info(string) (*codec.SongInfo, error)
+	Info(codec.ID) (*codec.SongInfo, error)
 	// GetSong returns a playable song.
-	GetSong(string) (codec.Song, error)
+	GetSong(codec.ID) (codec.Song, error)
 }
 
-type SongList map[string]*codec.SongInfo
+type SongList map[codec.ID]*codec.SongInfo
 
 func (p *Protocol) NewInstance(params []string, token *oauth2.Token) (Instance, error) {
 	return p.newInstance(params, token)
@@ -74,13 +72,4 @@ func Get() map[string]Params {
 		m[n] = *p.Params
 	}
 	return m
-}
-
-func ParseID(id string) (path string, num int, err error) {
-	sp := strings.SplitN(id, "-", 2)
-	i, err := strconv.Atoi(sp[0])
-	if len(sp) != 2 || err != nil {
-		return "", 0, fmt.Errorf("bad format")
-	}
-	return sp[1], i, nil
 }

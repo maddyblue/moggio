@@ -10,14 +10,14 @@ import (
 )
 
 func init() {
-	codec.RegisterCodec("WAV", "RIFF????WAVE", []string{"wav"}, New)
+	codec.RegisterCodec("WAV", []string{"RIFF????WAVE"}, []string{"wav"}, New, nil)
 }
 
-func New(rf codec.Reader) ([]codec.Song, error) {
+func New(rf codec.Reader) (codec.Songs, error) {
 	w := Wav{
 		Reader: rf,
 	}
-	return []codec.Song{&w}, nil
+	return codec.Songs{codec.None: &w}, nil
 }
 
 type Wav struct {

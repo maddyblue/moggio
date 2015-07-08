@@ -49471,19 +49471,19 @@ var Tracks = exports.Tracks = React.createClass({displayName: "Tracks",
 	},
 	mkparams: function() {
 		return _.map(this.state.tracks, function(t, i) {
-			return 'add-' + t.ID.UID;
+			return ['add', t.ID.UID];
 		});
 	},
 	play: function() {
 		var params = this.mkparams();
-		params.unshift('clear');
-		Mog.POST('/api/queue/change', Mog.mkcmd(params), function() {
+		params.unshift(['clear']);
+		Mog.POST('/api/queue/change', params, function() {
 			Mog.POST('/api/cmd/play');
 		});
 	},
 	add: function() {
 		var params = this.mkparams();
-		Mog.POST('/api/queue/change', Mog.mkcmd(params));
+		Mog.POST('/api/queue/change', params);
 	},
 	playTrack: function(index) {
 		return function() {
@@ -49492,10 +49492,10 @@ var Tracks = exports.Tracks = React.createClass({displayName: "Tracks",
 				Mog.POST('/api/cmd/play_idx?idx=' + idx);
 			} else {
 				var params = [
-					'clear',
-					'add-' + this.getter(index).ID.UID
+					['clear'],
+					['add', this.getter(index).ID.UID]
 				];
-				Mog.POST('/api/queue/change', Mog.mkcmd(params), function() {
+				Mog.POST('/api/queue/change', params, function() {
 					Mog.POST('/api/cmd/play');
 				});
 			}
@@ -49507,14 +49507,14 @@ var Tracks = exports.Tracks = React.createClass({displayName: "Tracks",
 			if (this.props.isqueue) {
 				var idx = this.getIdx(index);
 				params = [
-					'rem-' + idx
+					['rem', idx.toString()],
 				];
 			} else {
 				params = [
-					'add-' + this.getter(index).ID.UID
+					['add', this.getter(index).ID.UID]
 				];
 			}
-			Mog.POST('/api/queue/change', Mog.mkcmd(params));
+			Mog.POST('/api/queue/change', params);
 		}.bind(this);
 	},
 	sort: function(field) {
@@ -49827,22 +49827,14 @@ _.each(exports.Actions, function(action, name) {
 	});
 });
 
-var POST = exports.POST = function(path, params, success) {
-	var data = new(FormData);
-	if (_.isArray(params)) {
-		_.each(params, function(v) {
-			data.append(v.name, v.value);
-		});
-	} else if (_.isObject(params)) {
-		_.each(params, function(v, k) {
-			data.append(k, v);
-		});
-	} else if (params) {
-		data = params;
-	}
+var POST = exports.POST = function(path, body, success) {
 	var f = fetch(path, {
 		method: 'post',
-		body: data
+		headers: {
+			'Accept': 'application/json',
+			'Content-Type': 'application/json'
+		},
+		body: JSON.stringify(body)
 	});
 	f.then(function(response) {
 		if (response.status >= 200 && response.status < 300) {
@@ -49862,15 +49854,6 @@ var POST = exports.POST = function(path, params, success) {
 	}
 	return f;
 }
-
-exports.mkcmd = function(cmds) {
-	return _.map(cmds, function(val) {
-		return {
-			"name": "c",
-			"value": val
-		};
-	});
-};
 
 document.addEventListener('keydown', function(e) {
 	if (document.activeElement != document.body) {
@@ -50284,9 +50267,7 @@ exports.Queue = React.createClass({displayName: "Queue",
 		return Stores.playlist.data || {};
 	},
 	clear: function() {
-		var params = Mog.mkcmd([
-			'clear',
-		]);
+		var params = [['clear']];
 		Mog.POST('/api/queue/change', params);
 	},
 	save: function() {
@@ -50300,10 +50281,10 @@ exports.Queue = React.createClass({displayName: "Queue",
 			}
 		}
 		var params = _.map(this.state.Queue, function(t) {
-			return 'add-' + t.ID.UID;
+			return ['add', t.ID.UID];
 		});
-		params.unshift('clear');
-		Mog.POST('/api/playlist/change/' + name, Mog.mkcmd(params));
+		params.unshift(['clear']);
+		Mog.POST('/api/playlist/change/' + name, params);
 	},
 	render: function() {
 		return (
@@ -50329,9 +50310,7 @@ exports.Playlist = React.createClass({displayName: "Playlist",
 		if (!confirm("Delete playlist?")) {
 			return;
 		}
-		var params = Mog.mkcmd([
-			'clear',
-		]);
+		var params = [['clear']];
 		Mog.POST('/api/playlist/change/' + this.props.params.Playlist, params);
 	},
 	render: function() {
@@ -50422,16 +50401,10 @@ var Protocol = React.createClass({displayName: "Protocol",
 		};
 	},
 	save: function() {
-		var params = this.state.params.map(function(v) {
-			return {
-				name: 'params',
-				value: v,
-			};
-		});
-		params.push({
-			name: 'protocol',
-			value: this.props.protocol,
-		});
+		params = {
+			protocol: this.props.protocol,
+			params: this.state.params,
+		};
 		Mog.POST('/api/protocol/add', params, function() {
 			this.setState(this.getInitialState());
 		}.bind(this));

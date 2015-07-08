@@ -33,7 +33,7 @@ func New(params []string, token *oauth2.Token) (protocol.Instance, error) {
 	}, nil
 }
 
-func (g *GMusic) Info(id string) (*codec.SongInfo, error) {
+func (g *GMusic) Info(id codec.ID) (*codec.SongInfo, error) {
 	s := g.Songs[id]
 	if s == nil {
 		return nil, fmt.Errorf("could not find %v", id)
@@ -43,7 +43,7 @@ func (g *GMusic) Info(id string) (*codec.SongInfo, error) {
 
 type GMusic struct {
 	GMusic *gmusic.GMusic
-	Tracks map[string]*gmusic.Track
+	Tracks map[codec.ID]*gmusic.Track
 	Songs  protocol.SongList
 }
 
@@ -58,14 +58,14 @@ func (g *GMusic) List() (protocol.SongList, error) {
 	return g.Songs, nil
 }
 
-func (g *GMusic) GetSong(id string) (codec.Song, error) {
+func (g *GMusic) GetSong(id codec.ID) (codec.Song, error) {
 	f := g.Tracks[id]
 	if f == nil {
 		return nil, fmt.Errorf("missing %v", id)
 	}
 	return mpa.NewSong(func() (io.ReadCloser, int64, error) {
 		log.Println("GMUSIC", id)
-		r, err := g.GMusic.GetStream(id)
+		r, err := g.GMusic.GetStream(string(id))
 		if err != nil {
 			return nil, 0, err
 		}
@@ -75,7 +75,7 @@ func (g *GMusic) GetSong(id string) (codec.Song, error) {
 }
 
 func (g *GMusic) Refresh() (protocol.SongList, error) {
-	tracks := make(map[string]*gmusic.Track)
+	tracks := make(map[codec.ID]*gmusic.Track)
 	songs := make(protocol.SongList)
 	log.Println("get gmusic tracks")
 	trackList, err := g.GMusic.ListTracks()
@@ -84,7 +84,7 @@ func (g *GMusic) Refresh() (protocol.SongList, error) {
 	}
 	log.Println("got gmusic tracks", len(trackList))
 	for _, t := range trackList {
-		tracks[t.ID] = t
+		tracks[codec.ID(t.ID)] = t
 		duration, _ := strconv.Atoi(t.DurationMillis)
 		si := &codec.SongInfo{
 			Time:   time.Duration(duration) * time.Millisecond,
@@ -96,7 +96,7 @@ func (g *GMusic) Refresh() (protocol.SongList, error) {
 		if len(t.AlbumArtRef) != 0 {
 			si.ImageURL = t.AlbumArtRef[0].URL
 		}
-		songs[t.ID] = si
+		songs[codec.ID(t.ID)] = si
 	}
 	g.Songs = songs
 	g.Tracks = tracks

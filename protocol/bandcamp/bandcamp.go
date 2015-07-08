@@ -9,7 +9,6 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/mjibson/mog/_third_party/golang.org/x/oauth2"
@@ -39,14 +38,14 @@ func New(params []string, token *oauth2.Token) (protocol.Instance, error) {
 type Bandcamp struct {
 	URL    string
 	Songs  protocol.SongList
-	Tracks map[string]*track
+	Tracks map[codec.ID]*track
 }
 
 func (b *Bandcamp) Key() string {
 	return b.URL
 }
 
-func (b *Bandcamp) Info(id string) (*codec.SongInfo, error) {
+func (b *Bandcamp) Info(id codec.ID) (*codec.SongInfo, error) {
 	t := b.Songs[id]
 	if t == nil {
 		return nil, fmt.Errorf("could not find %v", id)
@@ -54,7 +53,7 @@ func (b *Bandcamp) Info(id string) (*codec.SongInfo, error) {
 	return t, nil
 }
 
-func (b *Bandcamp) GetSong(id string) (codec.Song, error) {
+func (b *Bandcamp) GetSong(id codec.ID) (codec.Song, error) {
 	t := b.Tracks[id]
 	if t == nil {
 		return nil, fmt.Errorf("missing %v", id)
@@ -146,13 +145,13 @@ func (b *Bandcamp) Refresh() (protocol.SongList, error) {
 			return
 		}
 	}()
-	tracklist := make(map[string]*track)
+	tracklist := make(map[codec.ID]*track)
 	songs := make(protocol.SongList)
 	for _, t := range tracks {
 		if t.File.Mp3_128 == "" {
 			continue
 		}
-		id := strconv.FormatInt(t.ID, 10)
+		id := codec.Int64(t.ID)
 		tracklist[id] = t
 		songs[id] = &codec.SongInfo{
 			Time:     time.Duration(t.Duration) * time.Second,

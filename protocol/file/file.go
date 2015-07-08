@@ -46,7 +46,7 @@ func (f *File) Key() string {
 	return f.Path
 }
 
-func (f *File) Info(id string) (*codec.SongInfo, error) {
+func (f *File) Info(id codec.ID) (*codec.SongInfo, error) {
 	if _, ok := f.Songs[id]; !ok {
 		if _, err := f.List(); err != nil {
 			return nil, err
@@ -59,16 +59,9 @@ func (f *File) Info(id string) (*codec.SongInfo, error) {
 	return v, nil
 }
 
-func (f *File) GetSong(id string) (codec.Song, error) {
-	path, num, err := protocol.ParseID(id)
-	if err != nil {
-		return nil, err
-	}
-	songs, _, err := codec.ByExtension(path, fileReader(path))
-	if err != nil {
-		return nil, err
-	}
-	return songs[num], nil
+func (f *File) GetSong(id codec.ID) (codec.Song, error) {
+	top, child := id.Pop()
+	return codec.ByExtensionID(top, child, fileReader(top))
 }
 
 func (f *File) List() (protocol.SongList, error) {
@@ -97,7 +90,6 @@ func (f *File) Refresh() (protocol.SongList, error) {
 			return nil
 		}
 		for i, s := range ss {
-			id := fmt.Sprintf("%v-%v", i, path)
 			info, _ := s.Info()
 			if info.Title == "" {
 				title := filepath.Base(path)
@@ -109,7 +101,7 @@ func (f *File) Refresh() (protocol.SongList, error) {
 			if info.Album == "" {
 				info.Album = filepath.Base(filepath.Dir(path))
 			}
-			songs[id] = &info
+			songs[codec.NewID(path, string(i))] = &info
 		}
 		return nil
 	})
