@@ -7,16 +7,10 @@ DIR="$APPNAME.app/Contents/MacOS"
 OUTPUT="$DIR/$APPNAME"
 PA=libportaudio.2.dylib
 PALIB=/usr/local/lib/$PA
-DARWIN386=/usr/local/go-darwin-386
 
 rm -rf $APPNAME.app
 mkdir -p $DIR
-
-go build -o $OUTPUT-amd64 -ldflags "-linkmode=external"
-GOROOT=$DARWIN386 $DARWIN386/bin/go build -o $OUTPUT-386 -ldflags "-linkmode=external"
-
-lipo $OUTPUT-* -output $OUTPUT -create
-rm $OUTPUT-*
+go build -o $OUTPUT -ldflags "-linkmode=external"
 chmod +x $OUTPUT
 cp $PALIB $DIR/$PA
 install_name_tool -change $PALIB @executable_path/$PA $OUTPUT
