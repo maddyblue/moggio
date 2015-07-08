@@ -21,6 +21,7 @@ import (
 	_ "github.com/mjibson/mog/codec/gme"
 	_ "github.com/mjibson/mog/codec/mpa"
 	_ "github.com/mjibson/mog/codec/nsf"
+	_ "github.com/mjibson/mog/codec/rar"
 	_ "github.com/mjibson/mog/codec/vorbis"
 	_ "github.com/mjibson/mog/codec/wav"
 
