@@ -35,6 +35,7 @@ import (
 )
 
 var (
+	flagAddr       = flag.String("addr", ":6601", "listen address")
 	flagWatch      = flag.Bool("w", false, "watch current directory and exit on changes; for use with an autorestarter")
 	flagDrive      = flag.String("drive", "792434736327-0pup5skbua0gbfld4min3nfv2reairte.apps.googleusercontent.com:OsN_bydWG45resaU0PPiDmtK", "Google Drive API credentials of the form ClientID:ClientSecret")
 	flagDropbox    = flag.String("dropbox", "rnhpqsbed2q2ezn:ldref688unj74ld", "Dropbox API credentials of the form ClientID:ClientSecret")
@@ -57,7 +58,7 @@ func main() {
 		watch(".", "*.go", quit)
 		go browserify()
 	}
-	redir := DefaultAddr
+	redir := *flagAddr
 	if strings.HasPrefix(redir, ":") {
 		redir = "localhost" + redir
 	}
@@ -97,10 +98,8 @@ func main() {
 			*stateFile = filepath.Join(os.Getenv("HOME"), ".mog.state")
 		}
 	}
-	log.Fatal(server.ListenAndServe(*stateFile, DefaultAddr, *flagDev))
+	log.Fatal(server.ListenAndServe(*stateFile, *flagAddr, *flagDev))
 }
-
-const DefaultAddr = ":6601"
 
 func quit() {
 	os.Exit(0)
