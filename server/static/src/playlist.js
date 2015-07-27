@@ -5,9 +5,8 @@ var Mog = require('./mog.js');
 var React = require('react');
 var Reflux = require('reflux');
 var _ = require('underscore');
-var mui = require('material-ui');
 
-var { RaisedButton } = mui;
+var { Button } = require('./mdl.js');
 
 exports.Queue = React.createClass({
 	mixins: [Reflux.listenTo(Stores.playlist, 'setState')],
@@ -38,9 +37,9 @@ exports.Queue = React.createClass({
 		return (
 			<div>
 				<h2>Queue</h2>
-				<RaisedButton onClick={this.clear} label='clear' />
+				<Button raised={true} onClick={this.clear}>clear</Button>
 				&nbsp;
-				<RaisedButton onClick={this.save} label='save' />
+				<Button raised={true} onClick={this.save}>save</Button>
 				<List.Tracks tracks={this.state.Queue} noIdx={true} isqueue={true} />
 			</div>
 		);
@@ -65,7 +64,7 @@ exports.Playlist = React.createClass({
 		return (
 			<div>
 				<h2>{this.props.params.Playlist}</h2>
-				<RaisedButton onClick={this.clear} label='delete playlist' />
+				<Button raised={true} onClick={this.clear}>delete playlist</Button>
 				<List.Tracks tracks={this.state.Playlists[this.props.params.Playlist]} useIdxAsNum={true} />
 			</div>
 		);

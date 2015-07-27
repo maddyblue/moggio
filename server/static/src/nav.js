@@ -2,12 +2,6 @@ var React = require('react');
 var Reflux = require('reflux');
 var Router = require('react-router');
 var _ = require('underscore');
-var mui = require('material-ui');
-var Colors = mui.Styles.Colors;
-var ThemeManager = new mui.Styles.ThemeManager();
-
-var injectTapEventPlugin = require('react-tap-event-plugin');
-injectTapEventPlugin();
 
 var Route = Router.Route;
 var NotFoundRoute = Router.NotFoundRoute;
@@ -16,36 +10,34 @@ var Link = Router.Link;
 var RouteHandler = Router.RouteHandler;
 var Redirect = Router.Redirect;
 
+// todo: get these from the CSS somehow
+var Colors = {
+	grey300: '#e0e0e0',
+	orange500: 'rgb(255, 152, 0)',
+	grey500: 'rgb(158, 158, 158)',
+};
+
 var Mog = require('./mog.js');
+
 var Group = require('./group.js');
 var List = require('./list.js');
 var Playlist = require('./playlist.js');
 var Protocol = require('./protocol.js');
 
-var { AppBar, LeftNav, MenuItem, IconButton, FloatingActionButton, RaisedButton } = mui;
+var { Button } = require('./mdl.js');
 
 var App = React.createClass({
 	mixins: [
-		Reflux.listenTo(Stores.playlist, 'setPlaylist'),
+		Reflux.listenTo(Stores.playlist, 'setState'),
 		Reflux.listenTo(Stores.error, 'error'),
 		Router.Navigation,
 		Router.State,
 	],
-	childContextTypes: {
-		muiTheme: React.PropTypes.object
-	},
-	getChildContext: function() {
-		return {
-			muiTheme: ThemeManager.getCurrentTheme()
-		};
-	},
 	componentDidMount: function() {
 		this.startWS();
 	},
 	getInitialState: function() {
-		return {
-			menuItems: navMenuItems,
-		};
+		return {};
 	},
 	startWS: function() {
 		var ws = new WebSocket('ws://' + window.location.host + '/ws/');
@@ -68,24 +60,6 @@ var App = React.createClass({
 	},
 	clearError: function() {
 		this.setState({error: null});
-	},
-	leftNavToggle: function() {
-		this.refs.leftNav.toggle();
-	},
-	leftNavChange: function(e, selectedIndex, menuItem) {
-		this.transitionTo(menuItem.route, menuItem.params);
-	},
-	setPlaylist: function(ps) {
-		var menuItems = _.clone(navMenuItems);
-		_.each(ps.Playlists, function(_, key) {
-			menuItems.push({
-				route: 'playlist',
-				params: {Playlist: key},
-				text: key
-			});
-		});
-		ps.menuItems = menuItems;
-		this.setState(ps);
 	},
 	getSelectedIndex() {
 		var currentItem;
@@ -114,30 +88,51 @@ var App = React.createClass({
 		if (this.state.error) {
 			var time = new Date(this.state.error.Time);
 			error = (
-				<div style={{paddingBottom: '10px'}}>
-					<RaisedButton onClick={this.clearError} primary={true} label='clear'/>
+				<div style={{padding: '10px'}}>
+					<Button onClick={this.clearError} raised={true} primary={true}>clear</Button>
 					<span style={{paddingLeft: '10px'}}>
 						error at {time.toString()}: {this.state.error.Error}
 					</span>
 				</div>
 			);
 		}
+		var menuItems = _.map(navMenuItems, function(v, k) {
+			return <Link key={k} className="mdl-navigation__link" to={v.route}>{v.text}</Link>;
+		});
+		var playlists;
+		if (this.state.Playlists) {
+			var entries = _.map(this.state.Playlists, function(_, key) {
+				return <Link key={"playlist-" + key} className="mdl-navigation__link" to="playlist" params={{Playlist: key}}>{key}</Link>;
+			});
+			playlists = (
+				<nav className="mdl-navigation">
+					{entries}
+				</nav>
+			);
+		}
 		return (
 			<div>
 				{overlay}
-				{error}
-				<AppBar
-					title={'mog'}
-					onLeftIconButtonTouchTap={this.leftNavToggle}
-					/>
-				<LeftNav
-					ref="leftNav"
-					docked={false}
-					menuItems={this.state.menuItems}
-					onChange={this.leftNavChange}
-					selectedIndex={this.getSelectedIndex()}
-					/>
-				<RouteHandler {...this.props}/>
+				<div className="top-main">
+				<div className="mdl-layout mdl-js-layout mdl-layout--fixed-drawer
+					mdl-layout--overlay-drawer-button">
+					<div className="mdl-layout__drawer">
+						<span className="mdl-layout-title">mog</span>
+						<nav className="mdl-navigation">
+							{menuItems}
+						</nav>
+						<span className="mdl-layout-title">Playlists</span>
+						{playlists}
+					</div>
+					<main className="mdl-layout__content">
+						<div className="page-content">
+							{error}
+							<RouteHandler {...this.props} />
+						</div>
+					</main>
+				</div>
+				</div>
+
 				<footer>
 					<Player/>
 				</footer>
@@ -152,7 +147,6 @@ var navMenuItems = [
 	{ route: 'queue', text: 'Queue' },
 	{ route: 'artists', text: 'Artists' },
 	{ route: 'albums', text: 'Albums' },
-	{ type: MenuItem.Types.SUBHEADER, text: 'Playlists' },
 ];
 
 var Player = React.createClass({
@@ -199,7 +193,6 @@ var Player = React.createClass({
 		var pos = 0;
 		var dur = '0s';
 		var img;
-		var palette = ThemeManager.getCurrentTheme().palette;
 		if (this.state.Song && this.state.Song.ID) {
 			var info = this.state.SongInfo;
 			var song = this.state.Song.UID;
@@ -244,7 +237,8 @@ var Player = React.createClass({
 			}
 		};
 		var play = this.state.State == 0 ? 'pause' : 'play_circle_filled';
-		var primary = {color: palette.accent1Color};
+		// TODO: dynamically set this to the correct CSS color/class
+		var primary = 'red';
 		var repeat = this.state.Repeat ? primary : {};
 		var random = this.state.Random ? primary : {};
 		var ctrlStyle = {
@@ -260,7 +254,6 @@ var Player = React.createClass({
 			position: 'relative',
 			top: '50%',
 			transform: 'translateY(-50%)',
-			backgroundColor: Colors.grey100,
 		};
 		var statusStyle = {
 			position: 'absolute',
@@ -302,26 +295,26 @@ var Player = React.createClass({
 						{album}
 					</div>
 					<div style={rightStyle}>
-						<IconButton onClick={this.openQueue} style={btnStyle}>
+						<Button onClick={this.openQueue} style={btnStyle} icon={true}>
 							<i className='material-icons'>queue_music</i>
-						</IconButton>
+						</Button>
 					</div>
 					<div style={ctrlStyle}>
-						<IconButton onClick={this.cmd('repeat')} style={_.extend({}, btnStyle, repeat)}>
+						<Button onClick={this.cmd('repeat')} style={_.extend({}, btnStyle, repeat)} icon={true}>
 							<i className='material-icons'>repeat</i>
-						</IconButton>
-						<IconButton onClick={this.cmd('prev')} style={btnStyle}>
+						</Button>
+						<Button onClick={this.cmd('prev')} style={btnStyle} icon={true}>
 							<i className='material-icons'>skip_previous</i>
-						</IconButton>
-						<IconButton onClick={this.cmd('pause')} style={btnStyle}>
+						</Button>
+						<Button onClick={this.cmd('pause')} style={btnStyle} accent={true} icon={true}>
 							<i className='material-icons'>{play}</i>
-						</IconButton>
-						<IconButton onClick={this.cmd('next')} style={btnStyle}>
+						</Button>
+						<Button onClick={this.cmd('next')} style={btnStyle} icon={true}>
 							<i className='material-icons'>skip_next</i>
-						</IconButton>
-						<IconButton onClick={this.cmd('random')} style={_.extend({}, btnStyle, random)}>
+						</Button>
+						<Button onClick={this.cmd('random')} style={_.extend({}, btnStyle, random)} icon={true}>
 							<i className='material-icons'>shuffle</i>
-						</IconButton>
+						</Button>
 					</div>
 				</div>
 			</div>

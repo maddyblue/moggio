@@ -2,12 +2,7 @@
 	font-family: 'Material Icons';
 	font-style: normal;
 	font-weight: 400;
-	src: url(/static/fonts/MaterialIcons-Regular.eot); /* For IE6-8 */
-	src: local('Material Icons'),
-		 local('MaterialIcons-Regular'),
-		 url(/static/fonts/MaterialIcons-Regular.woff2) format('woff2'),
-		 url(/static/fonts/MaterialIcons-Regular.woff) format('woff'),
-		 url(/static/fonts/MaterialIcons-Regular.ttf) format('truetype');
+	src: local('Material Icons'), local('MaterialIcons-Regular'), url(/static/fonts/MaterialIcons-Regular.woff) format('woff');
 }
 
 .material-icons {
@@ -34,21 +29,41 @@
 	font-feature-settings: 'liga';
 }
 
-html {
-	font-family: 'Roboto', sans-serif;
+@font-face {
+	font-family: 'Roboto';
+	font-style: normal;
+	font-weight: 300;
+	src: local('Roboto Light'), local('Roboto-Light'), url(/static/fonts/Roboto-Light.woff) format('woff');
 }
-
-h2 {
+@font-face {
+	font-family: 'Roboto';
+	font-style: normal;
+	font-weight: 400;
+	src: local('Roboto'), local('Roboto-Regular'), url(/static/fonts/Roboto-Regular.woff) format('woff');
+}
+@font-face {
+	font-family: 'Roboto';
+	font-style: normal;
 	font-weight: 500;
+	src: local('Roboto Medium'), local('Roboto-Medium'), url(/static/fonts/Roboto-Medium.woff) format('woff');
+}
+@font-face {
+	font-family: 'Roboto';
+	font-style: normal;
+	font-weight: 700;
+	src: local('Roboto Bold'), local('Roboto-Bold'), url(/static/fonts/Roboto-Bold.woff) format('woff');
 }
 
-th {
-	font-weight: 500;
+.top-main {
+	position: absolute;
+	top: 0;
+	bottom: 80px;
+	left: 0;
+	right: 0;
 }
 
-a {
-	color: #3f51b5;
-	text-decoration: none;
+.page-content {
+	margin-left: 20px;
 }
 
 footer {

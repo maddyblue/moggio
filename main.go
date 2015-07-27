@@ -1,5 +1,7 @@
 package main
 
+// TODO: fix the ID3 reading for 02 london MP3 on the air. could just be an old id3 package or something? thought i already fixed it.
+
 import (
 	"flag"
 	"io"
@@ -188,4 +190,5 @@ func watch(root, pattern string, f func()) {
 	}()
 }
 
+//go:generate browserify -t [ reactify --es6 ] server/static/src/nav.js -o server/static/js/mog.js
 //go:generate esc -o server/static.go -pkg server -prefix server server/static/index.html server/static/css server/static/fonts server/static/js

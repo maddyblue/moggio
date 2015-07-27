@@ -6,9 +6,8 @@ var React = require('react');
 var Reflux = require('reflux');
 var Router = require('react-router');
 var _ = require('underscore');
-var mui = require('material-ui');
 
-var { IconButton } = mui;
+var { Button, TextField } = require('./mdl.js');
 
 var Column = FixedDataTable.Column;
 var Link = Router.Link;
@@ -207,9 +206,9 @@ var Tracks = exports.Tracks = React.createClass({
 			<div style={{padding: '0'}}>
 				<span className="nohover" style={{padding: '12px'}}>{track}</span>
 				<span className="hover">
-					<IconButton onClick={this.playTrack(index)}>
+					<Button onClick={this.playTrack(index)} icon={true}>
 						<Mog.Icon name="play_arrow"/>
-					</IconButton>
+					</Button>
 				</span>
 			</div>
 		);
@@ -224,9 +223,9 @@ var Tracks = exports.Tracks = React.createClass({
 				{image}
 				{data.Info.Title}
 				<span className="hover pull-right">
-					<IconButton onClick={this.appendTrack(index)}>
+					<Button onClick={this.appendTrack(index)} icon={true}>
 						<Mog.Icon name={this.props.isqueue ? 'clear' : 'add'} />
-					</IconButton>
+					</Button>
 				</span>
 			</div>
 		);
@@ -253,9 +252,9 @@ var Tracks = exports.Tracks = React.createClass({
 		if (!this.props.isqueue) {
 			queue = (
 				<div>
-					<mui.RaisedButton onClick={this.play} primary={true} label="play" />
+					<Button onClick={this.play} raised={true} primary={true}>play</Button>
 					&nbsp;
-					<mui.RaisedButton onClick={this.add} secondary={true} label="add" />
+					<Button onClick={this.add} raised={true} accent={true}>add</Button>
 					&nbsp;
 					({this.state.tracks.length} tracks)
 				</div>
@@ -266,7 +265,7 @@ var Tracks = exports.Tracks = React.createClass({
 		return (
 			<div>
 				{queue}
-				<mui.TextField style={{width: tableWidth - 2}} hintText="search" onChange={this.search} value={this.state.search} />
+				<TextField style={{width: tableWidth - 2}} onChange={this.search} value={this.state.search}>search</TextField>
 				<Table ref="table"
 					headerHeight={50}
 					rowHeight={50}

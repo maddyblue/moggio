@@ -6,9 +6,6 @@ var React = require('react');
 var Reflux = require('reflux');
 var Router = require('react-router');
 var _ = require('underscore');
-var mui = require('material-ui');
-
-var { IconButton, List, ListItem } = mui;
 
 var Link = Router.Link;
 

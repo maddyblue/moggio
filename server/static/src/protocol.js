@@ -4,9 +4,8 @@ var Mog = require('./mog.js');
 var React = require('react');
 var Reflux = require('reflux');
 var _ = require('underscore');
-var mui = require('material-ui');
 
-var { DropDownMenu, FlatButton, IconButton, RaisedButton, TextField } = mui;
+var { Button, TextField } = require('./mdl.js');
 
 exports.Protocols = React.createClass({
 	mixins: [Reflux.listenTo(Stores.protocols, 'setState')],
@@ -18,21 +17,30 @@ exports.Protocols = React.createClass({
 		};
 		return _.extend(d, Stores.protocols.data);
 	},
-	handleChange: function(e, idx, item) {
-		this.setState({
-			Selected: item.text,
-		});
-	},
 	render: function() {
 		var keys = Object.keys(this.state.Available) || [];
 		keys.sort();
-		var options = keys.map(function(protocol) {
-			return { text: protocol };
-		});
 		var selectedIndex = _.indexOf(keys, this.state.Selected);
 		var dropdown;
-		if (options.length) {
-			dropdown = <DropDownMenu onChange={this.handleChange} selectedIndex={selectedIndex} menuItems={options} />
+		if (keys.length) {
+			var tabs = keys.map(function(protocol) {
+				var click = function(evt) {
+					evt.preventDefault();
+					this.setState({Selected: protocol});
+				}.bind(this);
+				var cn = 'mdl-tabs__tab';
+				if (this.state.Selected == protocol) {
+					cn += ' is-active';
+				}
+				return <a href key={protocol} className={cn} onClick={click}>{protocol}</a>;
+			}.bind(this));
+			dropdown = (
+				<div className="mdl-tabs mdl-js-tabs mdl-js-ripple-effect">
+					<div className="mdl-tabs__tab-bar">
+						{tabs}
+					</div>
+				</div>
+			);
 		}
 		var protocols = [];
 		_.each(this.state.Current, function(instances, protocol) {
@@ -42,20 +50,24 @@ exports.Protocols = React.createClass({
 		}, this);
 		var selected;
 		if (this.state.Selected) {
-			selected = <Protocol protocol={this.state.Selected} params={this.state.Available[this.state.Selected]} />;
+			selected = (
+				<div className="mdl-tabs__panel is-active">
+					<Protocol protocol={this.state.Selected} params={this.state.Available[this.state.Selected]} />
+				</div>
+			);
 		}
 		return <div>
 			<h2>New Protocol</h2>
 			{dropdown}
 			{selected}
 			<h2>Existing Protocols</h2>
-			<table>
+			<table className="mdl-data-table mdl-js-data-table">
 				<thead>
 					<tr>
-						<th>protocol</th>
-						<th>name</th>
-						<th>remove</th>
-						<th>refresh</th>
+						<th className="mdl-data-table__cell--non-numeric">protocol</th>
+						<th className="mdl-data-table__cell--non-numeric">name</th>
+						<th className="mdl-data-table__cell--non-numeric">remove</th>
+						<th className="mdl-data-table__cell--non-numeric">refresh</th>
 					</tr>
 				</thead>
 				<tbody>
@@ -84,7 +96,7 @@ var Protocol = React.createClass({
 	},
 	render: function() {
 		if (!this.props.params) {
-			return <div></div>;
+			return <div/>;
 		}
 		var params = [];
 		if (this.props.params.Params) {
@@ -97,22 +109,21 @@ var Protocol = React.createClass({
 						save: true,
 					});
 				}.bind(this);
-				return <TextField key={idx} style={{width: '75%'}} onChange={change} value={this.state.params[idx]} floatingLabelText={param} type={param} />;
+				return <TextField key={idx} style={{width: '75%'}} onChange={change} value={this.state.params[idx]} floating={true} type={param}>{param}</TextField>;
 			}.bind(this));
 		}
 		if (this.props.params.OAuthURL) {
-			params.push(<FlatButton
-				key='oauth'
-				primary={true}
-				linkButton={true}
-				href={this.props.params.OAuthURL}
-				label='connect'
-				/>);
+			params.push(
+				<Button key="oauth">
+					<a href={this.props.params.OAuthURL}>connect</a>
+				</Button>
+			);
+		} else {
+			params.push(<Button key="save" raised={true} colored={true} onClick={this.save} disabled={!this.state.save}>save</Button>);
 		}
 		return (
 			<div>
 				{params}
-				<div><RaisedButton onClick={this.save} label='save' disabled={!this.state.save} /></div>
 			</div>
 		);
 	}
@@ -134,17 +145,17 @@ var ProtocolRow = React.createClass({
 	render: function() {
 		return (
 			<tr>
-				<td>{this.props.protocol}</td>
-				<td>{this.props.name}</td>
-				<td>
-					<IconButton onClick={this.remove}>
+				<td className="mdl-data-table__cell--non-numeric">{this.props.protocol}</td>
+				<td className="mdl-data-table__cell--non-numeric">{this.props.name}</td>
+				<td className="mdl-data-table__cell--non-numeric">
+					<Button onClick={this.remove} icon={true}>
 						<i className="material-icons">clear</i>
-					</IconButton>
+					</Button>
 				</td>
-				<td>
-					<IconButton onClick={this.refresh}>
+				<td className="mdl-data-table__cell--non-numeric">
+					<Button onClick={this.refresh} icon={true}>
 						<i className="material-icons">refresh</i>
-					</IconButton>
+					</Button>
 				</td>
 			</tr>
 		);
