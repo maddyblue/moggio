@@ -32755,8 +32755,6 @@ var Player = React.createClass({displayName: "Player",
 		var play = this.state.State == 0 ? 'pause' : 'play_circle_filled';
 		// TODO: dynamically set this to the correct CSS color/class
 		var primary = 'red';
-		var repeat = this.state.Repeat ? primary : {};
-		var random = this.state.Random ? primary : {};
 		var ctrlStyle = {
 			position: 'absolute',
 			left: '50%',
@@ -32816,7 +32814,7 @@ var Player = React.createClass({displayName: "Player",
 						)
 					), 
 					React.createElement("div", {style: ctrlStyle}, 
-						React.createElement(Button, {onClick: this.cmd('repeat'), style: _.extend({}, btnStyle, repeat), icon: true}, 
+						React.createElement(Button, {onClick: this.cmd('repeat'), style: btnStyle, accent: this.state.Repeat, icon: true}, 
 							React.createElement("i", {className: "material-icons"}, "repeat")
 						), 
 						React.createElement(Button, {onClick: this.cmd('prev'), style: btnStyle, icon: true}, 
@@ -32828,7 +32826,7 @@ var Player = React.createClass({displayName: "Player",
 						React.createElement(Button, {onClick: this.cmd('next'), style: btnStyle, icon: true}, 
 							React.createElement("i", {className: "material-icons"}, "skip_next")
 						), 
-						React.createElement(Button, {onClick: this.cmd('random'), style: _.extend({}, btnStyle, random), icon: true}, 
+						React.createElement(Button, {onClick: this.cmd('random'), style: btnStyle, accent: this.state.Random, icon: true}, 
 							React.createElement("i", {className: "material-icons"}, "shuffle")
 						)
 					)

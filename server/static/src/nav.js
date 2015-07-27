@@ -239,8 +239,6 @@ var Player = React.createClass({
 		var play = this.state.State == 0 ? 'pause' : 'play_circle_filled';
 		// TODO: dynamically set this to the correct CSS color/class
 		var primary = 'red';
-		var repeat = this.state.Repeat ? primary : {};
-		var random = this.state.Random ? primary : {};
 		var ctrlStyle = {
 			position: 'absolute',
 			left: '50%',
@@ -300,7 +298,7 @@ var Player = React.createClass({
 						</Button>
 					</div>
 					<div style={ctrlStyle}>
-						<Button onClick={this.cmd('repeat')} style={_.extend({}, btnStyle, repeat)} icon={true}>
+						<Button onClick={this.cmd('repeat')} style={btnStyle} accent={this.state.Repeat} icon={true}>
 							<i className='material-icons'>repeat</i>
 						</Button>
 						<Button onClick={this.cmd('prev')} style={btnStyle} icon={true}>
@@ -312,7 +310,7 @@ var Player = React.createClass({
 						<Button onClick={this.cmd('next')} style={btnStyle} icon={true}>
 							<i className='material-icons'>skip_next</i>
 						</Button>
-						<Button onClick={this.cmd('random')} style={_.extend({}, btnStyle, random)} icon={true}>
+						<Button onClick={this.cmd('random')} style={btnStyle} accent={this.state.Random} icon={true}>
 							<i className='material-icons'>shuffle</i>
 						</Button>
 					</div>
