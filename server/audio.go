@@ -192,6 +192,7 @@ func (srv *Server) audio() {
 			sr, ch, err := srv.song.Init()
 			if err != nil {
 				srv.song.Close()
+				srv.song = nil
 				broadcastErr(err)
 				sendNext()
 				return
