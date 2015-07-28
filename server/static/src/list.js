@@ -261,7 +261,8 @@ var Tracks = exports.Tracks = React.createClass({
 			);
 		};
 		var track = this.props.isqueue ? <th></th> : <th className={this.sortClass('Track')} onClick={this.sort('Track')}>#</th>;
-		var tableWidth = window.innerWidth - 16;
+		// todo: fix this for mobile when the drawer is hidden
+		var tableWidth = window.innerWidth - 240 - 20;
 		return (
 			<div>
 				{queue}
