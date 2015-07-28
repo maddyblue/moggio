@@ -780,6 +780,9 @@ type File struct {
 	// AppDataContents: Whether this file is in the Application Data folder.
 	AppDataContents bool `json:"appDataContents,omitempty"`
 
+	// CanComment: Whether the current user can comment on the file.
+	CanComment bool `json:"canComment,omitempty"`
+
 	// Copyable: Whether the file can be copied by the current user.
 	Copyable bool `json:"copyable,omitempty"`
 
@@ -795,8 +798,6 @@ type File struct {
 	// Description: A short description of the file.
 	Description string `json:"description,omitempty"`
 
-	// DownloadUrl: Short lived download URL for the file. This is only
-	// populated for files with content stored in Drive.
 	DownloadUrl string `json:"downloadUrl,omitempty"`
 
 	// Editable: Whether the file can be edited by the current user.
@@ -809,8 +810,7 @@ type File struct {
 	Etag string `json:"etag,omitempty"`
 
 	// ExplicitlyTrashed: Whether this file has been explicitly trashed, as
-	// opposed to recursively trashed. This will only be populated if the
-	// file is trashed.
+	// opposed to recursively trashed.
 	ExplicitlyTrashed bool `json:"explicitlyTrashed,omitempty"`
 
 	// ExportLinks: Links for exporting Google Docs to specific formats.
@@ -903,6 +903,9 @@ type File struct {
 	// Drive.
 	OriginalFilename string `json:"originalFilename,omitempty"`
 
+	// OwnedByMe: Whether the file is owned by the current user.
+	OwnedByMe bool `json:"ownedByMe,omitempty"`
+
 	// OwnerNames: Name(s) of the owner(s) of this file.
 	OwnerNames []string `json:"ownerNames,omitempty"`
 
@@ -928,6 +931,10 @@ type File struct {
 
 	// SelfLink: A link back to this file.
 	SelfLink string `json:"selfLink,omitempty"`
+
+	// Shareable: Whether the file's sharing settings can be modified by the
+	// current user.
+	Shareable bool `json:"shareable,omitempty"`
 
 	// Shared: Whether the file has been shared.
 	Shared bool `json:"shared,omitempty"`
@@ -3897,12 +3904,11 @@ func (c *FilesInsertCall) Do() (*File, error) {
 	req, _ := http.NewRequest("POST", urls, body)
 	googleapi.SetOpaque(req.URL)
 	if c.protocol_ == "resumable" {
-		req.ContentLength = 0
 		if c.mediaType_ == "" {
 			c.mediaType_ = googleapi.DetectMediaType(c.resumable_)
 		}
 		req.Header.Set("X-Upload-Content-Type", c.mediaType_)
-		req.Body = nil
+		req.Header.Set("Content-Type", "application/json; charset=utf-8")
 	} else {
 		req.Header.Set("Content-Type", ctype)
 	}
@@ -4248,6 +4254,26 @@ func (c *FilesPatchCall) Convert(convert bool) *FilesPatchCall {
 	return c
 }
 
+// ModifiedDateBehavior sets the optional parameter
+// "modifiedDateBehavior": How the modifiedDate field should be updated.
+// This overrides setModifiedDate.
+//
+// Possible values:
+//   "fromBody" - Set modifiedDate to the value provided in the body of
+// the request. No change if no value was provided.
+//   "fromBodyIfNeeded" - Set modifiedDate to the value provided in the
+// body of the request depending on other contents of the update.
+//   "fromBodyOrNow" - Set modifiedDate to the value provided in the
+// body of the request, or to the current time if no value was provided.
+//   "noChange" - Maintain the previous value of modifiedDate.
+//   "now" - Set modifiedDate to the current time.
+//   "nowIfNeeded" - Set modifiedDate to the current time depending on
+// contents of the update.
+func (c *FilesPatchCall) ModifiedDateBehavior(modifiedDateBehavior string) *FilesPatchCall {
+	c.opt_["modifiedDateBehavior"] = modifiedDateBehavior
+	return c
+}
+
 // NewRevision sets the optional parameter "newRevision": Whether a blob
 // upload should create a new revision. If false, the blob data in the
 // current head revision is replaced. If true or not set, a new blob is
@@ -4347,6 +4373,9 @@ func (c *FilesPatchCall) Do() (*File, error) {
 	if v, ok := c.opt_["convert"]; ok {
 		params.Set("convert", fmt.Sprintf("%v", v))
 	}
+	if v, ok := c.opt_["modifiedDateBehavior"]; ok {
+		params.Set("modifiedDateBehavior", fmt.Sprintf("%v", v))
+	}
 	if v, ok := c.opt_["newRevision"]; ok {
 		params.Set("newRevision", fmt.Sprintf("%v", v))
 	}
@@ -4424,6 +4453,27 @@ func (c *FilesPatchCall) Do() (*File, error) {
 	//       "description": "The ID of the file to update.",
 	//       "location": "path",
 	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "modifiedDateBehavior": {
+	//       "description": "How the modifiedDate field should be updated. This overrides setModifiedDate.",
+	//       "enum": [
+	//         "fromBody",
+	//         "fromBodyIfNeeded",
+	//         "fromBodyOrNow",
+	//         "noChange",
+	//         "now",
+	//         "nowIfNeeded"
+	//       ],
+	//       "enumDescriptions": [
+	//         "Set modifiedDate to the value provided in the body of the request. No change if no value was provided.",
+	//         "Set modifiedDate to the value provided in the body of the request depending on other contents of the update.",
+	//         "Set modifiedDate to the value provided in the body of the request, or to the current time if no value was provided.",
+	//         "Maintain the previous value of modifiedDate.",
+	//         "Set modifiedDate to the current time.",
+	//         "Set modifiedDate to the current time depending on contents of the update."
+	//       ],
+	//       "location": "query",
 	//       "type": "string"
 	//     },
 	//     "newRevision": {
@@ -4776,6 +4826,26 @@ func (c *FilesUpdateCall) Convert(convert bool) *FilesUpdateCall {
 	return c
 }
 
+// ModifiedDateBehavior sets the optional parameter
+// "modifiedDateBehavior": How the modifiedDate field should be updated.
+// This overrides setModifiedDate.
+//
+// Possible values:
+//   "fromBody" - Set modifiedDate to the value provided in the body of
+// the request. No change if no value was provided.
+//   "fromBodyIfNeeded" - Set modifiedDate to the value provided in the
+// body of the request depending on other contents of the update.
+//   "fromBodyOrNow" - Set modifiedDate to the value provided in the
+// body of the request, or to the current time if no value was provided.
+//   "noChange" - Maintain the previous value of modifiedDate.
+//   "now" - Set modifiedDate to the current time.
+//   "nowIfNeeded" - Set modifiedDate to the current time depending on
+// contents of the update.
+func (c *FilesUpdateCall) ModifiedDateBehavior(modifiedDateBehavior string) *FilesUpdateCall {
+	c.opt_["modifiedDateBehavior"] = modifiedDateBehavior
+	return c
+}
+
 // NewRevision sets the optional parameter "newRevision": Whether a blob
 // upload should create a new revision. If false, the blob data in the
 // current head revision is replaced. If true or not set, a new blob is
@@ -4903,6 +4973,9 @@ func (c *FilesUpdateCall) Do() (*File, error) {
 	if v, ok := c.opt_["convert"]; ok {
 		params.Set("convert", fmt.Sprintf("%v", v))
 	}
+	if v, ok := c.opt_["modifiedDateBehavior"]; ok {
+		params.Set("modifiedDateBehavior", fmt.Sprintf("%v", v))
+	}
 	if v, ok := c.opt_["newRevision"]; ok {
 		params.Set("newRevision", fmt.Sprintf("%v", v))
 	}
@@ -4960,12 +5033,11 @@ func (c *FilesUpdateCall) Do() (*File, error) {
 		"fileId": c.fileId,
 	})
 	if c.protocol_ == "resumable" {
-		req.ContentLength = 0
 		if c.mediaType_ == "" {
 			c.mediaType_ = googleapi.DetectMediaType(c.resumable_)
 		}
 		req.Header.Set("X-Upload-Content-Type", c.mediaType_)
-		req.Body = nil
+		req.Header.Set("Content-Type", "application/json; charset=utf-8")
 	} else {
 		req.Header.Set("Content-Type", ctype)
 	}
@@ -5039,6 +5111,27 @@ func (c *FilesUpdateCall) Do() (*File, error) {
 	//       "description": "The ID of the file to update.",
 	//       "location": "path",
 	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "modifiedDateBehavior": {
+	//       "description": "How the modifiedDate field should be updated. This overrides setModifiedDate.",
+	//       "enum": [
+	//         "fromBody",
+	//         "fromBodyIfNeeded",
+	//         "fromBodyOrNow",
+	//         "noChange",
+	//         "now",
+	//         "nowIfNeeded"
+	//       ],
+	//       "enumDescriptions": [
+	//         "Set modifiedDate to the value provided in the body of the request. No change if no value was provided.",
+	//         "Set modifiedDate to the value provided in the body of the request depending on other contents of the update.",
+	//         "Set modifiedDate to the value provided in the body of the request, or to the current time if no value was provided.",
+	//         "Maintain the previous value of modifiedDate.",
+	//         "Set modifiedDate to the current time.",
+	//         "Set modifiedDate to the current time depending on contents of the update."
+	//       ],
+	//       "location": "query",
 	//       "type": "string"
 	//     },
 	//     "newRevision": {
@@ -7119,12 +7212,11 @@ func (c *RealtimeUpdateCall) Do() error {
 		"fileId": c.fileId,
 	})
 	if c.protocol_ == "resumable" {
-		req.ContentLength = 0
 		if c.mediaType_ == "" {
 			c.mediaType_ = googleapi.DetectMediaType(c.resumable_)
 		}
 		req.Header.Set("X-Upload-Content-Type", c.mediaType_)
-		req.Body = nil
+		req.Header.Set("Content-Type", "application/json; charset=utf-8")
 	} else {
 		req.Header.Set("Content-Type", ctype)
 	}
