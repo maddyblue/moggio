@@ -2,14 +2,13 @@ package mpa
 
 import (
 	"bytes"
-	"fmt"
 	"io"
-	"io/ioutil"
-	"strconv"
+	"math"
 	"time"
 
+	"github.com/mjibson/mog/_third_party/github.com/dhowden/tag"
 	"github.com/mjibson/mog/_third_party/github.com/korandiz/mpa"
-	"github.com/mjibson/mog/_third_party/github.com/mjibson/id3"
+	"github.com/mjibson/mog/_third_party/github.com/korandiz/mpseek"
 	"github.com/mjibson/mog/codec"
 )
 
@@ -34,89 +33,66 @@ type Song struct {
 	Reader  codec.Reader
 	r       io.ReadCloser
 	decoder *mpa.Decoder
-	initbuf []byte
 	buff    [2][]float32
+	info    *codec.SongInfo
 }
 
 func NewSong(rf codec.Reader) (*Song, error) {
 	s := &Song{Reader: rf}
-	_, _, err := s.Init()
-	return s, err
+	return s, nil
 }
 
 func (s *Song) Init() (sampleRate, channels int, err error) {
-	if s.decoder == nil {
-		r, _, err := s.Reader()
-		if err != nil {
+	r, _, err := s.Reader()
+	if err != nil {
+		return 0, 0, err
+	}
+	s.decoder = &mpa.Decoder{Input: r}
+	s.r = r
+	for {
+		if err := s.decode(); err != nil {
+			r.Close()
 			return 0, 0, err
 		}
-		buf := new(bytes.Buffer)
-		defer func() {
-			s.initbuf = buf.Bytes()
-		}()
-		s.decoder = &mpa.Decoder{Input: io.TeeReader(r, buf)}
-		s.r = r
-		for {
-			if err := s.decoder.DecodeFrame(); err != nil {
-				switch err.(type) {
-				case mpa.MalformedStream:
-					continue
-				}
-				r.Close()
-				return 0, 0, err
-			}
-			break
-		}
+		break
 	}
 	return s.decoder.SamplingFrequency(), s.decoder.NChannels(), nil
 }
 
 func (s *Song) Info() (info codec.SongInfo, err error) {
-	var r io.ReadCloser
-	if len(s.initbuf) != 0 {
-		r = ioutil.NopCloser(bytes.NewBuffer(s.initbuf))
+	if s.info != nil {
+		return *s.info, nil
 	}
-	if r == nil {
-		r, _, err = s.Reader()
-		if err != nil {
-			return
-		}
-	}
-	f := id3.Read(r)
-	r.Close()
-	if f == nil {
-		err = fmt.Errorf("could not read id3 data")
+	si, _, b, err := s.Reader.Metadata(tag.MP3)
+	if err != nil {
 		return
 	}
-	track, _ := strconv.ParseFloat(f.Track, 64)
-	dur, _ := strconv.Atoi(f.Length)
-	si := codec.SongInfo{
-		Artist: f.Artist,
-		Title:  f.Name,
-		Album:  f.Album,
-		Track:  track,
-		Time:   time.Duration(dur) * time.Millisecond,
+	table, err := mpseek.CreateTable(bytes.NewReader(b), math.MaxFloat64)
+	if err != nil {
+		return
 	}
-	if f.Image != nil {
-		si.ImageURL = f.Image.DataURL()
+	si.Time = time.Duration(table.Length()) * time.Second
+	s.info = si
+	return *si, nil
+}
+
+func (s *Song) decode() error {
+	err := s.decoder.DecodeFrame()
+	if err != nil {
+		return err
 	}
-	return si, nil
+	for i := 0; i < 2; i++ {
+		s.buff[i] = make([]float32, s.decoder.NSamples())
+		s.decoder.ReadSamples(i, s.buff[i])
+	}
+	return nil
 }
 
 func (s *Song) Play(n int) (r []float32, err error) {
 	for len(r) < n {
 		if len(s.buff[0]) == 0 {
-			err = s.decoder.DecodeFrame()
-			if err != nil {
-				switch err.(type) {
-				case mpa.MalformedStream:
-					continue
-				}
+			if err = s.decode(); err != nil {
 				return
-			}
-			for i := 0; i < 2; i++ {
-				s.buff[i] = make([]float32, s.decoder.NSamples())
-				s.decoder.ReadSamples(i, s.buff[i])
 			}
 		}
 		for len(s.buff[0]) > 0 && len(r) < n {

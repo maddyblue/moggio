@@ -6,12 +6,17 @@ package codec
 
 import (
 	"bufio"
+	"bytes"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"github.com/mjibson/mog/_third_party/github.com/dhowden/tag"
 )
 
 // ErrFormat indicates that decoding encountered an unknown format.
@@ -135,6 +140,48 @@ func sniff(r reader) *codec {
 // Reader returns a file reader and the file size in bytes (or 0 if streamed
 // or unknown).
 type Reader func() (io.ReadCloser, int64, error)
+
+func (rf Reader) Metadata(ft tag.FileType) (*SongInfo, tag.Metadata, []byte, error) {
+	r, sz, err := rf()
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	if sz == 0 {
+		return nil, nil, nil, fmt.Errorf("cannot get metadata with unknown size")
+	}
+	b, err := ioutil.ReadAll(r)
+	r.Close()
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	m, err := tag.ReadFrom(bytes.NewReader(b))
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	if m.FileType() != ft {
+		return nil, nil, nil, fmt.Errorf("expected filetype %v, got %v", ft, m.FileType())
+	}
+	track, _ := m.Track()
+	si := &SongInfo{
+		Artist:   m.Artist(),
+		Title:    m.Title(),
+		Album:    m.Album(),
+		Track:    float64(track),
+		ImageURL: dataURL(m),
+	}
+	return si, m, b, nil
+}
+
+func dataURL(m tag.Metadata) string {
+	p := m.Picture()
+	if p == nil {
+		return ""
+	}
+	if p.MIMEType == "-->" {
+		return string(p.Data)
+	}
+	return fmt.Sprintf("data:%s;base64,%s", p.MIMEType, base64.StdEncoding.EncodeToString(p.Data))
+}
 
 // Decode decodes audio that has been encoded in a registered codec.
 // The string returned is the format name used during format registration.
