@@ -1,7 +1,5 @@
 package main
 
-// TODO: fix the ID3 reading for 02 london MP3 on the air. could just be an old id3 package or something? thought i already fixed it.
-
 import (
 	"flag"
 	"io"
