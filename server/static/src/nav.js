@@ -61,15 +61,13 @@ var App = React.createClass({
 	clearError: function() {
 		this.setState({error: null});
 	},
-	getSelectedIndex() {
-		var currentItem;
-		var menuItems = this.state.menuItems;
-		for (var i = menuItems.length - 1; i >= 0; i--) {
-			currentItem = menuItems[i];
-			if (currentItem.route && this.context.router.isActive(currentItem.route)) {
-				return i;
-			}
+	routeClass(route, params) {
+		var active = this.context.router.isActive(route, params);
+		var path = this.context.router.getCurrentPath();
+		if (route == 'app' && path != '/') {
+			active = false;
 		}
+		return active ? ' mdl-color-text--accent' : '';
 	},
 	render: function() {
 		var overlay;
@@ -97,13 +95,14 @@ var App = React.createClass({
 			);
 		}
 		var menuItems = _.map(navMenuItems, function(v, k) {
-			return <Link key={k} className="mdl-navigation__link" to={v.route}>{v.text}</Link>;
-		});
+			return <Link key={k} className={"mdl-navigation__link" + this.routeClass(v.route)} to={v.route}>{v.text}</Link>;
+		}.bind(this));
 		var playlists;
 		if (this.state.Playlists) {
 			var entries = _.map(this.state.Playlists, function(_, key) {
-				return <Link key={"playlist-" + key} className="mdl-navigation__link" to="playlist" params={{Playlist: key}}>{key}</Link>;
-			});
+				var params = {Playlist: key};
+				return <Link key={"playlist-" + key} className={"mdl-navigation__link" + this.routeClass('playlist', params)} to="playlist" params={params}>{key}</Link>;
+			}.bind(this));
 			playlists = (
 				<nav className="mdl-navigation">
 					{entries}

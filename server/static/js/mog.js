@@ -32583,15 +32583,13 @@ var App = React.createClass({displayName: "App",
 	clearError: function() {
 		this.setState({error: null});
 	},
-	getSelectedIndex:function() {
-		var currentItem;
-		var menuItems = this.state.menuItems;
-		for (var i = menuItems.length - 1; i >= 0; i--) {
-			currentItem = menuItems[i];
-			if (currentItem.route && this.context.router.isActive(currentItem.route)) {
-				return i;
-			}
+	routeClass:function(route, params) {
+		var active = this.context.router.isActive(route, params);
+		var path = this.context.router.getCurrentPath();
+		if (route == 'app' && path != '/') {
+			active = false;
 		}
+		return active ? ' mdl-color-text--accent' : '';
 	},
 	render: function() {
 		var overlay;
@@ -32619,13 +32617,14 @@ var App = React.createClass({displayName: "App",
 			);
 		}
 		var menuItems = _.map(navMenuItems, function(v, k) {
-			return React.createElement(Link, {key: k, className: "mdl-navigation__link", to: v.route}, v.text);
-		});
+			return React.createElement(Link, {key: k, className: "mdl-navigation__link" + this.routeClass(v.route), to: v.route}, v.text);
+		}.bind(this));
 		var playlists;
 		if (this.state.Playlists) {
 			var entries = _.map(this.state.Playlists, function(_, key) {
-				return React.createElement(Link, {key: "playlist-" + key, className: "mdl-navigation__link", to: "playlist", params: {Playlist: key}}, key);
-			});
+				var params = {Playlist: key};
+				return React.createElement(Link, {key: "playlist-" + key, className: "mdl-navigation__link" + this.routeClass('playlist', params), to: "playlist", params: params}, key);
+			}.bind(this));
 			playlists = (
 				React.createElement("nav", {className: "mdl-navigation"}, 
 					entries
