@@ -31999,6 +31999,7 @@ var Tracks = exports.Tracks = React.createClass({displayName: "Tracks",
 			asc: true,
 			tracks: [],
 			search: '',
+			tableWidth: 0,
 		};
 		if (this.props.isqueue || this.props.useIdxAsNum) {
 			init.sort = 'Track';
@@ -32080,11 +32081,17 @@ var Tracks = exports.Tracks = React.createClass({displayName: "Tracks",
 		return name;
 	},
 	handleResize: function() {
-		this.forceUpdate();
+		this.update(this.getTableWidth());
+	},
+	getTableWidth: function() {
+		var n = React.findDOMNode(this.refs.table);
+		var w = window.innerWidth - n.offsetLeft;
+		return {tableWidth: w};
 	},
 	componentDidMount: function() {
 		window.addEventListener('resize', this.handleResize);
-		this.update(null, this.props.tracks);
+		var w = this.getTableWidth();
+		this.update(w, this.props.tracks);
 	},
 	componentWillUnmount: function() {
 		window.removeEventListener('resize', this.handleResize);
@@ -32234,19 +32241,17 @@ var Tracks = exports.Tracks = React.createClass({displayName: "Tracks",
 			);
 		};
 		var track = this.props.isqueue ? React.createElement("th", null) : React.createElement("th", {className: this.sortClass('Track'), onClick: this.sort('Track')}, "#");
-		// todo: fix this for mobile when the drawer is hidden
-		var tableWidth = window.innerWidth - 240 - 20;
 		return (
 			React.createElement("div", null, 
 				queue, 
-				React.createElement(TextField, {style: {width: tableWidth - 2}, onChange: this.search, value: this.state.search}, "search"), 
+				React.createElement(TextField, {style: {width: this.state.tableWidth - 2}, onChange: this.search, value: this.state.search}, "search"), 
 				React.createElement(Table, {ref: "table", 
 					headerHeight: 50, 
 					rowHeight: 50, 
 					rowGetter: this.getter, 
 					rowsCount: this.state.tracks.length, 
 					rowClassNameGetter: this.rowClassNameGetter, 
-					width: tableWidth, 
+					width: this.state.tableWidth, 
 					height: height, 
 					overflowX: 'hidden'
 					}, 
