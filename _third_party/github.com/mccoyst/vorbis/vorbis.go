@@ -1,3 +1,4 @@
+// Package vorbis decodes Ogg Vorbis files.
 package vorbis
 
 // Additional code placed in the public domain July 2013 by the author: no copyright is claimed.
@@ -5425,6 +5426,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"time"
 	"unsafe"
 )
 
@@ -5452,6 +5454,19 @@ func Decode(b []byte) (data []int16, channels int, sampleRate int, err error) {
 	}
 
 	return data, int(Cchannels), int(Crate), nil
+}
+
+// Length returns the duration of an ogg-vorbis file.
+func Length(b []byte) (time.Duration, error) {
+	raw := (*C.uchar)(unsafe.Pointer(&b[0]))
+	var cerror C.int
+	v := C.stb_vorbis_open_memory(raw, C.int(len(b)), &cerror, nil)
+	if cerror != 0 {
+		return 0, fmt.Errorf("vorbis: stb_vorbis_open_memory: %v", cerror)
+	}
+	secs := C.stb_vorbis_stream_length_in_seconds(v)
+	dur := time.Duration(secs) * time.Second
+	return dur, nil
 }
 
 // New opens the Vorbis file from r, which is then prepared for playback.

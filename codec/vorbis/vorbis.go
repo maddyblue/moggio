@@ -3,9 +3,9 @@
 package vorbis
 
 import (
-	"bytes"
 	"io"
 
+	"github.com/mjibson/mog/_third_party/github.com/dhowden/tag"
 	"github.com/mjibson/mog/_third_party/github.com/mccoyst/vorbis"
 	"github.com/mjibson/mog/codec"
 )
@@ -26,16 +26,15 @@ func NewSong(rf codec.Reader) (codec.Song, error) {
 	f := &Vorbis{
 		Reader: rf,
 	}
-	_, _, err := f.Init()
-	return f, err
+	return f, nil
 }
 
 type Vorbis struct {
 	Reader  codec.Reader
 	r       io.ReadCloser
-	initbuf []byte
 	v       *vorbis.Vorbis
 	samples []float32
+	info    *codec.SongInfo
 }
 
 func (v *Vorbis) Init() (sampleRate, channels int, err error) {
@@ -44,11 +43,7 @@ func (v *Vorbis) Init() (sampleRate, channels int, err error) {
 		if err != nil {
 			return 0, 0, err
 		}
-		buf := new(bytes.Buffer)
-		defer func() {
-			v.initbuf = buf.Bytes()
-		}()
-		vr, err := vorbis.New(io.TeeReader(r, buf))
+		vr, err := vorbis.New(r)
 		if err != nil {
 			r.Close()
 			return 0, 0, err
@@ -60,7 +55,16 @@ func (v *Vorbis) Init() (sampleRate, channels int, err error) {
 }
 
 func (v *Vorbis) Info() (info codec.SongInfo, err error) {
-	return
+	if v.info != nil {
+		return *v.info, nil
+	}
+	si, _, b, err := v.Reader.Metadata(tag.OGG)
+	if err != nil {
+		return
+	}
+	si.Time, _ = vorbis.Length(b)
+	v.info = si
+	return *si, nil
 }
 
 func (v *Vorbis) Play(n int) ([]float32, error) {
