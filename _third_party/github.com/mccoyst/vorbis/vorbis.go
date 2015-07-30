@@ -5465,6 +5465,7 @@ func Length(b []byte) (time.Duration, error) {
 		return 0, fmt.Errorf("vorbis: stb_vorbis_open_memory: %v", cerror)
 	}
 	secs := C.stb_vorbis_stream_length_in_seconds(v)
+	C.stb_vorbis_close(v)
 	dur := time.Duration(secs) * time.Second
 	return dur, nil
 }
