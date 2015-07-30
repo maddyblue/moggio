@@ -109,7 +109,7 @@ var Protocol = React.createClass({
 						save: true,
 					});
 				}.bind(this);
-				return <div><TextField key={idx} style={{width: '75%'}} onChange={change} value={this.state.params[idx]} floating={true} type={param}>{param}</TextField></div>;
+				return <div key={idx}><TextField style={{width: '75%'}} onChange={change} value={this.state.params[idx]} floating={true} type={param}>{param}</TextField></div>;
 			}.bind(this));
 		}
 		if (this.props.params.OAuthURL) {
