@@ -121,11 +121,13 @@ table.tracks button {
 .sort-asc::after {
 	content: "▲";
 	padding-left: 5px;
+	font-size: 14px;
 }
 
 .sort-desc::after {
 	content: "▼";
 	padding-left: 5px;
+	font-size: 14px;
 }
 
 .clickable:hover {
@@ -154,6 +156,10 @@ table.tracks button {
 
 .public_fixedDataTable_bodyRow.public_fixedDataTableRow_highlighted .nowrap div:after {
 	background: linear-gradient(to right, rgba(245, 245, 245,0), rgb(245, 245, 245));
+}
+
+.public_fixedDataTableCell_wrap2 {
+	height: 100%;
 }
 
 .fixedDataTableCellGroup_cellGroup .hover {
