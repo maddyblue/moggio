@@ -339,7 +339,7 @@ exports.TrackList = React.createClass({
 	render: function() {
 		return (
 			<div>
-				<h2>Music</h2>
+				<div className="mdl-typography--display-3 mdl-color-text--grey-600">Music</div>
 				<Tracks tracks={this.state.Tracks} />
 			</div>
 		);
@@ -362,7 +362,7 @@ function searchClass(field, sort) {
 			});
 			return (
 				<div>
-					<h2><Link to="app">Music</Link> &gt; {prop}</h2>
+					<div className="mdl-typography--display-3 mdl-color-text--grey-600"><Link to="app">Music</Link> &gt; {prop}</div>
 					<Tracks tracks={tracks} initSort={sort} />
 				</div>
 			);

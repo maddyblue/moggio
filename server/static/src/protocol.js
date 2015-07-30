@@ -57,10 +57,10 @@ exports.Protocols = React.createClass({
 			);
 		}
 		return <div>
-			<h2>New Protocol</h2>
+			<div className="mdl-typography--display-3 mdl-color-text--grey-600">New Protocol</div>
 			{dropdown}
 			{selected}
-			<h2>Existing Protocols</h2>
+			<div className="mdl-typography--display-3 mdl-color-text--grey-600">Existing Protocols</div>
 			<table className="mdl-data-table mdl-js-data-table">
 				<thead>
 					<tr>

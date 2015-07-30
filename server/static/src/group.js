@@ -34,7 +34,7 @@ function group(route, field, name) {
 			});
 			return (
 				<div>
-					<h2><Link to="app">Music</Link> &gt; {name}</h2>
+					<div className="mdl-typography--display-3 mdl-color-text--grey-600"><Link to="app">Music</Link> &gt; {name}</div>
 					<ul>
 						{lis}
 					</ul>

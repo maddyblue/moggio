@@ -31957,7 +31957,7 @@ function group(route, field, name) {
 			});
 			return (
 				React.createElement("div", null, 
-					React.createElement("h2", null, React.createElement(Link, {to: "app"}, "Music"), " > ", name), 
+					React.createElement("div", {className: "mdl-typography--display-3 mdl-color-text--grey-600"}, React.createElement(Link, {to: "app"}, "Music"), " > ", name), 
 					React.createElement("ul", null, 
 						lis
 					)
@@ -32312,7 +32312,7 @@ exports.TrackList = React.createClass({displayName: "TrackList",
 	render: function() {
 		return (
 			React.createElement("div", null, 
-				React.createElement("h2", null, "Music"), 
+				React.createElement("div", {className: "mdl-typography--display-3 mdl-color-text--grey-600"}, "Music"), 
 				React.createElement(Tracks, {tracks: this.state.Tracks})
 			)
 		);
@@ -32335,7 +32335,7 @@ function searchClass(field, sort) {
 			});
 			return (
 				React.createElement("div", null, 
-					React.createElement("h2", null, React.createElement(Link, {to: "app"}, "Music"), " > ", prop), 
+					React.createElement("div", {className: "mdl-typography--display-3 mdl-color-text--grey-600"}, React.createElement(Link, {to: "app"}, "Music"), " > ", prop), 
 					React.createElement(Tracks, {tracks: tracks, initSort: sort})
 				)
 			);
@@ -32531,14 +32531,6 @@ var DefaultRoute = Router.DefaultRoute;
 var Link = Router.Link;
 var RouteHandler = Router.RouteHandler;
 var Redirect = Router.Redirect;
-
-// todo: get these from the CSS somehow
-var Colors = {
-	grey100: '#F5F5F5',
-	grey300: '#e0e0e0',
-	grey500: 'rgb(158, 158, 158)',
-	orange500: 'rgb(255, 152, 0)',
-};
 
 var Mog = require('./mog.js');
 
@@ -32755,7 +32747,7 @@ var Player = React.createClass({displayName: "Player",
 			if (info.ImageURL) {
 				img = React.createElement("img", {style: istyle, src: info.ImageURL});
 			} else {
-				img = React.createElement("div", {style: _.extend({backgroundColor: Colors.grey300}, istyle)});
+				img = React.createElement("div", {style: istyle, className: "mdl-color--grey-300"});
 			}
 		};
 		var play = this.state.State == 0 ? 'pause' : 'play_circle_filled';
@@ -32768,7 +32760,6 @@ var Player = React.createClass({displayName: "Player",
 			bottom: '0',
 			height: '70px',
 			textAlign: 'center',
-			backgroundColor: Colors.grey100,
 		};
 		var btnStyle = {
 			position: 'relative',
@@ -32798,14 +32789,14 @@ var Player = React.createClass({displayName: "Player",
 			animationTimingFunction: 'linear',
 			width: animation == '' ? 0 : '100%',
 			animation: ad,
-			backgroundColor: Colors.orange500,
 		};
+		var seekBG = 'mdl-color--orange-500';
 		return (
 			React.createElement("div", null, 
 				React.createElement("div", {id: "seek", onClick: this.seek}, 
-					React.createElement("div", {style: {position: 'absolute', left: '0', width: pos + '%', bottom: '0', top: '0', backgroundColor: seekPosStyle.backgroundColor}}), 
-					React.createElement("div", {style: {position: 'absolute', right: '0', width: (100 - pos) + '%', bottom: '0', top: '0', backgroundColor: Colors.grey500}}, 
-						React.createElement("div", {style: seekPosStyle})
+					React.createElement("div", {style: {position: 'absolute', left: '0', width: pos + '%', bottom: '0', top: '0'}, className: seekBG}), 
+					React.createElement("div", {style: {position: 'absolute', right: '0', width: (100 - pos) + '%', bottom: '0', top: '0'}, className: "mdl-color--grey-500"}, 
+						React.createElement("div", {style: seekPosStyle, className: seekBG})
 					)
 				), 
 				img, 
@@ -32819,7 +32810,7 @@ var Player = React.createClass({displayName: "Player",
 							React.createElement("i", {className: "material-icons"}, "queue_music")
 						)
 					), 
-					React.createElement("div", {style: ctrlStyle}, 
+					React.createElement("div", {style: ctrlStyle, className: "mdl-color--grey-100"}, 
 						React.createElement(Button, {onClick: this.cmd('repeat'), style: btnStyle, accent: this.state.Repeat, icon: true}, 
 							React.createElement("i", {className: "material-icons"}, "repeat")
 						), 
@@ -32899,7 +32890,7 @@ exports.Queue = React.createClass({displayName: "Queue",
 	render: function() {
 		return (
 			React.createElement("div", null, 
-				React.createElement("h2", null, "Queue"), 
+				React.createElement("div", {className: "mdl-typography--display-3 mdl-color-text--grey-600"}, "Queue"), 
 				React.createElement(Button, {raised: true, onClick: this.clear}, "clear"), 
 				" ", 
 				React.createElement(Button, {raised: true, onClick: this.save}, "save"), 
@@ -32926,7 +32917,7 @@ exports.Playlist = React.createClass({displayName: "Playlist",
 	render: function() {
 		return (
 			React.createElement("div", null, 
-				React.createElement("h2", null, this.props.params.Playlist), 
+				React.createElement("div", {className: "mdl-typography--display-3 mdl-color-text--grey-600"}, this.props.params.Playlist), 
 				React.createElement(Button, {raised: true, onClick: this.clear}, "delete playlist"), 
 				React.createElement(List.Tracks, {tracks: this.state.Playlists[this.props.params.Playlist], useIdxAsNum: true})
 			)
@@ -32994,10 +32985,10 @@ exports.Protocols = React.createClass({displayName: "Protocols",
 			);
 		}
 		return React.createElement("div", null, 
-			React.createElement("h2", null, "New Protocol"), 
+			React.createElement("div", {className: "mdl-typography--display-3 mdl-color-text--grey-600"}, "New Protocol"), 
 			dropdown, 
 			selected, 
-			React.createElement("h2", null, "Existing Protocols"), 
+			React.createElement("div", {className: "mdl-typography--display-3 mdl-color-text--grey-600"}, "Existing Protocols"), 
 			React.createElement("table", {className: "mdl-data-table mdl-js-data-table"}, 
 				React.createElement("thead", null, 
 					React.createElement("tr", null, 

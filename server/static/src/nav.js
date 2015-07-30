@@ -10,14 +10,6 @@ var Link = Router.Link;
 var RouteHandler = Router.RouteHandler;
 var Redirect = Router.Redirect;
 
-// todo: get these from the CSS somehow
-var Colors = {
-	grey100: '#F5F5F5',
-	grey300: '#e0e0e0',
-	grey500: 'rgb(158, 158, 158)',
-	orange500: 'rgb(255, 152, 0)',
-};
-
 var Mog = require('./mog.js');
 
 var Group = require('./group.js');
@@ -233,7 +225,7 @@ var Player = React.createClass({
 			if (info.ImageURL) {
 				img = <img style={istyle} src={info.ImageURL}/>;
 			} else {
-				img = <div style={_.extend({backgroundColor: Colors.grey300}, istyle)} />;
+				img = <div style={istyle} className="mdl-color--grey-300"/>;
 			}
 		};
 		var play = this.state.State == 0 ? 'pause' : 'play_circle_filled';
@@ -246,7 +238,6 @@ var Player = React.createClass({
 			bottom: '0',
 			height: '70px',
 			textAlign: 'center',
-			backgroundColor: Colors.grey100,
 		};
 		var btnStyle = {
 			position: 'relative',
@@ -276,14 +267,14 @@ var Player = React.createClass({
 			animationTimingFunction: 'linear',
 			width: animation == '' ? 0 : '100%',
 			animation: ad,
-			backgroundColor: Colors.orange500,
 		};
+		var seekBG = 'mdl-color--orange-500';
 		return (
 			<div>
 				<div id="seek" onClick={this.seek}>
-					<div style={{position: 'absolute', left: '0', width: pos + '%', bottom: '0', top: '0', backgroundColor: seekPosStyle.backgroundColor}}/>
-					<div style={{position: 'absolute', right: '0', width: (100 - pos) + '%', bottom: '0', top: '0', backgroundColor: Colors.grey500}}>
-						<div style={seekPosStyle}/>
+					<div style={{position: 'absolute', left: '0', width: pos + '%', bottom: '0', top: '0'}} className={seekBG}/>
+					<div style={{position: 'absolute', right: '0', width: (100 - pos) + '%', bottom: '0', top: '0'}} className="mdl-color--grey-500">
+						<div style={seekPosStyle} className={seekBG}/>
 					</div>
 				</div>
 				{img}
@@ -297,7 +288,7 @@ var Player = React.createClass({
 							<i className='material-icons'>queue_music</i>
 						</Button>
 					</div>
-					<div style={ctrlStyle}>
+					<div style={ctrlStyle} className="mdl-color--grey-100">
 						<Button onClick={this.cmd('repeat')} style={btnStyle} accent={this.state.Repeat} icon={true}>
 							<i className='material-icons'>repeat</i>
 						</Button>

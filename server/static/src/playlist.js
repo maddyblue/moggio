@@ -36,7 +36,7 @@ exports.Queue = React.createClass({
 	render: function() {
 		return (
 			<div>
-				<h2>Queue</h2>
+				<div className="mdl-typography--display-3 mdl-color-text--grey-600">Queue</div>
 				<Button raised={true} onClick={this.clear}>clear</Button>
 				&nbsp;
 				<Button raised={true} onClick={this.save}>save</Button>
@@ -63,7 +63,7 @@ exports.Playlist = React.createClass({
 	render: function() {
 		return (
 			<div>
-				<h2>{this.props.params.Playlist}</h2>
+				<div className="mdl-typography--display-3 mdl-color-text--grey-600">{this.props.params.Playlist}</div>
 				<Button raised={true} onClick={this.clear}>delete playlist</Button>
 				<List.Tracks tracks={this.state.Playlists[this.props.params.Playlist]} useIdxAsNum={true} />
 			</div>
