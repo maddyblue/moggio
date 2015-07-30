@@ -32534,9 +32534,10 @@ var Redirect = Router.Redirect;
 
 // todo: get these from the CSS somehow
 var Colors = {
+	grey100: '#F5F5F5',
 	grey300: '#e0e0e0',
-	orange500: 'rgb(255, 152, 0)',
 	grey500: 'rgb(158, 158, 158)',
+	orange500: 'rgb(255, 152, 0)',
 };
 
 var Mog = require('./mog.js');
@@ -32763,11 +32764,11 @@ var Player = React.createClass({displayName: "Player",
 		var ctrlStyle = {
 			position: 'absolute',
 			left: '50%',
-			width: '240px',
 			transform: 'translateX(-50%)',
 			bottom: '0',
 			height: '70px',
 			textAlign: 'center',
+			backgroundColor: Colors.grey100,
 		};
 		var btnStyle = {
 			position: 'relative',
