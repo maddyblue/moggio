@@ -137,6 +137,17 @@ type Server struct {
 	savePending bool
 }
 
+func (srv *Server) removeDeleted(p Playlist) Playlist {
+	var r Playlist
+	for _, id := range p {
+		if srv.songs[id] == nil {
+			continue
+		}
+		r = append(r, id)
+	}
+	return r
+}
+
 type PlaylistInfo []listItem
 
 func (srv *Server) playlistInfo(p Playlist) PlaylistInfo {

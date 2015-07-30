@@ -259,6 +259,26 @@ func (srv *Server) audio() {
 		srv.PlaylistIndex = int(c)
 		play()
 	}
+	removeDeleted := func() {
+		for n, p := range srv.Playlists {
+			p = srv.removeDeleted(p)
+			if len(p) == 0 {
+				delete(srv.Playlists, n)
+			} else {
+				srv.Playlists[n] = p
+			}
+		}
+		srv.Queue = srv.removeDeleted(srv.Queue)
+		if srv.songs[srv.songID] == nil {
+			playing := srv.state == statePlay
+			stop()
+			if playing {
+				srv.PlaylistIndex = 0
+				play()
+			}
+		}
+		broadcast(waitPlaylist)
+	}
 	refresh := func(c cmdRefresh) {
 		for id := range srv.songs {
 			if id.Protocol() == c.protocol && id.Key() == c.key {
@@ -268,6 +288,7 @@ func (srv *Server) audio() {
 		for id, s := range c.songs {
 			srv.songs[SongID(codec.NewID(c.protocol, c.key, string(id)))] = s
 		}
+		removeDeleted()
 		broadcast(waitTracks)
 		broadcast(waitProtocols)
 	}
@@ -278,6 +299,7 @@ func (srv *Server) audio() {
 				delete(srv.songs, id)
 			}
 		}
+		removeDeleted()
 		broadcast(waitTracks)
 		broadcast(waitProtocols)
 	}
