@@ -224,6 +224,8 @@ var Tracks = exports.Tracks = React.createClass({
 		var image;
 		if (data.Info.ImageURL) {
 			image = <img className="track-image" src={data.Info.ImageURL}/>;
+		} else {
+			image = <span className="track-image mdl-color--grey-300" />;
 		}
 		return (
 			<div className="track-title">

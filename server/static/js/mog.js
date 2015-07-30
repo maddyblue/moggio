@@ -32197,6 +32197,8 @@ var Tracks = exports.Tracks = React.createClass({displayName: "Tracks",
 		var image;
 		if (data.Info.ImageURL) {
 			image = React.createElement("img", {className: "track-image", src: data.Info.ImageURL});
+		} else {
+			image = React.createElement("span", {className: "track-image mdl-color--grey-300"});
 		}
 		return (
 			React.createElement("div", {className: "track-title"}, 
