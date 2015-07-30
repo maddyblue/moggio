@@ -33039,12 +33039,12 @@ var Protocol = React.createClass({displayName: "Protocol",
 						save: true,
 					});
 				}.bind(this);
-				return React.createElement(TextField, {key: idx, style: {width: '75%'}, onChange: change, value: this.state.params[idx], floating: true, type: param}, param);
+				return React.createElement("div", null, React.createElement(TextField, {key: idx, style: {width: '75%'}, onChange: change, value: this.state.params[idx], floating: true, type: param}, param));
 			}.bind(this));
 		}
 		if (this.props.params.OAuthURL) {
 			params.push(
-				React.createElement(Button, {key: "oauth"}, 
+				React.createElement(Button, {key: "oauth", raised: true}, 
 					React.createElement("a", {href: this.props.params.OAuthURL}, "connect")
 				)
 			);
