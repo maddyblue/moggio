@@ -131,6 +131,7 @@ type Server struct {
 	elapsed       time.Duration
 
 	ch          chan interface{}
+	audioch     chan interface{}
 	state       State
 	songs       map[SongID]*codec.SongInfo
 	db          *bolt.DB
@@ -166,6 +167,7 @@ var dir = filepath.Join("server")
 func New(stateFile string) (*Server, error) {
 	srv := Server{
 		ch:          make(chan interface{}),
+		audioch:     make(chan interface{}),
 		songs:       make(map[SongID]*codec.SongInfo),
 		Protocols:   make(map[string]map[string]protocol.Instance),
 		Playlists:   make(map[string]Playlist),
@@ -183,6 +185,7 @@ func New(stateFile string) (*Server, error) {
 		log.Println(err)
 	}
 	log.Println("started from", stateFile)
+	go srv.commands()
 	go srv.audio()
 	return &srv, nil
 }
