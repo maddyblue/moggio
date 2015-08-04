@@ -172,7 +172,8 @@ var Player = React.createClass({
 		if (!this.state.Time) {
 			return;
 		}
-		var pos = event.screenX / window.innerWidth;
+		var offset = 80;
+		var pos = (event.clientX - offset) / (window.innerWidth - offset);
 		var s = pos * this.state.Time;
 		Mog.POST('/api/cmd/seek?pos=' + s + 'ns');
 	},
