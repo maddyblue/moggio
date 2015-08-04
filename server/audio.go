@@ -19,6 +19,9 @@ func (srv *Server) audio() {
 			srv.ch <- v
 		}()
 	}
+	setTime := func() {
+		send(cmdSetTime(seek.Pos()))
+	}
 	tick := func() {
 		const expected = 4096
 		if seek == nil {
@@ -27,7 +30,7 @@ func (srv *Server) audio() {
 		next, err := seek.Read(expected)
 		if len(next) > 0 {
 			out.Push(next)
-			send(cmdAdvanceTime(time.Duration(len(next)) * dur))
+			setTime()
 		}
 		if err != nil {
 			seek = nil
@@ -45,7 +48,9 @@ func (srv *Server) audio() {
 		err := seek.Seek(time.Duration(c))
 		if err != nil {
 			send(cmdError(err))
+			return
 		}
+		setTime()
 	}
 	for {
 		select {

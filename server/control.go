@@ -356,6 +356,12 @@ func (srv *Server) commands() {
 	setMinDuration := func(c cmdMinDuration) {
 		srv.MinDuration = time.Duration(c)
 	}
+	doSeek := func(c cmdSeek) {
+		if time.Duration(c) > srv.info.Time {
+			return
+		}
+		srv.audioch <- c
+	}
 	ch := make(chan interface{})
 	go func() {
 		for c := range srv.ch {
@@ -373,8 +379,16 @@ func (srv *Server) commands() {
 		case <-timer:
 			infoTimer()
 		case c := <-ch:
-			if c, ok := c.(cmdAdvanceTime); ok {
-				srv.elapsed += time.Duration(c)
+			if c, ok := c.(cmdSetTime); ok {
+				d := time.Duration(c)
+				change := srv.elapsed - d
+				if change < 0 {
+					change = -change
+				}
+				srv.elapsed = d
+				if change > time.Second {
+					broadcast(waitStatus)
+				}
 				continue
 			}
 			save := true
@@ -426,8 +440,8 @@ func (srv *Server) commands() {
 			case cmdAddOAuth:
 				addOAuth(c)
 			case cmdSeek:
+				doSeek(c)
 				save = false
-				srv.audioch <- c
 			case cmdMinDuration:
 				setMinDuration(c)
 			case cmdError:
@@ -488,6 +502,6 @@ type cmdAddOAuth struct {
 
 type cmdMinDuration time.Duration
 
-type cmdAdvanceTime time.Duration
+type cmdSetTime time.Duration
 
 type cmdError error
