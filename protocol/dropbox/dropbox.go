@@ -4,6 +4,7 @@ import (
 	"encoding/gob"
 	"fmt"
 	"io"
+	"log"
 	"path"
 
 	"github.com/mjibson/mog/codec"
@@ -81,7 +82,7 @@ func (d *Dropbox) GetSong(id codec.ID) (codec.Song, error) {
 
 func (d *Dropbox) reader(id string, size int64) codec.Reader {
 	return func() (io.ReadCloser, int64, error) {
-		fmt.Println("DROPBOX ", id)
+		log.Println("DROPBOX ", id)
 		service, err := d.getService()
 		if err != nil {
 			return nil, 0, err

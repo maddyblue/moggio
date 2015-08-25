@@ -36,7 +36,7 @@ func printErr(e error) {
 	log.Println(e)
 	b := make([]byte, 4096)
 	runtime.Stack(b, false)
-	fmt.Println(string(b))
+	println(string(b))
 }
 
 func ListenAndServe(stateFile, addr string, devMode bool) error {

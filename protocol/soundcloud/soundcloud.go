@@ -4,6 +4,7 @@ import (
 	"encoding/gob"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"time"
 
@@ -94,7 +95,7 @@ func (s *Soundcloud) List() (protocol.SongList, error) {
 }
 
 func (s *Soundcloud) GetSong(id codec.ID) (codec.Song, error) {
-	fmt.Println("SOUNDCLOUD", id)
+	log.Println("SOUNDCLOUD", id)
 	_, client, err := s.getService()
 	if err != nil {
 		return nil, err

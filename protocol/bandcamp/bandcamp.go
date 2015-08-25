@@ -162,7 +162,6 @@ func (b *Bandcamp) Refresh() (protocol.SongList, error) {
 			ImageURL: artURL,
 		}
 	}
-	fmt.Println(tracks[0])
 	b.Songs = songs
 	b.Tracks = tracklist
 	return songs, err
