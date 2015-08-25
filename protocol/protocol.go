@@ -3,8 +3,8 @@ package protocol
 import (
 	"fmt"
 
-	"github.com/mjibson/mog/_third_party/golang.org/x/oauth2"
 	"github.com/mjibson/mog/codec"
+	"golang.org/x/oauth2"
 )
 
 type Protocol struct {

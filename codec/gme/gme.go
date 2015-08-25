@@ -8,7 +8,7 @@ import (
 	"math"
 	"strconv"
 
-	"github.com/mjibson/mog/_third_party/github.com/mjibson/gme"
+	"github.com/mjibson/gme"
 	"github.com/mjibson/mog/codec"
 )
 

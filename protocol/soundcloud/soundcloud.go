@@ -7,12 +7,12 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/mjibson/mog/_third_party/github.com/google/google-api-go-client/googleapi"
-	"github.com/mjibson/mog/_third_party/golang.org/x/oauth2"
 	"github.com/mjibson/mog/codec"
 	"github.com/mjibson/mog/codec/mpa"
 	"github.com/mjibson/mog/protocol"
 	"github.com/mjibson/mog/protocol/soundcloud/soundcloud"
+	"golang.org/x/oauth2"
+	"google.golang.org/api/googleapi"
 )
 
 var config *oauth2.Config

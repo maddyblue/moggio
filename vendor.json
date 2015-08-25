@@ -1,0 +1,349 @@
+{
+	"comment": "",
+	"ignore": "test",
+	"package": [
+		{
+			"canonical": "github.com/boltdb/bolt",
+			"comment": "",
+			"local": "vendor/github.com/boltdb/bolt",
+			"revision": "90fef389f98027ca55594edd7dbd6e7f3926fdad",
+			"revisionTime": "2015-08-24T19:23:40-06:00"
+		},
+		{
+			"canonical": "github.com/dhowden/tag",
+			"comment": "",
+			"local": "vendor/github.com/dhowden/tag",
+			"revision": "549eab9b7500add6a9f7381fd8439906b2b2182d",
+			"revisionTime": "2015-07-12T11:27:14+10:00"
+		},
+		{
+			"canonical": "github.com/facebookgo/httpcontrol",
+			"comment": "",
+			"local": "vendor/github.com/facebookgo/httpcontrol",
+			"revision": "ccde4420e1fee9af5da365cb76075b95683f39a6",
+			"revisionTime": "2015-07-08T23:40:01Z"
+		},
+		{
+			"canonical": "github.com/golang/protobuf/proto",
+			"comment": "",
+			"local": "vendor/github.com/golang/protobuf/proto",
+			"revision": "68c687dc49948540b356a6b47931c9be4fcd0245",
+			"revisionTime": "2015-07-27T19:06:00+10:00"
+		},
+		{
+			"canonical": "github.com/google/google-api-go-client/drive/v2",
+			"comment": "",
+			"local": "vendor/github.com/google/google-api-go-client/drive/v2",
+			"revision": "a5c3e2a4792aff40e59840d9ecdff0542a202a80",
+			"revisionTime": "2015-08-07T21:35:18-07:00"
+		},
+		{
+			"canonical": "github.com/julienschmidt/httprouter",
+			"comment": "",
+			"local": "vendor/github.com/julienschmidt/httprouter",
+			"revision": "6aacfd5ab513e34f7e64ea9627ab9670371b34e7",
+			"revisionTime": "2015-07-08T23:54:00+02:00"
+		},
+		{
+			"canonical": "github.com/korandiz/mpa",
+			"comment": "",
+			"local": "vendor/github.com/korandiz/mpa",
+			"revision": "47af78b40287a591ee40cc0567419f182e5585a8",
+			"revisionTime": "2015-06-19T18:03:11+02:00"
+		},
+		{
+			"canonical": "github.com/korandiz/mpseek",
+			"comment": "",
+			"local": "vendor/github.com/korandiz/mpseek",
+			"revision": "7fdfba007a2f3054ae56e63b5581a8b67023628f",
+			"revisionTime": "2015-06-23T17:15:14+02:00"
+		},
+		{
+			"canonical": "github.com/mccoyst/vorbis",
+			"comment": "",
+			"local": "vendor/github.com/mccoyst/vorbis",
+			"revision": "9a9801b988e85c87f995255179901902971d37b6",
+			"revisionTime": "2015-08-05T14:12:28-04:00"
+		},
+		{
+			"canonical": "github.com/mesilliac/pulse-simple",
+			"comment": "",
+			"local": "vendor/github.com/mesilliac/pulse-simple",
+			"revision": "1e0dc13a19775c46d755afdac26621c3a349d566",
+			"revisionTime": "2014-12-22T14:19:37+13:00"
+		},
+		{
+			"canonical": "github.com/mjibson/gme",
+			"comment": "",
+			"local": "vendor/github.com/mjibson/gme",
+			"revision": "e9dc4d56a71c3e83b4c2a87ca3894c069f172748",
+			"revisionTime": "2015-07-05T10:18:37-04:00"
+		},
+		{
+			"canonical": "github.com/mjibson/gmusic",
+			"comment": "",
+			"local": "vendor/github.com/mjibson/gmusic",
+			"revision": "bbbdeb11e2f0f0b166f19aa7c6b5956ede522678",
+			"revisionTime": "2015-06-21T16:06:04-04:00"
+		},
+		{
+			"canonical": "github.com/mjibson/go-dsp/wav",
+			"comment": "",
+			"local": "vendor/github.com/mjibson/go-dsp/wav",
+			"revision": "1b9e25a19e16952f6c3a5b54601010a17498d9c0",
+			"revisionTime": "2015-03-03T01:43:12-05:00"
+		},
+		{
+			"canonical": "github.com/mjibson/gpsoauth",
+			"comment": "",
+			"local": "vendor/github.com/mjibson/gpsoauth",
+			"revision": "be41f43784ed68405d473a38b886a4198aaf45b6",
+			"revisionTime": "2015-06-21T16:05:43-04:00"
+		},
+		{
+			"canonical": "github.com/mjibson/nsf",
+			"comment": "",
+			"local": "vendor/github.com/mjibson/nsf",
+			"revision": "10b2439b9af2ab409e7357fc4ce902935f554d1a",
+			"revisionTime": "2015-04-16T03:32:23-04:00"
+		},
+		{
+			"canonical": "github.com/mjibson/nsf/cpu6502",
+			"comment": "",
+			"local": "vendor/github.com/mjibson/nsf/cpu6502",
+			"revision": "10b2439b9af2ab409e7357fc4ce902935f554d1a",
+			"revisionTime": "2015-04-16T03:32:23-04:00"
+		},
+		{
+			"canonical": "github.com/nwaples/rardecode",
+			"comment": "",
+			"local": "vendor/github.com/nwaples/rardecode",
+			"revision": "88c23d3db3ab54e47840bd7c730df33ba28bf8a6",
+			"revisionTime": "2015-07-14T10:27:14+10:00"
+		},
+		{
+			"canonical": "github.com/oov/directsound-go/dsound",
+			"comment": "",
+			"local": "vendor/github.com/oov/directsound-go/dsound",
+			"revision": "e53e59c700bfd3a54be020aa361349351b1221aa",
+			"revisionTime": "2014-11-02T05:13:56+09:00"
+		},
+		{
+			"canonical": "github.com/pkg/browser",
+			"comment": "",
+			"local": "vendor/github.com/pkg/browser",
+			"revision": "3bc3fa0b3a3b0f1b6273531d4026fee46443eb67",
+			"revisionTime": "2015-07-17T08:22:57-07:00"
+		},
+		{
+			"canonical": "golang.org/x/net/context",
+			"comment": "",
+			"local": "vendor/golang.org/x/net/context",
+			"revision": "7654728e381988afd88e58cabfd6363a5ea91810",
+			"revisionTime": "2015-08-24T10:39:13+10:00"
+		},
+		{
+			"canonical": "golang.org/x/net/websocket",
+			"comment": "",
+			"local": "vendor/golang.org/x/net/websocket",
+			"revision": "7654728e381988afd88e58cabfd6363a5ea91810",
+			"revisionTime": "2015-08-24T10:39:13+10:00"
+		},
+		{
+			"canonical": "golang.org/x/oauth2",
+			"comment": "",
+			"local": "vendor/golang.org/x/oauth2",
+			"revision": "397fe7649477ff2e8ced8fc0b2696f781e53745a",
+			"revisionTime": "2015-06-03T16:14:52-07:00"
+		},
+		{
+			"canonical": "golang.org/x/oauth2/google",
+			"comment": "",
+			"local": "vendor/golang.org/x/oauth2/google",
+			"revision": "397fe7649477ff2e8ced8fc0b2696f781e53745a",
+			"revisionTime": "2015-06-03T16:14:52-07:00"
+		},
+		{
+			"canonical": "golang.org/x/oauth2/internal",
+			"comment": "",
+			"local": "vendor/golang.org/x/oauth2/internal",
+			"revision": "397fe7649477ff2e8ced8fc0b2696f781e53745a",
+			"revisionTime": "2015-06-03T16:14:52-07:00"
+		},
+		{
+			"canonical": "golang.org/x/oauth2/jws",
+			"comment": "",
+			"local": "vendor/golang.org/x/oauth2/jws",
+			"revision": "397fe7649477ff2e8ced8fc0b2696f781e53745a",
+			"revisionTime": "2015-06-03T16:14:52-07:00"
+		},
+		{
+			"canonical": "golang.org/x/oauth2/jwt",
+			"comment": "",
+			"local": "vendor/golang.org/x/oauth2/jwt",
+			"revision": "397fe7649477ff2e8ced8fc0b2696f781e53745a",
+			"revisionTime": "2015-06-03T16:14:52-07:00"
+		},
+		{
+			"canonical": "golang.org/x/sys/unix",
+			"comment": "",
+			"local": "vendor/golang.org/x/sys/unix",
+			"revision": "58e109635f5d754f4b3a8a0172db65a52fcab866",
+			"revisionTime": "2015-05-17T00:37:28-04:00"
+		},
+		{
+			"canonical": "google.golang.org/api/googleapi",
+			"comment": "",
+			"local": "vendor/google.golang.org/api/googleapi",
+			"revision": "a5c3e2a4792aff40e59840d9ecdff0542a202a80",
+			"revisionTime": "2015-08-07T21:35:18-07:00"
+		},
+		{
+			"canonical": "google.golang.org/api/googleapi/internal/uritemplates",
+			"comment": "",
+			"local": "vendor/google.golang.org/api/googleapi/internal/uritemplates",
+			"revision": "a5c3e2a4792aff40e59840d9ecdff0542a202a80",
+			"revisionTime": "2015-08-07T21:35:18-07:00"
+		},
+		{
+			"canonical": "google.golang.org/appengine",
+			"comment": "",
+			"local": "vendor/google.golang.org/appengine",
+			"revision": "afb3df0168a9872d9226386a6734249784051f6d",
+			"revisionTime": "2015-07-23T13:58:14+10:00"
+		},
+		{
+			"canonical": "google.golang.org/appengine/internal",
+			"comment": "",
+			"local": "vendor/google.golang.org/appengine/internal",
+			"revision": "afb3df0168a9872d9226386a6734249784051f6d",
+			"revisionTime": "2015-07-23T13:58:14+10:00"
+		},
+		{
+			"canonical": "google.golang.org/appengine/internal/app_identity",
+			"comment": "",
+			"local": "vendor/google.golang.org/appengine/internal/app_identity",
+			"revision": "afb3df0168a9872d9226386a6734249784051f6d",
+			"revisionTime": "2015-07-23T13:58:14+10:00"
+		},
+		{
+			"canonical": "google.golang.org/appengine/internal/base",
+			"comment": "",
+			"local": "vendor/google.golang.org/appengine/internal/base",
+			"revision": "afb3df0168a9872d9226386a6734249784051f6d",
+			"revisionTime": "2015-07-23T13:58:14+10:00"
+		},
+		{
+			"canonical": "google.golang.org/appengine/internal/datastore",
+			"comment": "",
+			"local": "vendor/google.golang.org/appengine/internal/datastore",
+			"revision": "afb3df0168a9872d9226386a6734249784051f6d",
+			"revisionTime": "2015-07-23T13:58:14+10:00"
+		},
+		{
+			"canonical": "google.golang.org/appengine/internal/log",
+			"comment": "",
+			"local": "vendor/google.golang.org/appengine/internal/log",
+			"revision": "afb3df0168a9872d9226386a6734249784051f6d",
+			"revisionTime": "2015-07-23T13:58:14+10:00"
+		},
+		{
+			"canonical": "google.golang.org/appengine/internal/modules",
+			"comment": "",
+			"local": "vendor/google.golang.org/appengine/internal/modules",
+			"revision": "afb3df0168a9872d9226386a6734249784051f6d",
+			"revisionTime": "2015-07-23T13:58:14+10:00"
+		},
+		{
+			"canonical": "google.golang.org/appengine/internal/remote_api",
+			"comment": "",
+			"local": "vendor/google.golang.org/appengine/internal/remote_api",
+			"revision": "afb3df0168a9872d9226386a6734249784051f6d",
+			"revisionTime": "2015-07-23T13:58:14+10:00"
+		},
+		{
+			"canonical": "google.golang.org/appengine/internal/urlfetch",
+			"comment": "",
+			"local": "vendor/google.golang.org/appengine/internal/urlfetch",
+			"revision": "afb3df0168a9872d9226386a6734249784051f6d",
+			"revisionTime": "2015-07-23T13:58:14+10:00"
+		},
+		{
+			"canonical": "google.golang.org/appengine/urlfetch",
+			"comment": "",
+			"local": "vendor/google.golang.org/appengine/urlfetch",
+			"revision": "afb3df0168a9872d9226386a6734249784051f6d",
+			"revisionTime": "2015-07-23T13:58:14+10:00"
+		},
+		{
+			"canonical": "google.golang.org/cloud/compute/metadata",
+			"comment": "",
+			"local": "vendor/google.golang.org/cloud/compute/metadata",
+			"revision": "c8de7fb24e8f427e2a56ffe08fcf0f6791228595",
+			"revisionTime": "2015-08-20T15:39:46+10:00"
+		},
+		{
+			"canonical": "google.golang.org/cloud/internal",
+			"comment": "",
+			"local": "vendor/google.golang.org/cloud/internal",
+			"revision": "c8de7fb24e8f427e2a56ffe08fcf0f6791228595",
+			"revisionTime": "2015-08-20T15:39:46+10:00"
+		},
+		{
+			"canonical": "gopkg.in/fsnotify.v1",
+			"comment": "",
+			"local": "vendor/gopkg.in/fsnotify.v1",
+			"revision": "96c060f6a6b7e0d6f75fddd10efeaca3e5d1bcb0",
+			"revisionTime": "2015-02-08T13:29:58-07:00"
+		},
+		{
+			"canonical": "gopkg.in/mewkiz/flac.v1",
+			"comment": "",
+			"local": "vendor/gopkg.in/mewkiz/flac.v1",
+			"revision": "a26b3254987f71ac9a05b741a9c079e367463123",
+			"revisionTime": "2015-06-05T00:17:58+02:00"
+		},
+		{
+			"canonical": "gopkg.in/mewkiz/flac.v1/frame",
+			"comment": "",
+			"local": "vendor/gopkg.in/mewkiz/flac.v1/frame",
+			"revision": "a26b3254987f71ac9a05b741a9c079e367463123",
+			"revisionTime": "2015-06-05T00:17:58+02:00"
+		},
+		{
+			"canonical": "gopkg.in/mewkiz/flac.v1/meta",
+			"comment": "",
+			"local": "vendor/gopkg.in/mewkiz/flac.v1/meta",
+			"revision": "a26b3254987f71ac9a05b741a9c079e367463123",
+			"revisionTime": "2015-06-05T00:17:58+02:00"
+		},
+		{
+			"canonical": "gopkg.in/mewpkg/bits.v1",
+			"comment": "",
+			"local": "vendor/gopkg.in/mewpkg/bits.v1",
+			"revision": "99e93b96ba1121341421023326c6634a2d16c6e1",
+			"revisionTime": "2014-09-30T01:34:08+02:00"
+		},
+		{
+			"canonical": "gopkg.in/mewpkg/hashutil.v1",
+			"comment": "",
+			"local": "vendor/gopkg.in/mewpkg/hashutil.v1",
+			"revision": "576638dc68739d767ffde05d1b4f62e3c0659639",
+			"revisionTime": "2014-09-30T02:32:37+02:00"
+		},
+		{
+			"canonical": "gopkg.in/mewpkg/hashutil.v1/crc16",
+			"comment": "",
+			"local": "vendor/gopkg.in/mewpkg/hashutil.v1/crc16",
+			"revision": "576638dc68739d767ffde05d1b4f62e3c0659639",
+			"revisionTime": "2014-09-30T02:32:37+02:00"
+		},
+		{
+			"canonical": "gopkg.in/mewpkg/hashutil.v1/crc8",
+			"comment": "",
+			"local": "vendor/gopkg.in/mewpkg/hashutil.v1/crc8",
+			"revision": "576638dc68739d767ffde05d1b4f62e3c0659639",
+			"revisionTime": "2014-09-30T02:32:37+02:00"
+		}
+	]
+}

@@ -11,10 +11,10 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/mjibson/mog/_third_party/golang.org/x/oauth2"
 	"github.com/mjibson/mog/codec"
 	"github.com/mjibson/mog/codec/mpa"
 	"github.com/mjibson/mog/protocol"
+	"golang.org/x/oauth2"
 )
 
 func init() {

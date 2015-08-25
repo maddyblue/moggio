@@ -10,10 +10,10 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/mjibson/mog/_third_party/gopkg.in/mewkiz/flac.v1"
-	"github.com/mjibson/mog/_third_party/gopkg.in/mewkiz/flac.v1/frame"
-	"github.com/mjibson/mog/_third_party/gopkg.in/mewkiz/flac.v1/meta"
 	"github.com/mjibson/mog/codec"
+	"gopkg.in/mewkiz/flac.v1"
+	"gopkg.in/mewkiz/flac.v1/frame"
+	"gopkg.in/mewkiz/flac.v1/meta"
 )
 
 func init() {

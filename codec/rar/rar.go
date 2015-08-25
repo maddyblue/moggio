@@ -6,8 +6,8 @@ import (
 	"io"
 	"io/ioutil"
 
-	"github.com/mjibson/mog/_third_party/github.com/nwaples/rardecode"
 	"github.com/mjibson/mog/codec"
+	"github.com/nwaples/rardecode"
 )
 
 func init() {

@@ -18,10 +18,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mjibson/mog/_third_party/github.com/boltdb/bolt"
-	"github.com/mjibson/mog/_third_party/github.com/pkg/browser"
+	"github.com/boltdb/bolt"
 	"github.com/mjibson/mog/codec"
 	"github.com/mjibson/mog/protocol"
+	"github.com/pkg/browser"
 )
 
 func init() {

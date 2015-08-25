@@ -5,8 +5,8 @@ package vorbis
 import (
 	"io"
 
-	"github.com/mjibson/mog/_third_party/github.com/dhowden/tag"
-	"github.com/mjibson/mog/_third_party/github.com/mccoyst/vorbis"
+	"github.com/dhowden/tag"
+	"github.com/mccoyst/vorbis"
 	"github.com/mjibson/mog/codec"
 )
 

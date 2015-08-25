@@ -16,7 +16,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/mjibson/mog/_third_party/github.com/dhowden/tag"
+	"github.com/dhowden/tag"
 )
 
 // ErrFormat indicates that decoding encountered an unknown format.

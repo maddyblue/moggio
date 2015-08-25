@@ -3,8 +3,8 @@ package server
 import (
 	"fmt"
 
-	"github.com/mjibson/mog/_third_party/golang.org/x/net/websocket"
 	"github.com/mjibson/mog/protocol"
+	"golang.org/x/net/websocket"
 )
 
 type waitData struct {

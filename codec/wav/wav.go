@@ -5,7 +5,7 @@ import (
 	"io"
 	"io/ioutil"
 
-	"github.com/mjibson/mog/_third_party/github.com/mjibson/go-dsp/wav"
+	"github.com/mjibson/go-dsp/wav"
 	"github.com/mjibson/mog/codec"
 )
 

@@ -6,9 +6,9 @@ import (
 	"math"
 	"time"
 
-	"github.com/mjibson/mog/_third_party/github.com/dhowden/tag"
-	"github.com/mjibson/mog/_third_party/github.com/korandiz/mpa"
-	"github.com/mjibson/mog/_third_party/github.com/korandiz/mpseek"
+	"github.com/dhowden/tag"
+	"github.com/korandiz/mpa"
+	"github.com/korandiz/mpseek"
 	"github.com/mjibson/mog/codec"
 )
 

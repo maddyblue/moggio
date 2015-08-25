@@ -6,10 +6,10 @@ import (
 	"io"
 	"path"
 
-	"github.com/mjibson/mog/_third_party/golang.org/x/oauth2"
 	"github.com/mjibson/mog/codec"
 	"github.com/mjibson/mog/protocol"
 	"github.com/mjibson/mog/protocol/dropbox/dropbox"
+	"golang.org/x/oauth2"
 )
 
 var config *oauth2.Config
