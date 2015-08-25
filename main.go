@@ -47,7 +47,6 @@ var (
 
 func main() {
 	flag.Parse()
-	runtime.GOMAXPROCS(runtime.NumCPU())
 	http.DefaultClient = &http.Client{
 		Transport: &httpcontrol.Transport{
 			ResponseHeaderTimeout: time.Second * 3,
