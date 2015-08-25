@@ -3,7 +3,8 @@
 set -e
 
 while true; do
-	go run main.go -w -dev
+	time go install
+	mog -w -dev
 	if [ $? != 0 ] ; then
 		exit
 	fi
