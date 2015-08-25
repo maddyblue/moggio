@@ -337,7 +337,7 @@ func (srv *Server) commands() {
 			c.done <- fmt.Errorf("bad protocol")
 			return
 		}
-		// TODO: decouple this from the audio thread
+		// TODO: decouple this from the command thread
 		t, err := prot.OAuth.Exchange(oauth2.NoContext, c.r.FormValue("code"))
 		if err != nil {
 			c.done <- err
