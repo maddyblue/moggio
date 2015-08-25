@@ -222,7 +222,7 @@ func (srv *Server) restore() error {
 	for name, insts := range srv.Protocols {
 		for key := range insts {
 			go func(name, key string) {
-				if err := srv.protocolRefresh(name, key, true); err != nil {
+				if err := srv.protocolRefresh(name, key, true, false); err != nil {
 					log.Println(err)
 				}
 			}(name, key)
@@ -285,7 +285,7 @@ func (srv *Server) GetInstance(name, key string) (protocol.Instance, error) {
 	return inst, nil
 }
 
-func (srv *Server) protocolRefresh(protocol, key string, list bool) error {
+func (srv *Server) protocolRefresh(protocol, key string, list, doDelete bool) error {
 	inst, err := srv.GetInstance(protocol, key)
 	if err != nil {
 		return err
@@ -307,6 +307,7 @@ func (srv *Server) protocolRefresh(protocol, key string, list bool) error {
 		protocol: protocol,
 		key:      key,
 		songs:    songs,
+		delete:   doDelete,
 	}
 	return err
 }

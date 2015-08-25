@@ -268,7 +268,9 @@ func (srv *Server) commands() {
 		for id, s := range c.songs {
 			srv.songs[SongID(codec.NewID(c.protocol, c.key, string(id)))] = s
 		}
-		removeDeleted()
+		if c.delete {
+			removeDeleted()
+		}
 		broadcast(waitTracks)
 		broadcast(waitProtocols)
 	}
@@ -350,7 +352,7 @@ func (srv *Server) commands() {
 			return
 		}
 		prots[t.AccessToken] = instance
-		go srv.protocolRefresh(c.name, instance.Key(), false)
+		go srv.protocolRefresh(c.name, instance.Key(), false, false)
 		c.done <- nil
 	}
 	setMinDuration := func(c cmdMinDuration) {
@@ -478,6 +480,7 @@ type cmdPlayIdx int
 type cmdRefresh struct {
 	protocol, key string
 	songs         protocol.SongList
+	delete        bool
 }
 
 type cmdProtocolRemove struct {

@@ -176,7 +176,7 @@ func (srv *Server) ProtocolRefresh(body io.Reader, form url.Values, ps httproute
 	if err := json.NewDecoder(body).Decode(&pd); err != nil {
 		return nil, err
 	}
-	return nil, srv.protocolRefresh(pd.Protocol, pd.Key, false)
+	return nil, srv.protocolRefresh(pd.Protocol, pd.Key, false, true)
 }
 
 func (srv *Server) ProtocolAdd(body io.Reader, form url.Values, ps httprouter.Params) (interface{}, error) {
@@ -196,7 +196,7 @@ func (srv *Server) ProtocolAdd(body io.Reader, form url.Values, ps httprouter.Pa
 		return nil, err
 	}
 	srv.Protocols[ap.Protocol][inst.Key()] = inst
-	err = srv.protocolRefresh(ap.Protocol, inst.Key(), false)
+	err = srv.protocolRefresh(ap.Protocol, inst.Key(), false, false)
 	if err != nil {
 		delete(srv.Protocols[ap.Protocol], inst.Key())
 		return nil, err
