@@ -45,7 +45,7 @@ exports.Protocols = React.createClass({
 		var protocols = [];
 		_.each(this.state.Current, function(instances, protocol) {
 			_.each(instances, function(key) {
-				protocols.push(<ProtocolRow key={key} protocol={protocol} name={key} />);
+				protocols.push(<ProtocolRow key={protocol + "\n" + key} protocol={protocol} name={key} />);
 			}, this);
 		}, this);
 		var selected;
