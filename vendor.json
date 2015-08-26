@@ -3,6 +3,13 @@
 	"ignore": "test",
 	"package": [
 		{
+			"canonical": "code.google.com/p/portaudio-go/portaudio",
+			"comment": "",
+			"local": "vendor/code.google.com/p/portaudio-go/portaudio",
+			"revision": "effe9be3431c",
+			"revisionTime": "2014-11-18T15:14:02+01:00"
+		},
+		{
 			"canonical": "github.com/boltdb/bolt",
 			"comment": "",
 			"local": "vendor/github.com/boltdb/bolt",
