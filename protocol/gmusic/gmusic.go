@@ -90,7 +90,7 @@ func (g *GMusic) Refresh() (protocol.SongList, error) {
 		duration, _ := strconv.Atoi(t.DurationMillis)
 		si := &codec.SongInfo{
 			Time:   time.Duration(duration) * time.Millisecond,
-			Artist: t.Artist,
+			Artist: t.AlbumArtist,
 			Title:  t.Title,
 			Album:  t.Album,
 			Track:  t.TrackNumber,
