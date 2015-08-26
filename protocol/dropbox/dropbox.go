@@ -39,6 +39,7 @@ func (d *Dropbox) getService() (*dropbox.Service, error) {
 
 type Dropbox struct {
 	Token *oauth2.Token
+	Name  string
 	Files map[string]*dropbox.ListContent
 	Songs protocol.SongList
 }
@@ -47,13 +48,23 @@ func New(params []string, token *oauth2.Token) (protocol.Instance, error) {
 	if token == nil {
 		return nil, fmt.Errorf("expected oauth token")
 	}
-	return &Dropbox{
+	d := &Dropbox{
 		Token: token,
-	}, nil
+	}
+	service, err := d.getService()
+	if err != nil {
+		return nil, err
+	}
+	account, err := service.Account().Do()
+	if err != nil {
+		return nil, err
+	}
+	d.Name = account.DisplayName
+	return d, nil
 }
 
 func (d *Dropbox) Key() string {
-	return d.Token.AccessToken
+	return d.Name
 }
 
 func (d *Dropbox) Info(id codec.ID) (*codec.SongInfo, error) {

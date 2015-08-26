@@ -39,6 +39,7 @@ func (d *Drive) getService() (*drive.Service, *http.Client, error) {
 
 type Drive struct {
 	Token *oauth2.Token
+	Name  string
 	Files map[string]*drive.File
 	Songs protocol.SongList
 }
@@ -47,13 +48,23 @@ func New(params []string, token *oauth2.Token) (protocol.Instance, error) {
 	if token == nil {
 		return nil, fmt.Errorf("expected oauth token")
 	}
-	return &Drive{
+	d := &Drive{
 		Token: token,
-	}, nil
+	}
+	service, _, err := d.getService()
+	if err != nil {
+		return nil, err
+	}
+	about, err := service.About.Get().Do()
+	if err != nil {
+		return nil, err
+	}
+	d.Name = about.Name
+	return d, nil
 }
 
 func (d *Drive) Key() string {
-	return d.Token.AccessToken
+	return d.Name
 }
 
 func (d *Drive) Info(id codec.ID) (*codec.SongInfo, error) {

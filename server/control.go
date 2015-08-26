@@ -351,7 +351,7 @@ func (srv *Server) commands() {
 			c.done <- err
 			return
 		}
-		prots[t.AccessToken] = instance
+		prots[instance.Key()] = instance
 		go srv.protocolRefresh(c.name, instance.Key(), false, false)
 		c.done <- nil
 	}

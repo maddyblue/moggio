@@ -135,3 +135,56 @@ func (c *GetCall) Path(path string) *GetCall {
 	c.path = path
 	return c
 }
+
+func (s *Service) Account() *AccountCall {
+	a := &AccountCall{s: s}
+	return a
+}
+
+type AccountCall struct {
+	s *Service
+}
+
+func (c *AccountCall) Do() (*Account, error) {
+	urls, err := c.s.BasePath.Parse("account/info")
+	if err != nil {
+		return nil, err
+	}
+	req, _ := http.NewRequest("GET", urls.String(), nil)
+	res, err := c.s.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	var ret Account
+	if err := json.NewDecoder(res.Body).Decode(&ret); err != nil {
+		return nil, err
+	}
+	return &ret, nil
+}
+
+type Account struct {
+	Country       string `json:"country"`
+	DisplayName   string `json:"display_name"`
+	Email         string `json:"email"`
+	EmailVerified bool   `json:"email_verified"`
+	IsPaired      bool   `json:"is_paired"`
+	Locale        string `json:"locale"`
+	NameDetails   struct {
+		FamiliarName string `json:"familiar_name"`
+		GivenName    string `json:"given_name"`
+		Surname      string `json:"surname"`
+	} `json:"name_details"`
+	QuotaInfo struct {
+		Datastores int `json:"datastores"`
+		Normal     int `json:"normal"`
+		Quota      int `json:"quota"`
+		Shared     int `json:"shared"`
+	} `json:"quota_info"`
+	ReferralLink string      `json:"referral_link"`
+	Team         interface{} `json:"team"`
+	UID          int         `json:"uid"`
+}

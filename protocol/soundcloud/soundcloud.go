@@ -46,6 +46,7 @@ func (s *Soundcloud) getService() (*soundcloud.Service, *http.Client, error) {
 
 type Soundcloud struct {
 	Token     *oauth2.Token
+	Name      string
 	Favorites map[codec.ID]*soundcloud.Favorite
 }
 
@@ -53,13 +54,23 @@ func New(params []string, token *oauth2.Token) (protocol.Instance, error) {
 	if token == nil {
 		return nil, fmt.Errorf("expected oauth token")
 	}
-	return &Soundcloud{
+	s := &Soundcloud{
 		Token: token,
-	}, nil
+	}
+	service, _, err := s.getService()
+	if err != nil {
+		return nil, err
+	}
+	me, err := service.Me().Do()
+	if err != nil {
+		return nil, err
+	}
+	s.Name = me.Username
+	return s, nil
 }
 
 func (s *Soundcloud) Key() string {
-	return s.Token.AccessToken
+	return s.Name
 }
 
 func (s *Soundcloud) Info(id codec.ID) (*codec.SongInfo, error) {

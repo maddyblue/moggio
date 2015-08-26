@@ -30,6 +30,7 @@ func New(params []string, token *oauth2.Token) (protocol.Instance, error) {
 	}
 	return &GMusic{
 		GMusic: g,
+		Name:   params[0],
 	}, nil
 }
 
@@ -43,12 +44,13 @@ func (g *GMusic) Info(id codec.ID) (*codec.SongInfo, error) {
 
 type GMusic struct {
 	GMusic *gmusic.GMusic
+	Name   string
 	Tracks map[codec.ID]*gmusic.Track
 	Songs  protocol.SongList
 }
 
 func (g *GMusic) Key() string {
-	return g.GMusic.DeviceID
+	return g.Name
 }
 
 func (g *GMusic) List() (protocol.SongList, error) {
