@@ -21,7 +21,7 @@
 .mdl-textfield {
   position: relative;
 
-  font-size: 16px;
+  font-size: $input-text-font-size;
 
   display: inline-block;
 
@@ -59,12 +59,12 @@
 .mdl-textfield__input {
   border: none;
   border-bottom: 1px solid $input-text-bottom-border-color;
-  display: inline-block;
+  display: block;
   font-size: $input-text-font-size;
   margin: 0;
   padding: $input-text-padding 0;
   width: $input-text-width;
-  background: $input-text-font-size;
+  background: none;
   text-align: left;
   color: inherit;
 
@@ -80,7 +80,12 @@
   .mdl-textfield.is-disabled & {
     background-color: transparent;
     border-bottom: 1px dotted $input-text-disabled-color;
+    color: $input-text-disabled-text-color;
   }
+}
+
+.mdl-textfield textarea.mdl-textfield__input {
+  display: block;
 }
 
 // Styling for the label / floating label.
@@ -92,6 +97,7 @@
   right: 0;
   pointer-events: none;
   position: absolute;
+  display: block;
   top: ($input-text-padding + $input-text-vertical-spacing);
   width: 100%;
   overflow: hidden;
@@ -105,6 +111,10 @@
   // Floating Label
   .mdl-textfield--floating-label & {
     @include material-animation-default();
+  }
+
+  .mdl-textfield.is-disabled.is-disabled & {
+    color: $input-text-disabled-text-color;
   }
 
   .mdl-textfield--floating-label.is-focused &,
@@ -122,7 +132,7 @@
 
   .mdl-textfield--floating-label.is-invalid & {
     color: $input-text-error-color;
-    font-size: 12px;
+    font-size: $input-text-floating-label-fontsize;
   }
 
   // The after label is the colored underline for the TextField.
@@ -153,9 +163,10 @@
 .mdl-textfield__error {
   color: $input-text-error-color;
   position: absolute;
-  font-size: 12px;
+  font-size: $input-text-floating-label-fontsize;
   margin-top: 3px;
   visibility: hidden;
+  display: block;
 
   .mdl-textfield.is-invalid & {
     visibility: visible;

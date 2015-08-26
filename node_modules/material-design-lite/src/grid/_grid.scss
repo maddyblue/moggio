@@ -14,6 +14,12 @@
  * limitations under the License.
  */
 
+/*
+* NOTE: Some rules here are applied using duplicate selectors.
+* This is on purpose to increase their specificity when applied.
+* For example: `.mdl-cell--1-col-phone.mdl-cell--1-col-phone`
+*/
+
 @import "../variables";
 
 .mdl-grid {
@@ -87,10 +93,7 @@
 
   // Define partial sizes for columnNumber < totalColumns.
   @for $i from 1 through ($grid-phone-columns - 1) {
-    .mdl-cell--#{$i}-col {
-      @include partial-size($i, $grid-phone-columns, $grid-phone-gutter);
-    }
-
+    .mdl-cell--#{$i}-col,
     .mdl-cell--#{$i}-col-phone.mdl-cell--#{$i}-col-phone {
       @include partial-size($i, $grid-phone-columns, $grid-phone-gutter);
     }
@@ -98,10 +101,7 @@
 
   // Define 100% for everything else.
   @for $i from $grid-phone-columns through $grid-desktop-columns {
-    .mdl-cell--#{$i}-col {
-      @include full-size($grid-phone-gutter);
-    }
-
+    .mdl-cell--#{$i}-col,
     .mdl-cell--#{$i}-col-phone.mdl-cell--#{$i}-col-phone {
       @include full-size($grid-phone-gutter);
     }
@@ -128,10 +128,7 @@
 
   // Define partial sizes for columnNumber < totalColumns.
   @for $i from 1 through ($grid-tablet-columns - 1) {
-    .mdl-cell--#{$i}-col {
-      @include partial-size($i, $grid-tablet-columns, $grid-tablet-gutter);
-    }
-
+    .mdl-cell--#{$i}-col,
     .mdl-cell--#{$i}-col-tablet.mdl-cell--#{$i}-col-tablet {
       @include partial-size($i, $grid-tablet-columns, $grid-tablet-gutter);
     }
@@ -139,10 +136,7 @@
 
   // Define 100% for everything else.
   @for $i from $grid-tablet-columns through $grid-desktop-columns {
-    .mdl-cell--#{$i}-col {
-      @include full-size($grid-tablet-gutter);
-    }
-
+    .mdl-cell--#{$i}-col,
     .mdl-cell--#{$i}-col-tablet.mdl-cell--#{$i}-col-tablet {
       @include full-size($grid-tablet-gutter);
     }
@@ -169,10 +163,7 @@
 
   // Define partial sizes for all numbers of columns.
   @for $i from 1 through $grid-desktop-columns {
-    .mdl-cell--#{$i}-col {
-      @include partial-size($i, $grid-desktop-columns, $grid-desktop-gutter);
-    }
-
+    .mdl-cell--#{$i}-col,
     .mdl-cell--#{$i}-col-desktop.mdl-cell--#{$i}-col-desktop {
       @include partial-size($i, $grid-desktop-columns, $grid-desktop-gutter);
     }
