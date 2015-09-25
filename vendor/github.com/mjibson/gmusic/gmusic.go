@@ -85,6 +85,7 @@ func (g *GMusic) sjRequest(method, path string, data interface{}) (*http.Respons
 }
 
 func (g *GMusic) setDeviceID() error {
+	const phoneDevice = 2
 	req, err := http.NewRequest("HEAD", googlePlayMusicEndpoint+"/listen", nil)
 	if err != nil {
 		return err
@@ -110,8 +111,8 @@ func (g *GMusic) setDeviceID() error {
 	if err != nil {
 		return err
 	}
-	for _, d := range settings.Devices {
-		if d.Type != "PHONE" || len(d.ID) != 18 {
+	for _, d := range settings.UploadDevice {
+		if d.DeviceType != phoneDevice || len(d.ID) != 18 {
 			continue
 		}
 		g.DeviceID = d.ID[2:]
@@ -124,7 +125,7 @@ func (g *GMusic) setDeviceID() error {
 }
 
 func (g *GMusic) settings(xtData url.Values, jarClient *http.Client) (*Settings, error) {
-	resp, err := g.request("POST", googlePlayMusicEndpoint+"/services/loadsettings?"+xtData.Encode(), nil, jarClient)
+	resp, err := g.request("POST", googlePlayMusicEndpoint+"/services/fetchsettings?"+xtData.Encode(), nil, jarClient)
 	if err != nil {
 		return nil, err
 	}
@@ -141,28 +142,28 @@ type SettingsData struct {
 }
 
 type Settings struct {
-	Devices []struct {
-		Carrier      string `json:"carrier"`
-		Date         int    `json:"date"`
-		ID           string `json:"id"`
-		LastUsedMs   int    `json:"lastUsedMs"`
-		Manufacturer string `json:"manufacturer"`
-		Model        string `json:"model"`
-		Name         string `json:"name"`
-		Type         string `json:"type"`
-	} `json:"devices"`
-	ExpirationMillis int  `json:"expirationMillis"`
-	IsCanceled       bool `json:"isCanceled"`
-	IsSubscription   bool `json:"isSubscription"`
-	IsTrial          bool `json:"isTrial"`
-	Labs             []struct {
-		Description string `json:"description"`
-		Enabled     bool   `json:"enabled"`
-		Name        string `json:"name"`
-		Title       string `json:"title"`
-	} `json:"labs"`
-	MaxTracks              int  `json:"maxTracks"`
+	EntitlementInfo struct {
+		ExpirationMillis int  `json:"expirationMillis"`
+		IsCanceled       bool `json:"isCanceled"`
+		IsSubscription   bool `json:"isSubscription"`
+		IsTrial          bool `json:"isTrial"`
+	} `json:"entitlementInfo"`
+	Lab []struct {
+		Description    string `json:"description"`
+		DisplayName    string `json:"displayName"`
+		Enabled        bool   `json:"enabled"`
+		ExperimentName string `json:"experimentName"`
+	} `json:"lab"`
+	MaxUploadedTracks      int  `json:"maxUploadedTracks"`
 	SubscriptionNewsletter bool `json:"subscriptionNewsletter"`
+	UploadDevice           []struct {
+		DeviceType             int    `json:"deviceType"`
+		ID                     string `json:"id"`
+		LastAccessedFormatted  string `json:"lastAccessedFormatted"`
+		LastAccessedTimeMillis int    `json:"lastAccessedTimeMillis"`
+		LastEventTimeMillis    int    `json:"lastEventTimeMillis"`
+		Name                   string `json:"name"`
+	} `json:"uploadDevice"`
 }
 
 func (g *GMusic) ListPlaylists() ([]*Playlist, error) {

@@ -64,8 +64,8 @@
 		},
 		{
 			"path": "github.com/mjibson/gmusic",
-			"revision": "bbbdeb11e2f0f0b166f19aa7c6b5956ede522678",
-			"revisionTime": "2015-06-21T16:06:04-04:00"
+			"revision": "ad078cbf9073deba72ddd853d42628fc40fbb173",
+			"revisionTime": "2015-09-25T00:50:01-04:00"
 		},
 		{
 			"path": "github.com/mjibson/go-dsp/wav",
