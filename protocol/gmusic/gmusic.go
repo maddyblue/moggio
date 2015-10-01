@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"reflect"
 	"strconv"
 	"time"
 
@@ -17,7 +18,7 @@ import (
 
 func init() {
 	gob.Register(new(GMusic))
-	protocol.Register("gmusic", []string{"username", "password"}, New)
+	protocol.Register("gmusic", []string{"username", "password"}, New, reflect.TypeOf(&GMusic{}))
 }
 
 func New(params []string, token *oauth2.Token) (protocol.Instance, error) {

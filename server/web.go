@@ -42,6 +42,11 @@ func (srv *Server) GetMux(devMode bool) *http.ServeMux {
 	router.POST("/api/protocol/add", JSON(srv.ProtocolAdd))
 	router.POST("/api/protocol/remove", JSON(srv.ProtocolRemove))
 	router.POST("/api/protocol/refresh", JSON(srv.ProtocolRefresh))
+
+	// Needs POST from local mog. Needs GET from App Engine redirect.
+	router.GET("/api/token/register", srv.TokenRegister)
+	router.POST("/api/token/register", srv.TokenRegister)
+
 	mux := http.NewServeMux()
 	mux.Handle("/static/", http.FileServer(webFS))
 	mux.HandleFunc("/", Index)
@@ -224,4 +229,9 @@ func (srv *Server) ProtocolRemove(body io.Reader, form url.Values, ps httprouter
 type ProtocolData struct {
 	Protocol string
 	Key      string
+}
+
+func (srv *Server) TokenRegister(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	srv.ch <- cmdTokenRegister(r.FormValue("token"))
+	http.Redirect(w, r, "/", 302)
 }

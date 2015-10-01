@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"path"
+	"reflect"
 
 	"github.com/mjibson/mog/codec"
 	"github.com/mjibson/mog/protocol"
@@ -29,7 +30,7 @@ func Init(clientID, clientSecret, redirect string) {
 			TokenURL: "https://api.dropbox.com/1/oauth2/token",
 		},
 	}
-	protocol.RegisterOAuth("dropbox", config, New)
+	protocol.RegisterOAuth("dropbox", config, New, reflect.TypeOf(&Dropbox{}))
 }
 
 func (d *Dropbox) getService() (*dropbox.Service, error) {

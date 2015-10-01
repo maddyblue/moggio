@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"reflect"
 	"time"
 
 	"github.com/mjibson/mog/codec"
@@ -18,7 +19,7 @@ import (
 )
 
 func init() {
-	protocol.Register("bandcamp", []string{"URL"}, New)
+	protocol.Register("bandcamp", []string{"URL"}, New, reflect.TypeOf(&Bandcamp{}))
 	gob.Register(new(Bandcamp))
 }
 

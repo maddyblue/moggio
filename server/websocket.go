@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/mjibson/mog/protocol"
 	"golang.org/x/net/websocket"
@@ -41,6 +42,7 @@ func (srv *Server) makeWaitData(wt waitType) (*waitData, error) {
 			protos,
 		}
 	case waitStatus:
+		hostname, _ := os.Hostname()
 		data = &Status{
 			State:    srv.state,
 			Song:     srv.songID,
@@ -49,6 +51,8 @@ func (srv *Server) makeWaitData(wt waitType) (*waitData, error) {
 			Time:     srv.info.Time,
 			Random:   srv.Random,
 			Repeat:   srv.Repeat,
+			Username: srv.Username,
+			Hostname: hostname,
 		}
 	case waitTracks:
 		songs := make([]listItem, len(srv.songs))

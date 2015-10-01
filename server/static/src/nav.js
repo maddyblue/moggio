@@ -19,10 +19,13 @@ var Protocol = require('./protocol.js');
 
 var { Button } = require('./mdl.js');
 
+var CentralURL = 'http://localhost:8080/token';
+
 var App = React.createClass({
 	mixins: [
-		Reflux.listenTo(Stores.playlist, 'setState'),
 		Reflux.listenTo(Stores.error, 'error'),
+		Reflux.listenTo(Stores.playlist, 'setState'),
+		Reflux.listenTo(Stores.status, 'setState'),
 		Router.Navigation,
 		Router.State,
 	],
@@ -54,13 +57,17 @@ var App = React.createClass({
 	clearError: function() {
 		this.setState({error: null});
 	},
-	routeClass(route, params) {
+	routeClass: function(route, params) {
 		var active = this.context.router.isActive(route, params);
 		var path = this.context.router.getCurrentPath();
 		if (route == 'app' && path != '/') {
 			active = false;
 		}
 		return active ? ' mdl-color-text--accent' : '';
+	},
+	logout: function(event) {
+		event.preventDefault();
+		Mog.POST('/api/token/register');
 	},
 	render: function() {
 		var overlay;
@@ -90,6 +97,23 @@ var App = React.createClass({
 		var menuItems = _.map(navMenuItems, function(v, k) {
 			return <Link key={k} className={"mdl-navigation__link" + this.routeClass(v.route)} to={v.route}>{v.text}</Link>;
 		}.bind(this));
+		if (this.state.Username) {
+			var un = (
+				<span key="username" className="mdl-navigation__link">
+					{this.state.Username}
+					<br/>
+					<a href="" onClick={this.logout}>[logout]</a>
+				</span>
+			);
+			menuItems.unshift(un);
+		} else {
+			var origin = location.protocol + '//' + location.host + '/api/token/register';
+			var params = "?redirect=" + encodeURIComponent(origin);
+			if (this.state.Hostname) {
+				params += '&hostname=' + encodeURIComponent(this.state.Hostname);
+			}
+			menuItems.unshift(<a key="username" href={CentralURL + params} className="mdl-navigation__link">login</a>);
+		}
 		var playlists;
 		if (this.state.Playlists) {
 			var entries = _.map(this.state.Playlists, function(_, key) {

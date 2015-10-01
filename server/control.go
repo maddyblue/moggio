@@ -1,6 +1,10 @@
 package server
 
 import (
+	"bytes"
+	"compress/gzip"
+	"encoding/gob"
+	"encoding/json"
 	"fmt"
 	"log"
 	"math/rand"
@@ -8,6 +12,7 @@ import (
 	"time"
 
 	"github.com/mjibson/mog/codec"
+	"github.com/mjibson/mog/models"
 	"github.com/mjibson/mog/protocol"
 	"golang.org/x/net/websocket"
 	"golang.org/x/oauth2"
@@ -281,7 +286,20 @@ func (srv *Server) commands() {
 				delete(srv.songs, id)
 			}
 		}
-		removeDeleted()
+		if srv.Token != "" {
+			d := models.Delete{
+				Protocol: c.protocol,
+				Name:     c.key,
+			}
+			go func() {
+				r, err := srv.request("/api/source/delete", &d)
+				if err != nil {
+					srv.ch <- cmdError(err)
+					return
+				}
+				r.Close()
+			}()
+		}
 		broadcast(waitTracks)
 		broadcast(waitProtocols)
 	}
@@ -334,7 +352,7 @@ func (srv *Server) commands() {
 		}
 		prots, ok := srv.Protocols[c.name]
 		if !ok || prot.OAuth == nil {
-			c.done <- fmt.Errorf("bad protocol")
+			c.done <- fmt.Errorf("bad protocol: %s", c.name)
 			return
 		}
 		// TODO: decouple this from the command thread
@@ -363,6 +381,105 @@ func (srv *Server) commands() {
 			return
 		}
 		srv.audioch <- c
+	}
+	setUsername := func(c cmdSetUsername) {
+		srv.Username = string(c)
+	}
+	tokenRegister := func(c cmdTokenRegister) {
+		srv.Token = ""
+		if c != "" {
+			var ss []*models.Source
+			for prot, m := range srv.Protocols {
+				for name, p := range m {
+					buf := new(bytes.Buffer)
+					gw := gzip.NewWriter(buf)
+					if err := gob.NewEncoder(gw).Encode(p); err != nil {
+						broadcastErr(err)
+						return
+					}
+					if err := gw.Close(); err != nil {
+						broadcastErr(err)
+						return
+					}
+					ss = append(ss, &models.Source{
+						Protocol: prot,
+						Name:     name,
+						Blob:     buf.Bytes(),
+					})
+				}
+			}
+			srv.Token = string(c)
+			go func() {
+				if r, err := srv.request("/api/source/set", &ss); err != nil {
+					srv.ch <- cmdError(fmt.Errorf("could not set sources: %v", err))
+					return
+				} else {
+					r.Close()
+				}
+				r, err := srv.request("/api/source/get", nil)
+				if err != nil {
+					srv.ch <- cmdError(fmt.Errorf("could not get sources: %v", err))
+					return
+				}
+				defer r.Close()
+				if err := json.NewDecoder(r).Decode(&ss); err != nil {
+					srv.ch <- cmdError(err)
+					return
+				}
+				srv.ch <- cmdSetSources(ss)
+			}()
+		}
+		go func() {
+			srv.ch <- cmdSetUsername("")
+			if c == "" {
+				return
+			}
+			r, err := srv.request("/api/username", nil)
+			if err != nil {
+				srv.ch <- cmdError(err)
+				return
+			}
+			defer r.Close()
+			var u cmdSetUsername
+			if err := json.NewDecoder(r).Decode(&u); err != nil {
+				srv.ch <- cmdError(err)
+				return
+			}
+			srv.ch <- u
+		}()
+	}
+	setSources := func(c cmdSetSources) {
+		ps := protocol.Map()
+		for _, s := range c {
+			proto, err := protocol.ByName(s.Protocol)
+			if err != nil {
+				broadcastErr(err)
+				return
+			}
+			if _, ok := ps[s.Protocol]; !ok {
+				ps[s.Protocol] = make(map[string]protocol.Instance)
+			}
+			r, err := gzip.NewReader(bytes.NewReader(s.Blob))
+			if err != nil {
+				broadcastErr(err)
+				return
+			}
+			defer r.Close()
+			p, err := proto.Decode(r)
+			if err != nil {
+				broadcastErr(err)
+				return
+			}
+			ps[s.Protocol][s.Name] = p
+		}
+		srv.Protocols = ps
+		go func() {
+			// protocolRefresh uses srv.Protocols, so
+			for i, s := range c {
+				last := i == len(c)-1
+				srv.protocolRefresh(s.Protocol, s.Name, true, last)
+			}
+		}()
 	}
 	ch := make(chan interface{})
 	go func() {
@@ -446,8 +563,15 @@ func (srv *Server) commands() {
 				save = false
 			case cmdMinDuration:
 				setMinDuration(c)
+			case cmdTokenRegister:
+				tokenRegister(c)
+			case cmdSetUsername:
+				setUsername(c)
+			case cmdSetSources:
+				setSources(c)
 			case cmdError:
 				broadcastErr(error(c))
+				save = false
 			default:
 				panic(c)
 			}
@@ -508,3 +632,9 @@ type cmdMinDuration time.Duration
 type cmdSetTime time.Duration
 
 type cmdError error
+
+type cmdTokenRegister string
+
+type cmdSetUsername string
+
+type cmdSetSources []*models.Source

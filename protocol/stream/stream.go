@@ -10,6 +10,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
@@ -22,7 +23,7 @@ import (
 )
 
 func init() {
-	protocol.Register("stream", []string{"URL"}, New)
+	protocol.Register("stream", []string{"URL"}, New, reflect.TypeOf(&Stream{}))
 	gob.Register(new(Stream))
 }
 

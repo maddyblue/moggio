@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"reflect"
 
 	"github.com/google/google-api-go-client/drive/v2"
 	"github.com/mjibson/mog/codec"
@@ -28,7 +29,7 @@ func Init(clientID, clientSecret, redirect string) {
 		Scopes:       []string{drive.DriveReadonlyScope},
 		Endpoint:     google.Endpoint,
 	}
-	protocol.RegisterOAuth("drive", config, New)
+	protocol.RegisterOAuth("drive", config, New, reflect.TypeOf(&Drive{}))
 }
 
 func (d *Drive) getService() (*drive.Service, *http.Client, error) {

@@ -32661,10 +32661,13 @@ var Protocol = require('./protocol.js');
 
 var $__0=    require('./mdl.js'),Button=$__0.Button;
 
+var CentralURL = 'http://localhost:8080/token';
+
 var App = React.createClass({displayName: "App",
 	mixins: [
-		Reflux.listenTo(Stores.playlist, 'setState'),
 		Reflux.listenTo(Stores.error, 'error'),
+		Reflux.listenTo(Stores.playlist, 'setState'),
+		Reflux.listenTo(Stores.status, 'setState'),
 		Router.Navigation,
 		Router.State,
 	],
@@ -32696,13 +32699,17 @@ var App = React.createClass({displayName: "App",
 	clearError: function() {
 		this.setState({error: null});
 	},
-	routeClass:function(route, params) {
+	routeClass: function(route, params) {
 		var active = this.context.router.isActive(route, params);
 		var path = this.context.router.getCurrentPath();
 		if (route == 'app' && path != '/') {
 			active = false;
 		}
 		return active ? ' mdl-color-text--accent' : '';
+	},
+	logout: function(event) {
+		event.preventDefault();
+		Mog.POST('/api/token/register');
 	},
 	render: function() {
 		var overlay;
@@ -32732,6 +32739,23 @@ var App = React.createClass({displayName: "App",
 		var menuItems = _.map(navMenuItems, function(v, k) {
 			return React.createElement(Link, {key: k, className: "mdl-navigation__link" + this.routeClass(v.route), to: v.route}, v.text);
 		}.bind(this));
+		if (this.state.Username) {
+			var un = (
+				React.createElement("span", {key: "username", className: "mdl-navigation__link"}, 
+					this.state.Username, 
+					React.createElement("br", null), 
+					React.createElement("a", {href: "", onClick: this.logout}, "[logout]")
+				)
+			);
+			menuItems.unshift(un);
+		} else {
+			var origin = location.protocol + '//' + location.host + '/api/token/register';
+			var params = "?redirect=" + encodeURIComponent(origin);
+			if (this.state.Hostname) {
+				params += '&hostname=' + encodeURIComponent(this.state.Hostname);
+			}
+			menuItems.unshift(React.createElement("a", {key: "username", href: CentralURL + params, className: "mdl-navigation__link"}, "login"));
+		}
 		var playlists;
 		if (this.state.Playlists) {
 			var entries = _.map(this.state.Playlists, function(_, key) {
@@ -33244,7 +33268,9 @@ function drainQueue() {
         currentQueue = queue;
         queue = [];
         while (++queueIndex < len) {
-            currentQueue[queueIndex].run();
+            if (currentQueue) {
+                currentQueue[queueIndex].run();
+            }
         }
         queueIndex = -1;
         len = queue.length;
@@ -33296,7 +33322,6 @@ process.binding = function (name) {
     throw new Error('process.binding is not supported');
 };
 
-// TODO(shtylman)
 process.cwd = function () { return '/' };
 process.chdir = function (dir) {
     throw new Error('process.chdir is not supported');

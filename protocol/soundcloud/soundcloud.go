@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"reflect"
 	"time"
 
 	"github.com/mjibson/mog/codec"
@@ -35,7 +36,7 @@ func Init(clientID, clientSecret, redirect string) {
 		},
 	}
 	oauthClientID = clientID
-	protocol.RegisterOAuth("soundcloud", config, New)
+	protocol.RegisterOAuth("soundcloud", config, New, reflect.TypeOf(&Soundcloud{}))
 }
 
 func (s *Soundcloud) getService() (*soundcloud.Service, *http.Client, error) {

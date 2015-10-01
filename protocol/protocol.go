@@ -1,7 +1,10 @@
 package protocol
 
 import (
+	"encoding/gob"
 	"fmt"
+	"io"
+	"reflect"
 
 	"github.com/mjibson/mog/codec"
 	"golang.org/x/oauth2"
@@ -11,6 +14,7 @@ type Protocol struct {
 	*Params
 	OAuth       *oauth2.Config
 	newInstance func([]string, *oauth2.Token) (Instance, error)
+	instType    reflect.Type
 }
 
 type Params struct {
@@ -37,24 +41,38 @@ func (p *Protocol) NewInstance(params []string, token *oauth2.Token) (Instance, 
 	return p.newInstance(params, token)
 }
 
+func (p *Protocol) Decode(r io.Reader) (Instance, error) {
+	if p.instType == nil {
+		panic("NIL")
+	}
+	v := reflect.New(p.instType)
+	i := v.Interface()
+	if err := gob.NewDecoder(r).Decode(i); err != nil {
+		return nil, err
+	}
+	return reflect.Indirect(v).Interface().(Instance), nil
+}
+
 var protocols = make(map[string]*Protocol)
 
-func Register(name string, params []string, newInstance func([]string, *oauth2.Token) (Instance, error)) {
+func Register(name string, params []string, newInstance func([]string, *oauth2.Token) (Instance, error), instType reflect.Type) {
 	protocols[name] = &Protocol{
 		Params: &Params{
 			Params: params,
 		},
 		newInstance: newInstance,
+		instType:    instType,
 	}
 }
 
-func RegisterOAuth(name string, config *oauth2.Config, newInstance func([]string, *oauth2.Token) (Instance, error)) {
+func RegisterOAuth(name string, config *oauth2.Config, newInstance func([]string, *oauth2.Token) (Instance, error), instType reflect.Type) {
 	protocols[name] = &Protocol{
 		Params: &Params{
 			OAuthURL: config.AuthCodeURL(""),
 		},
 		OAuth:       config,
 		newInstance: newInstance,
+		instType:    instType,
 	}
 }
 
@@ -72,4 +90,12 @@ func Get() map[string]Params {
 		m[n] = *p.Params
 	}
 	return m
+}
+
+func Map() map[string]map[string]Instance {
+	p := make(map[string]map[string]Instance)
+	for name := range Get() {
+		p[name] = make(map[string]Instance)
+	}
+	return p
 }
