@@ -471,12 +471,14 @@ func (srv *Server) commands() {
 	ch := make(chan interface{})
 	go func() {
 		for c := range srv.ch {
-			timer := time.AfterFunc(time.Second*10, func() {
-				log.Printf("%T: %#v\n", c, c)
-				panic("delay timer expired")
-			})
-			ch <- c
-			timer.Stop()
+			go func(c interface{}) {
+				timer := time.AfterFunc(time.Second*10, func() {
+					log.Printf("%T: %#v\n", c, c)
+					panic("delay timer expired")
+				})
+				ch <- c
+				timer.Stop()
+			}(c)
 		}
 	}()
 	infoTimer()
