@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/mjibson/mog/codec"
 	"github.com/mjibson/mog/protocol"
 	"golang.org/x/net/websocket"
 )
@@ -55,14 +56,18 @@ func (srv *Server) makeWaitData(wt waitType) (*waitData, error) {
 			Hostname: hostname,
 		}
 	case waitTracks:
-		songs := make([]listItem, len(srv.songs))
-		i := 0
-		for id, info := range srv.songs {
-			songs[i] = listItem{
-				ID:   id,
-				Info: info,
+		var songs []listItem
+		for name, protos := range srv.Protocols {
+			for key, inst := range protos {
+				sl, _ := inst.List()
+				for id, info := range sl {
+					sid := SongID(codec.NewID(name, key, string(id)))
+					songs = append(songs, listItem{
+						ID:   sid,
+						Info: info,
+					})
+				}
 			}
-			i++
 		}
 		data = struct {
 			Tracks []listItem

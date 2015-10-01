@@ -118,6 +118,12 @@ func (s SongID) ID() codec.ID {
 	return c
 }
 
+func (s SongID) Triple() (protocol, key string, id codec.ID) {
+	protocol, id = codec.ID(s).Pop()
+	key, id = id.Pop()
+	return
+}
+
 type Server struct {
 	Queue     Playlist
 	Playlists map[string]Playlist
@@ -141,7 +147,6 @@ type Server struct {
 	ch          chan interface{}
 	audioch     chan interface{}
 	state       State
-	songs       map[SongID]*codec.SongInfo
 	db          *bolt.DB
 	savePending bool
 }
@@ -149,7 +154,7 @@ type Server struct {
 func (srv *Server) removeDeleted(p Playlist) Playlist {
 	var r Playlist
 	for _, id := range p {
-		if srv.songs[id] == nil {
+		if !srv.hasSong(id) {
 			continue
 		}
 		r = append(r, id)
@@ -162,9 +167,10 @@ type PlaylistInfo []listItem
 func (srv *Server) playlistInfo(p Playlist) PlaylistInfo {
 	r := make(PlaylistInfo, len(p))
 	for idx, id := range p {
+		info, _ := srv.getSong(id)
 		r[idx] = listItem{
 			ID:   id,
-			Info: srv.songs[id],
+			Info: info,
 		}
 	}
 	return r
@@ -176,7 +182,6 @@ func New(stateFile, central string) (*Server, error) {
 	srv := Server{
 		ch:          make(chan interface{}),
 		audioch:     make(chan interface{}),
-		songs:       make(map[SongID]*codec.SongInfo),
 		Protocols:   protocol.Map(),
 		Playlists:   make(map[string]Playlist),
 		MinDuration: time.Second * 30,
@@ -405,4 +410,22 @@ func (srv *Server) request(path string, body interface{}) (io.ReadCloser, error)
 		return nil, fmt.Errorf("%s: %v: %s", path, r.Status, b)
 	}
 	return r.Body, nil
+}
+
+func (srv *Server) getSong(id SongID) (*codec.SongInfo, error) {
+	name, key, cid := id.Triple()
+	p, ok := srv.Protocols[name]
+	if !ok {
+		return nil, fmt.Errorf("unknown protocol: %s", name)
+	}
+	inst, ok := p[key]
+	if !ok {
+		return nil, fmt.Errorf("unknown instance: %s", key)
+	}
+	return inst.Info(cid)
+}
+
+func (srv *Server) hasSong(id SongID) bool {
+	info, _ := srv.getSong(id)
+	return info != nil
 }

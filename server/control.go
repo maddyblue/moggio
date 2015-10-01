@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/mjibson/mog/codec"
 	"github.com/mjibson/mog/models"
 	"github.com/mjibson/mog/protocol"
 	"golang.org/x/net/websocket"
@@ -169,8 +168,8 @@ func (srv *Server) commands() {
 
 			srv.songID = srv.Queue[srv.PlaylistIndex]
 			sid = srv.songID
-			if info := srv.songs[sid]; info == nil {
-				broadcastErr(fmt.Errorf("unknown id: %v", sid))
+			if info, err := srv.getSong(sid); err != nil {
+				broadcastErr(err)
 				forceNext = true
 				sendNext()
 				return
@@ -254,7 +253,7 @@ func (srv *Server) commands() {
 			}
 		}
 		srv.Queue = srv.removeDeleted(srv.Queue)
-		if srv.songs[srv.songID] == nil {
+		if info, _ := srv.getSong(srv.songID); info == nil {
 			playing := srv.state == statePlay
 			stop()
 			if playing {
@@ -264,15 +263,8 @@ func (srv *Server) commands() {
 		}
 		broadcast(waitPlaylist)
 	}
+	// TODO: figure out what this needs to do after removal of songs
 	refresh := func(c cmdRefresh) {
-		for id := range srv.songs {
-			if id.Protocol() == c.protocol && id.Key() == c.key {
-				delete(srv.songs, id)
-			}
-		}
-		for id, s := range c.songs {
-			srv.songs[SongID(codec.NewID(c.protocol, c.key, string(id)))] = s
-		}
 		if c.delete {
 			removeDeleted()
 		}
@@ -281,11 +273,6 @@ func (srv *Server) commands() {
 	}
 	protocolRemove := func(c cmdProtocolRemove) {
 		delete(c.prots, c.key)
-		for id := range srv.songs {
-			if id.Protocol() == c.protocol && id.Key() == c.key {
-				delete(srv.songs, id)
-			}
-		}
 		if srv.Token != "" {
 			d := models.Delete{
 				Protocol: c.protocol,
