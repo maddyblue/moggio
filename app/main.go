@@ -12,10 +12,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/mjibson/appstats"
 	"github.com/mjibson/goon"
 	"github.com/mjibson/mog/models"
 	"golang.org/x/net/context"
-	"google.golang.org/appengine"
 	"google.golang.org/appengine/datastore"
 	"google.golang.org/appengine/user"
 )
@@ -35,8 +35,7 @@ func init() {
 }
 
 func F(f func(c context.Context, w http.ResponseWriter, r *http.Request, u *User, g *goon.Goon) (interface{}, error)) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		c := appengine.NewContext(r)
+	return appstats.NewHandlerFunc(func(c context.Context, w http.ResponseWriter, r *http.Request) {
 		var u *User
 		au := user.Current(c)
 		if (au == nil || au.ID == "") && !strings.HasPrefix(r.URL.Path, "/api/") {
@@ -108,7 +107,7 @@ func F(f func(c context.Context, w http.ResponseWriter, r *http.Request, u *User
 		}
 		w.Header().Add("Content-Type", "application/json")
 		w.Write(b)
-	}
+	})
 }
 
 func serveError(w http.ResponseWriter, err error) {
