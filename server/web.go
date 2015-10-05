@@ -200,11 +200,9 @@ func (srv *Server) ProtocolAdd(body io.Reader, form url.Values, ps httprouter.Pa
 	if err != nil {
 		return nil, err
 	}
-	srv.Protocols[ap.Protocol][inst.Key()] = inst
-	err = srv.protocolRefresh(ap.Protocol, inst.Key(), false, false)
-	if err != nil {
-		delete(srv.Protocols[ap.Protocol], inst.Key())
-		return nil, err
+	srv.ch <- cmdProtocolAdd{
+		Name:     ap.Protocol,
+		Instance: inst,
 	}
 	return nil, nil
 }

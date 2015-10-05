@@ -3,7 +3,6 @@ package server
 import (
 	"bytes"
 	"compress/gzip"
-	"encoding/gob"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -263,14 +262,6 @@ func (srv *Server) commands() {
 		}
 		broadcast(waitPlaylist)
 	}
-	// TODO: figure out what this needs to do after removal of songs
-	refresh := func(c cmdRefresh) {
-		if c.delete {
-			removeDeleted()
-		}
-		broadcast(waitTracks)
-		broadcast(waitProtocols)
-	}
 	protocolRemove := func(c cmdProtocolRemove) {
 		delete(c.prots, c.key)
 		if srv.Token != "" {
@@ -285,6 +276,34 @@ func (srv *Server) commands() {
 					return
 				}
 				r.Close()
+			}()
+		}
+		broadcast(waitTracks)
+		broadcast(waitProtocols)
+	}
+	protocolAdd := func(c cmdProtocolAdd) {
+		go func() {
+			songs, err := c.Instance.Refresh()
+			if err != nil {
+				srv.ch <- cmdError(err)
+				return
+				return
+			}
+			for k, v := range songs {
+				if v.Time > 0 && v.Time < srv.MinDuration {
+					delete(songs, k)
+				}
+			}
+			srv.ch <- cmdProtocolAddInstance(c)
+		}()
+	}
+	protocolAddInstance := func(c cmdProtocolAddInstance) {
+		srv.Protocols[c.Name][c.Instance.Key()] = c.Instance
+		if srv.Token != "" {
+			go func() {
+				if err := srv.putSource(c.Name, c.Instance.Key()); err != nil {
+					srv.ch <- cmdError(err)
+				}
 			}()
 		}
 		broadcast(waitTracks)
@@ -332,33 +351,31 @@ func (srv *Server) commands() {
 		}
 	}
 	addOAuth := func(c cmdAddOAuth) {
-		prot, err := protocol.ByName(c.name)
-		if err != nil {
-			c.done <- err
-			return
-		}
-		prots, ok := srv.Protocols[c.name]
-		if !ok || prot.OAuth == nil {
-			c.done <- fmt.Errorf("bad protocol: %s", c.name)
-			return
-		}
-		// TODO: decouple this from the command thread
-		t, err := prot.OAuth.Exchange(oauth2.NoContext, c.r.FormValue("code"))
-		if err != nil {
-			c.done <- err
-			return
-		}
-		// "Bearer" was added for dropbox. It happens to work also with Google Music's
-		// OAuth. This may need to be changed to be protocol-specific in the future.
-		t.TokenType = "Bearer"
-		instance, err := prot.NewInstance(nil, t)
-		if err != nil {
-			c.done <- err
-			return
-		}
-		prots[instance.Key()] = instance
-		go srv.protocolRefresh(c.name, instance.Key(), false, false)
-		c.done <- nil
+		go func() {
+			prot, err := protocol.ByName(c.name)
+			if err != nil {
+				c.done <- err
+				return
+			}
+			t, err := prot.OAuth.Exchange(oauth2.NoContext, c.r.FormValue("code"))
+			if err != nil {
+				c.done <- err
+				return
+			}
+			// "Bearer" was added for dropbox. It happens to work also with Google Music's
+			// OAuth. This may need to be changed to be protocol-specific in the future.
+			t.TokenType = "Bearer"
+			instance, err := prot.NewInstance(nil, t)
+			if err != nil {
+				c.done <- err
+				return
+			}
+			srv.ch <- cmdProtocolAdd{
+				Name:     c.name,
+				Instance: instance,
+			}
+			c.done <- nil
+		}()
 	}
 	setMinDuration := func(c cmdMinDuration) {
 		srv.MinDuration = time.Duration(c)
@@ -375,33 +392,11 @@ func (srv *Server) commands() {
 	tokenRegister := func(c cmdTokenRegister) {
 		srv.Token = ""
 		if c != "" {
-			var ss []*models.Source
-			for prot, m := range srv.Protocols {
-				for name, p := range m {
-					buf := new(bytes.Buffer)
-					gw := gzip.NewWriter(buf)
-					if err := gob.NewEncoder(gw).Encode(p); err != nil {
-						broadcastErr(err)
-						return
-					}
-					if err := gw.Close(); err != nil {
-						broadcastErr(err)
-						return
-					}
-					ss = append(ss, &models.Source{
-						Protocol: prot,
-						Name:     name,
-						Blob:     buf.Bytes(),
-					})
-				}
-			}
 			srv.Token = string(c)
 			go func() {
-				if r, err := srv.request("/api/source/set", &ss); err != nil {
-					srv.ch <- cmdError(fmt.Errorf("could not set sources: %v", err))
+				if err := srv.putSource("", ""); err != nil {
+					srv.ch <- cmdError(err)
 					return
-				} else {
-					r.Close()
 				}
 				r, err := srv.request("/api/source/get", nil)
 				if err != nil {
@@ -409,6 +404,7 @@ func (srv *Server) commands() {
 					return
 				}
 				defer r.Close()
+				var ss []*models.Source
 				if err := json.NewDecoder(r).Decode(&ss); err != nil {
 					srv.ch <- cmdError(err)
 					return
@@ -528,8 +524,6 @@ func (srv *Server) commands() {
 				}
 			case cmdPlayIdx:
 				playIdx(c)
-			case cmdRefresh:
-				refresh(c)
 			case cmdProtocolRemove:
 				protocolRemove(c)
 			case cmdQueueChange:
@@ -558,6 +552,12 @@ func (srv *Server) commands() {
 				setUsername(c)
 			case cmdSetSources:
 				setSources(c)
+			case cmdProtocolAdd:
+				protocolAdd(c)
+			case cmdProtocolAddInstance:
+				protocolAddInstance(c)
+			case cmdRemoveDeleted:
+				removeDeleted()
 			case cmdError:
 				broadcastErr(error(c))
 				save = false
@@ -590,11 +590,7 @@ type cmdSeek time.Duration
 
 type cmdPlayIdx int
 
-type cmdRefresh struct {
-	protocol, key string
-	songs         protocol.SongList
-	delete        bool
-}
+type cmdRemoveDeleted struct{}
 
 type cmdProtocolRemove struct {
 	protocol, key string
@@ -627,3 +623,10 @@ type cmdTokenRegister string
 type cmdSetUsername string
 
 type cmdSetSources []*models.Source
+
+type cmdProtocolAdd struct {
+	Name     string
+	Instance protocol.Instance
+}
+
+type cmdProtocolAddInstance cmdProtocolAdd
