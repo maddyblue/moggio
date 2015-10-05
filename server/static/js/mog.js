@@ -32661,8 +32661,6 @@ var Protocol = require('./protocol.js');
 
 var $__0=    require('./mdl.js'),Button=$__0.Button;
 
-var CentralURL = 'http://localhost:8080/token';
-
 var App = React.createClass({displayName: "App",
 	mixins: [
 		Reflux.listenTo(Stores.error, 'error'),
@@ -32739,22 +32737,24 @@ var App = React.createClass({displayName: "App",
 		var menuItems = _.map(navMenuItems, function(v, k) {
 			return React.createElement(Link, {key: k, className: "mdl-navigation__link" + this.routeClass(v.route), to: v.route}, v.text);
 		}.bind(this));
-		if (this.state.Username) {
-			var un = (
-				React.createElement("span", {key: "username", className: "mdl-navigation__link"}, 
-					this.state.Username, 
-					React.createElement("br", null), 
-					React.createElement("a", {href: "", onClick: this.logout}, "[logout]")
-				)
-			);
-			menuItems.unshift(un);
-		} else {
-			var origin = location.protocol + '//' + location.host + '/api/token/register';
-			var params = "?redirect=" + encodeURIComponent(origin);
-			if (this.state.Hostname) {
-				params += '&hostname=' + encodeURIComponent(this.state.Hostname);
+		if (this.state.CentralURL) {
+			if (this.state.Username) {
+				var un = (
+					React.createElement("span", {key: "username", className: "mdl-navigation__link"}, 
+						this.state.Username, 
+						React.createElement("br", null), 
+						React.createElement("a", {href: "", onClick: this.logout}, "[logout]")
+					)
+				);
+				menuItems.unshift(un);
+			} else {
+				var origin = location.protocol + '//' + location.host + '/api/token/register';
+				var params = "?redirect=" + encodeURIComponent(origin);
+				if (this.state.Hostname) {
+					params += '&hostname=' + encodeURIComponent(this.state.Hostname);
+				}
+				menuItems.unshift(React.createElement("a", {key: "username", href: this.state.CentralURL + '/token' + params, className: "mdl-navigation__link"}, "login"));
 			}
-			menuItems.unshift(React.createElement("a", {key: "username", href: CentralURL + params, className: "mdl-navigation__link"}, "login"));
 		}
 		var playlists;
 		if (this.state.Playlists) {

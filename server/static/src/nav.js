@@ -19,8 +19,6 @@ var Protocol = require('./protocol.js');
 
 var { Button } = require('./mdl.js');
 
-var CentralURL = 'http://localhost:8080/token';
-
 var App = React.createClass({
 	mixins: [
 		Reflux.listenTo(Stores.error, 'error'),
@@ -97,22 +95,24 @@ var App = React.createClass({
 		var menuItems = _.map(navMenuItems, function(v, k) {
 			return <Link key={k} className={"mdl-navigation__link" + this.routeClass(v.route)} to={v.route}>{v.text}</Link>;
 		}.bind(this));
-		if (this.state.Username) {
-			var un = (
-				<span key="username" className="mdl-navigation__link">
-					{this.state.Username}
-					<br/>
-					<a href="" onClick={this.logout}>[logout]</a>
-				</span>
-			);
-			menuItems.unshift(un);
-		} else {
-			var origin = location.protocol + '//' + location.host + '/api/token/register';
-			var params = "?redirect=" + encodeURIComponent(origin);
-			if (this.state.Hostname) {
-				params += '&hostname=' + encodeURIComponent(this.state.Hostname);
+		if (this.state.CentralURL) {
+			if (this.state.Username) {
+				var un = (
+					<span key="username" className="mdl-navigation__link">
+						{this.state.Username}
+						<br/>
+						<a href="" onClick={this.logout}>[logout]</a>
+					</span>
+				);
+				menuItems.unshift(un);
+			} else {
+				var origin = location.protocol + '//' + location.host + '/api/token/register';
+				var params = "?redirect=" + encodeURIComponent(origin);
+				if (this.state.Hostname) {
+					params += '&hostname=' + encodeURIComponent(this.state.Hostname);
+				}
+				menuItems.unshift(<a key="username" href={this.state.CentralURL + '/token' + params} className="mdl-navigation__link">login</a>);
 			}
-			menuItems.unshift(<a key="username" href={CentralURL + params} className="mdl-navigation__link">login</a>);
 		}
 		var playlists;
 		if (this.state.Playlists) {

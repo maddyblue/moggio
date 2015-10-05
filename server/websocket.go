@@ -45,15 +45,16 @@ func (srv *Server) makeWaitData(wt waitType) (*waitData, error) {
 	case waitStatus:
 		hostname, _ := os.Hostname()
 		data = &Status{
-			State:    srv.state,
-			Song:     srv.songID,
-			SongInfo: srv.info,
-			Elapsed:  srv.elapsed,
-			Time:     srv.info.Time,
-			Random:   srv.Random,
-			Repeat:   srv.Repeat,
-			Username: srv.Username,
-			Hostname: hostname,
+			State:      srv.state,
+			Song:       srv.songID,
+			SongInfo:   srv.info,
+			Elapsed:    srv.elapsed,
+			Time:       srv.info.Time,
+			Random:     srv.Random,
+			Repeat:     srv.Repeat,
+			Username:   srv.Username,
+			Hostname:   hostname,
+			CentralURL: srv.centralURL,
 		}
 	case waitTracks:
 		var songs []listItem

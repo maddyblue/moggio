@@ -128,9 +128,8 @@ type Server struct {
 	Queue     Playlist
 	Playlists map[string]Playlist
 
-	CentralURL string
-	Username   string
-	Token      string
+	Username string
+	Token    string
 
 	Repeat      bool
 	Random      bool
@@ -144,6 +143,7 @@ type Server struct {
 	info          codec.SongInfo
 	elapsed       time.Duration
 
+	centralURL  string
 	ch          chan interface{}
 	audioch     chan interface{}
 	state       State
@@ -185,7 +185,7 @@ func New(stateFile, central string) (*Server, error) {
 		Protocols:   protocol.Map(),
 		Playlists:   make(map[string]Playlist),
 		MinDuration: time.Second * 30,
-		CentralURL:  central,
+		centralURL:  central,
 	}
 	db, err := bolt.Open(stateFile, 0600, nil)
 	if err != nil {
@@ -377,11 +377,12 @@ type Status struct {
 	// Elapsed time of current song.
 	Elapsed time.Duration
 	// Duration of current song.
-	Time     time.Duration
-	Random   bool
-	Repeat   bool
-	Username string
-	Hostname string
+	Time       time.Duration
+	Random     bool
+	Repeat     bool
+	Username   string
+	Hostname   string
+	CentralURL string
 }
 
 func (srv *Server) request(path string, body interface{}) (io.ReadCloser, error) {
@@ -397,7 +398,7 @@ func (srv *Server) request(path string, body interface{}) (io.ReadCloser, error)
 		}
 		br = bytes.NewReader(b)
 	}
-	r, err := http.Post(srv.CentralURL+path+"?"+tv, "application/json", br)
+	r, err := http.Post(srv.centralURL+path+"?"+tv, "application/json", br)
 	if err != nil {
 		return nil, err
 	}
