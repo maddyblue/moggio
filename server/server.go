@@ -311,6 +311,13 @@ func (srv *Server) protocolRefresh(protocol, key string, list, doDelete bool) er
 	if doDelete {
 		srv.ch <- cmdRemoveDeleted{}
 	}
+	if srv.Token != "" {
+		go func() {
+			if err := srv.putSource(protocol, key); err != nil {
+				srv.ch <- cmdError(err)
+			}
+		}()
+	}
 	return err
 }
 
