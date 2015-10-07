@@ -145,6 +145,7 @@ type Server struct {
 	elapsed       time.Duration
 
 	centralURL  string
+	inprogress  map[codec.ID]bool
 	ch          chan interface{}
 	audioch     chan interface{}
 	state       State
@@ -187,6 +188,7 @@ func New(stateFile, central string) (*Server, error) {
 		Playlists:   make(map[string]Playlist),
 		MinDuration: time.Second * 30,
 		centralURL:  central,
+		inprogress:  make(map[codec.ID]bool),
 	}
 	db, err := bolt.Open(stateFile, 0600, nil)
 	if err != nil {

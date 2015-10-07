@@ -33129,10 +33129,39 @@ exports.Protocols = React.createClass({displayName: "Protocols",
 				)
 			);
 		}
+		var inprogress;
+		if (!_.isEmpty(this.state.InProgress)) {
+			var insts = _.map(this.state.InProgress, function(v, id) {
+				var sp = id.split('\n');
+				return (
+					React.createElement("tr", {key: sp}, 
+						React.createElement("td", null, sp[0]), 
+						React.createElement("td", null, sp[1])
+					)
+				);
+			});
+			inprogress = (
+				React.createElement("div", null, 
+					React.createElement("div", {className: "mdl-typography--display-3 mdl-color-text--grey-600"}, "Adding In Progress..."), 
+					React.createElement("table", {className: "mdl-data-table mdl-js-data-table"}, 
+						React.createElement("thead", null, 
+							React.createElement("tr", null, 
+								React.createElement("th", {className: "mdl-data-table__cell--non-numeric"}, "protocol"), 
+								React.createElement("th", {className: "mdl-data-table__cell--non-numeric"}, "name")
+							)
+						), 
+						React.createElement("tbody", null, 
+							insts
+						)
+					)
+				)
+			);
+		}
 		return React.createElement("div", null, 
 			React.createElement("div", {className: "mdl-typography--display-3 mdl-color-text--grey-600"}, "New Protocol"), 
 			dropdown, 
 			selected, 
+			inprogress, 
 			React.createElement("div", {className: "mdl-typography--display-3 mdl-color-text--grey-600"}, "Existing Protocols"), 
 			React.createElement("table", {className: "mdl-data-table mdl-js-data-table"}, 
 				React.createElement("thead", null, 

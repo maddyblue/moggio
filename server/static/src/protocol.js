@@ -56,10 +56,39 @@ exports.Protocols = React.createClass({
 				</div>
 			);
 		}
+		var inprogress;
+		if (!_.isEmpty(this.state.InProgress)) {
+			var insts = _.map(this.state.InProgress, function(v, id) {
+				var sp = id.split('\n');
+				return (
+					<tr key={sp}>
+						<td>{sp[0]}</td>
+						<td>{sp[1]}</td>
+					</tr>
+				);
+			});
+			inprogress = (
+				<div>
+					<div className="mdl-typography--display-3 mdl-color-text--grey-600">Adding In Progress...</div>
+					<table className="mdl-data-table mdl-js-data-table">
+						<thead>
+							<tr>
+								<th className="mdl-data-table__cell--non-numeric">protocol</th>
+								<th className="mdl-data-table__cell--non-numeric">name</th>
+							</tr>
+						</thead>
+						<tbody>
+							{insts}
+						</tbody>
+					</table>
+				</div>
+			);
+		}
 		return <div>
 			<div className="mdl-typography--display-3 mdl-color-text--grey-600">New Protocol</div>
 			{dropdown}
 			{selected}
+			{inprogress}
 			<div className="mdl-typography--display-3 mdl-color-text--grey-600">Existing Protocols</div>
 			<table className="mdl-data-table mdl-js-data-table">
 				<thead>

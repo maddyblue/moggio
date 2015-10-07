@@ -38,9 +38,11 @@ func (srv *Server) makeWaitData(wt waitType) (*waitData, error) {
 		data = struct {
 			Available map[string]protocol.Params
 			Current   map[string][]string
+			InProgress map[codec.ID]bool
 		}{
 			protocol.Get(),
 			protos,
+			srv.inprogress,
 		}
 	case waitStatus:
 		hostname, _ := os.Hostname()

@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/mjibson/mog/codec"
 	"github.com/mjibson/mog/models"
 	"github.com/mjibson/mog/protocol"
 	"golang.org/x/net/websocket"
@@ -281,8 +282,27 @@ func (srv *Server) commands() {
 		broadcast(waitTracks)
 		broadcast(waitProtocols)
 	}
+	removeInProgress := func(c cmdRemoveInProgress) {
+		delete(srv.inprogress, codec.ID(c))
+		broadcast(waitProtocols)
+	}
 	protocolAdd := func(c cmdProtocolAdd) {
+		name, key := c.Name, c.Instance.Key()
+		id := codec.NewID(name, key)
+		if srv.inprogress[id] {
+			broadcastErr(fmt.Errorf("already adding %s: %s", name, key))
+			return
+		}
+		if _, err := srv.GetInstance(name, key); err == nil {
+			broadcastErr(fmt.Errorf("already have %s: %s", name, key))
+			return
+		}
+		srv.inprogress[id] = true
+		broadcast(waitProtocols)
 		go func() {
+			defer func() {
+				srv.ch <- cmdRemoveInProgress(id)
+			}()
 			songs, err := c.Instance.Refresh()
 			if err != nil {
 				srv.ch <- cmdError(err)
@@ -557,6 +577,8 @@ func (srv *Server) commands() {
 				protocolAddInstance(c)
 			case cmdRemoveDeleted:
 				removeDeleted()
+			case cmdRemoveInProgress:
+				removeInProgress(c)
 			case cmdError:
 				broadcastErr(error(c))
 				save = false
@@ -629,3 +651,5 @@ type cmdProtocolAdd struct {
 }
 
 type cmdProtocolAddInstance cmdProtocolAdd
+
+type cmdRemoveInProgress codec.ID
