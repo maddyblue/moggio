@@ -287,7 +287,6 @@ func (srv *Server) commands() {
 			if err != nil {
 				srv.ch <- cmdError(err)
 				return
-				return
 			}
 			for k, v := range songs {
 				if v.Time > 0 && v.Time < srv.MinDuration {
