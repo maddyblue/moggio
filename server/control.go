@@ -32,11 +32,7 @@ func (srv *Server) commands() {
 		}
 	}
 	broadcast := func(wt waitType) {
-		wd, err := srv.makeWaitData(wt)
-		if err != nil {
-			log.Println(err)
-			return
-		}
+		wd := srv.makeWaitData(wt)
 		broadcastData(wd)
 	}
 	broadcastErr := func(err error) {
@@ -63,10 +59,7 @@ func (srv *Server) commands() {
 			waitTracks,
 		}
 		for _, wt := range inits {
-			data, err := srv.makeWaitData(wt)
-			if err != nil {
-				return
-			}
+			data := srv.makeWaitData(wt)
 			go func() {
 				if err := websocket.JSON.Send(ws, data); err != nil {
 					srv.ch <- cmdDeleteWS(ws)
@@ -487,6 +480,9 @@ func (srv *Server) commands() {
 			}
 		}()
 	}
+	sendWaitData := func(c cmdWaitData) {
+		c.done <- srv.makeWaitData(c.wt)
+	}
 	ch := make(chan interface{})
 	go func() {
 		for c := range srv.ch {
@@ -586,6 +582,9 @@ func (srv *Server) commands() {
 			case cmdError:
 				broadcastErr(error(c))
 				save = false
+			case cmdWaitData:
+				sendWaitData(c)
+				save = false
 			default:
 				panic(c)
 			}
@@ -656,3 +655,8 @@ type cmdProtocolAdd struct {
 type cmdProtocolAddInstance cmdProtocolAdd
 
 type cmdRemoveInProgress codec.ID
+
+type cmdWaitData struct {
+	wt   waitType
+	done chan<- *waitData
+}

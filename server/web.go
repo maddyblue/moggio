@@ -112,7 +112,12 @@ func (srv *Server) OAuth(w http.ResponseWriter, r *http.Request, ps httprouter.P
 }
 
 func (srv *Server) Data(body io.Reader, form url.Values, ps httprouter.Params) (interface{}, error) {
-	return srv.makeWaitData(waitType(ps.ByName("type")))
+	ch := make(chan *waitData)
+	srv.ch <- cmdWaitData{
+		wt:   waitType(ps.ByName("type")),
+		done: ch,
+	}
+	return <-ch, nil
 }
 
 func (srv *Server) Cmd(body io.Reader, form url.Values, ps httprouter.Params) (interface{}, error) {

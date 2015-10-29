@@ -24,8 +24,8 @@ const (
 	waitError              = "error"
 )
 
-// makeWaitData should only be called by the audio() function.
-func (srv *Server) makeWaitData(wt waitType) (*waitData, error) {
+// makeWaitData should only be called by the commands() function.
+func (srv *Server) makeWaitData(wt waitType) *waitData {
 	var data interface{}
 	switch wt {
 	case waitProtocols:
@@ -36,8 +36,8 @@ func (srv *Server) makeWaitData(wt waitType) (*waitData, error) {
 			}
 		}
 		data = struct {
-			Available map[string]protocol.Params
-			Current   map[string][]string
+			Available  map[string]protocol.Params
+			Current    map[string][]string
 			InProgress map[codec.ID]bool
 		}{
 			protocol.Get(),
@@ -90,12 +90,12 @@ func (srv *Server) makeWaitData(wt waitType) (*waitData, error) {
 		}
 		data = d
 	default:
-		return nil, fmt.Errorf("bad wait type: %s", wt)
+		data = fmt.Errorf("unknown type")
 	}
 	return &waitData{
 		Type: wt,
 		Data: data,
-	}, nil
+	}
 }
 
 type cmdNewWS struct {
