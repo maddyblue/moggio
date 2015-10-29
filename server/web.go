@@ -212,14 +212,9 @@ func (srv *Server) ProtocolRemove(body io.Reader, form url.Values, ps httprouter
 	if err := json.NewDecoder(body).Decode(&pd); err != nil {
 		return nil, err
 	}
-	prots, ok := srv.Protocols[pd.Protocol]
-	if !ok {
-		return nil, fmt.Errorf("unknown protocol: %v", pd.Protocol)
-	}
 	srv.ch <- cmdProtocolRemove{
 		protocol: pd.Protocol,
 		key:      pd.Key,
-		prots:    prots,
 	}
 	return nil, nil
 }

@@ -264,7 +264,11 @@ func (srv *Server) commands() {
 		broadcast(waitPlaylist)
 	}
 	protocolRemove := func(c cmdProtocolRemove) {
-		delete(c.prots, c.key)
+		prots, ok := srv.Protocols[c.protocol]
+		if !ok {
+			return
+		}
+		delete(prots, c.key)
 		if srv.Token != "" {
 			d := models.Delete{
 				Protocol: c.protocol,
@@ -615,7 +619,6 @@ type cmdRemoveDeleted struct{}
 
 type cmdProtocolRemove struct {
 	protocol, key string
-	prots         map[string]protocol.Instance
 }
 
 type cmdQueueChange PlaylistChange
