@@ -24,7 +24,6 @@ import (
 
 	"github.com/boltdb/bolt"
 	"github.com/mjibson/mog/codec"
-	"github.com/mjibson/mog/models"
 	"github.com/mjibson/mog/protocol"
 	"github.com/pkg/browser"
 )
@@ -312,11 +311,10 @@ func (srv *Server) protocolRefresh(protocol, key string, list, doDelete bool) er
 		srv.ch <- cmdRemoveDeleted{}
 	}
 	if srv.Token != "" {
-		go func() {
-			if err := srv.putSource(protocol, key); err != nil {
-				srv.ch <- cmdError(err)
-			}
-		}()
+		srv.ch <- cmdPutSource{
+			protocol: protocol,
+			key:      key,
+		}
 	}
 	return err
 }
@@ -409,40 +407,6 @@ func (srv *Server) request(path string, body interface{}) (io.ReadCloser, error)
 		return nil, fmt.Errorf("%s: %v: %s", path, r.Status, b)
 	}
 	return r.Body, nil
-}
-
-// name and key may be empty to match all
-func (srv *Server) putSource(protocol, key string) error {
-	var ss []*models.Source
-	for prot, m := range srv.Protocols {
-		if prot != protocol && protocol != "" {
-			continue
-		}
-		for name, p := range m {
-			if name != key && key != "" {
-				continue
-			}
-			buf := new(bytes.Buffer)
-			gw := gzip.NewWriter(buf)
-			if err := gob.NewEncoder(gw).Encode(p); err != nil {
-				return err
-			}
-			if err := gw.Close(); err != nil {
-				return err
-			}
-			ss = append(ss, &models.Source{
-				Protocol: prot,
-				Name:     name,
-				Blob:     buf.Bytes(),
-			})
-		}
-	}
-	r, err := srv.request("/api/source/set", &ss)
-	if err != nil {
-		return fmt.Errorf("could not set sources: %v", err)
-	}
-	r.Close()
-	return nil
 }
 
 func (srv *Server) getSong(id SongID) (*codec.SongInfo, error) {
