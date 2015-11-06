@@ -53,6 +53,18 @@ func (srv *Server) audio() {
 		}
 		setTime()
 	}
+	setParams := func(c audioSetParams) {
+		out, err = output.Get(c.sr, c.ch)
+		if err != nil {
+			c.err <- fmt.Errorf("mog: could not open audio (%v, %v): %v", c.sr, c.ch, err)
+			return
+		}
+		dur = time.Second / (time.Duration(c.sr * c.ch))
+		seek = NewSeek(c.dur > 0, dur, c.play)
+		t = make(chan interface{})
+		close(t)
+		c.err <- nil
+	}
 	for {
 		select {
 		case <-t:
@@ -66,16 +78,7 @@ func (srv *Server) audio() {
 				t = make(chan interface{})
 				close(t)
 			case audioSetParams:
-				out, err = output.Get(c.sr, c.ch)
-				if err != nil {
-					c.err <- fmt.Errorf("mog: could not open audio (%v, %v): %v", c.sr, c.ch, err)
-					return
-				}
-				dur = time.Second / (time.Duration(c.sr * c.ch))
-				seek = NewSeek(c.dur > 0, dur, c.play)
-				t = make(chan interface{})
-				close(t)
-				c.err <- nil
+				setParams(c)
 			case cmdSeek:
 				doSeek(c)
 			default:
