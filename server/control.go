@@ -291,7 +291,7 @@ func (srv *Server) commands() {
 			broadcastErr(fmt.Errorf("already adding %s: %s", name, key))
 			return
 		}
-		if _, err := srv.GetInstance(name, key); err == nil {
+		if _, err := srv.getInstance(name, key); err == nil {
 			broadcastErr(fmt.Errorf("already have %s: %s", name, key))
 			return
 		}
@@ -546,7 +546,7 @@ func (srv *Server) commands() {
 			c.err <- nil
 			return
 		}
-		inst, err := srv.GetInstance(c.protocol, c.key)
+		inst, err := srv.getInstance(c.protocol, c.key)
 		if err != nil {
 			c.err <- err
 			return

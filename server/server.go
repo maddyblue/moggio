@@ -277,7 +277,7 @@ func (srv *Server) save() error {
 	return nil
 }
 
-func (srv *Server) GetInstance(name, key string) (protocol.Instance, error) {
+func (srv *Server) getInstance(name, key string) (protocol.Instance, error) {
 	prots, ok := srv.Protocols[name]
 	if !ok {
 		return nil, fmt.Errorf("unknown protocol: %s", name)
