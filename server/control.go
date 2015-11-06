@@ -526,12 +526,61 @@ func (srv *Server) commands() {
 			// protocolRefresh uses srv.Protocols, so
 			for i, s := range c {
 				last := i == len(c)-1
-				srv.protocolRefresh(s.Protocol, s.Name, true, last)
+				srv.ch <- cmdProtocolRefresh{
+					protocol: s.Protocol,
+					key:      s.Name,
+					list:     true,
+					doDelete: last,
+					err:      make(chan error, 1),
+				}
 			}
 		}()
 	}
 	sendWaitData := func(c cmdWaitData) {
 		c.done <- srv.makeWaitData(c.wt)
+	}
+	isRefreshing := make(map[codec.ID]bool)
+	protocolRefresh := func(c cmdProtocolRefresh) {
+		id := codec.NewID(c.protocol, c.key)
+		if isRefreshing[id] {
+			c.err <- nil
+			return
+		}
+		inst, err := srv.GetInstance(c.protocol, c.key)
+		if err != nil {
+			c.err <- err
+			return
+		}
+		isRefreshing[id] = true
+		go func() {
+			defer func() {
+				delete(isRefreshing, id)
+			}()
+			f := inst.Refresh
+			if c.list {
+				f = inst.List
+			}
+			songs, err := f()
+			if err != nil {
+				c.err <- err
+				return
+			}
+			for k, v := range songs {
+				if v.Time > 0 && v.Time < srv.MinDuration {
+					delete(songs, k)
+				}
+			}
+			if c.doDelete {
+				srv.ch <- cmdRemoveDeleted{}
+			}
+			if srv.Token != "" {
+				srv.ch <- cmdPutSource{
+					protocol: c.protocol,
+					key:      c.key,
+				}
+			}
+			c.err <- nil
+		}()
 	}
 	ch := make(chan interface{})
 	go func() {
@@ -638,6 +687,8 @@ func (srv *Server) commands() {
 			case cmdPutSource:
 				putSource(c)
 				save = false
+			case cmdProtocolRefresh:
+				protocolRefresh(c)
 			default:
 				panic(c)
 			}
@@ -716,4 +767,10 @@ type cmdWaitData struct {
 
 type cmdPutSource struct {
 	protocol, key string
+}
+
+type cmdProtocolRefresh struct {
+	protocol, key  string
+	list, doDelete bool
+	err            chan error
 }

@@ -186,7 +186,14 @@ func (srv *Server) ProtocolRefresh(body io.Reader, form url.Values, ps httproute
 	if err := json.NewDecoder(body).Decode(&pd); err != nil {
 		return nil, err
 	}
-	return nil, srv.protocolRefresh(pd.Protocol, pd.Key, false, true)
+	ch := make(chan error)
+	srv.ch <- cmdProtocolRefresh{
+		protocol: pd.Protocol,
+		key:      pd.Key,
+		list:     false,
+		doDelete: true,
+	}
+	return nil, <-ch
 }
 
 func (srv *Server) ProtocolAdd(body io.Reader, form url.Values, ps httprouter.Params) (interface{}, error) {

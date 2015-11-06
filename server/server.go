@@ -289,36 +289,6 @@ func (srv *Server) GetInstance(name, key string) (protocol.Instance, error) {
 	return inst, nil
 }
 
-func (srv *Server) protocolRefresh(protocol, key string, list, doDelete bool) error {
-	inst, err := srv.GetInstance(protocol, key)
-	if err != nil {
-		return err
-	}
-	f := inst.Refresh
-	if list {
-		f = inst.List
-	}
-	songs, err := f()
-	if err != nil {
-		return err
-	}
-	for k, v := range songs {
-		if v.Time > 0 && v.Time < srv.MinDuration {
-			delete(songs, k)
-		}
-	}
-	if doDelete {
-		srv.ch <- cmdRemoveDeleted{}
-	}
-	if srv.Token != "" {
-		srv.ch <- cmdPutSource{
-			protocol: protocol,
-			key:      key,
-		}
-	}
-	return err
-}
-
 type PlaylistChange [][]string
 
 func (srv *Server) playlistChange(p Playlist, plc PlaylistChange, isq bool) (pl Playlist, cleared bool, err error) {
