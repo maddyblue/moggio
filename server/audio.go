@@ -3,6 +3,7 @@ package server
 import (
 	"fmt"
 	"io"
+	"log"
 	"time"
 
 	"github.com/mjibson/mog/output"
@@ -57,6 +58,7 @@ func (srv *Server) audio() {
 		case <-t:
 			tick()
 		case c := <-srv.audioch:
+			log.Printf("%T\n", c)
 			switch c := c.(type) {
 			case audioStop:
 				t = nil
