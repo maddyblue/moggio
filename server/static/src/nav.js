@@ -182,6 +182,7 @@ var Player = React.createClass({
 		if (!this.state.Song || d.Song.UID != this.state.Song.UID) {
 			Actions.active(d.Song.UID);
 		}
+		d.songStart = new Date() - this.state.Elapsed / 1e6;
 		this.setState(d);
 		var title = 'mog';
 		if (this.state.SongInfo && this.state.SongInfo.Title) {
@@ -204,11 +205,20 @@ var Player = React.createClass({
 	openQueue: function() {
 		this.transitionTo('queue');
 	},
+	renderSeek: function() {
+		if (this.state.State == 0) {
+			window.requestAnimationFrame(this.renderSeek);
+		}
+		var s = document.getElementById('seek-pos');
+		var pos = 0;
+		if (this.state.songStart) {
+			var d = new Date - this.state.songStart;
+			pos = d / this.state.Time * 1e8;
+		}
+		s.setAttribute('style', 'width: ' + pos + '%');
+	},
 	render: function() {
 		var title, album;
-		var animation = '';
-		var pos = 0;
-		var dur = '0s';
 		var img;
 		if (this.state.Song && this.state.Song.ID) {
 			var info = this.state.SongInfo;
@@ -231,8 +241,6 @@ var Player = React.createClass({
 					{ialbum}
 				</div>
 			);
-			pos = this.state.Elapsed / this.state.Time * 100;
-			dur = (this.state.Time - this.state.Elapsed) / 1e9 + 's';
 			if (this.state.State == 0) {
 				// If a song is playing, swap the animation (they are identical). This
 				// triggers an animation restart which we need on song change.
@@ -283,24 +291,11 @@ var Player = React.createClass({
 			right: '5px',
 			height: '70px',
 		};
-		var ad = animation + ' ' + dur;
-		var seekPosStyle = {
-			position: 'absolute',
-			bottom: '0',
-			top: '0',
-			left: '0',
-			animationTimingFunction: 'linear',
-			width: animation == '' ? 0 : '100%',
-			animation: ad,
-		};
-		var seekBG = 'mdl-color--orange-500';
+		window.requestAnimationFrame(this.renderSeek);
 		return (
 			<div>
-				<div id="seek" onClick={this.seek}>
-					<div style={{position: 'absolute', left: '0', width: pos + '%', bottom: '0', top: '0'}} className={seekBG}/>
-					<div style={{position: 'absolute', right: '0', width: (100 - pos) + '%', bottom: '0', top: '0'}} className="mdl-color--grey-500">
-						<div style={seekPosStyle} className={seekBG}/>
-					</div>
+				<div id="seek" className="mdl-color--grey-500" onClick={this.seek}>
+					<div id="seek-pos" className="mdl-color--orange-500" />
 				</div>
 				{img}
 				<div style={{position: 'absolute', left: '80px', bottom: '0', right: '0', height: '70px', textAlign: 'center'}}>
