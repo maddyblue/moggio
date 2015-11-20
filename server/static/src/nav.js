@@ -262,8 +262,6 @@ var Player = React.createClass({
 			}
 		};
 		var play = this.state.State == 0 ? 'pause' : 'play_circle_filled';
-		// TODO: dynamically set this to the correct CSS color/class
-		var primary = 'red';
 		var ctrlStyle = {
 			position: 'absolute',
 			left: '50%',
