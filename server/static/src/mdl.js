@@ -49,12 +49,8 @@ exports.Button = React.createClass({
 		var {
 			children,
 			disabled,
-			ripple,
 			...others } = this.props;
-		var cn = 'mdl-button mdl-js-button';
-		if (ripple) {
-			cn += ' mdl-js-ripple-effect';
-		}
+		var cn = 'mdl-button mdl-js-button mdl-js-ripple-effect';
 		cn += propClasses('mdl-button--', others);
 		return (
 			<button

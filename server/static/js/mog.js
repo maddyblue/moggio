@@ -32518,12 +32518,8 @@ exports.Button = React.createClass({displayName: "Button",
 		var $__0=
 			
 			
-			
-			   this.props,children=$__0.children,disabled=$__0.disabled,ripple=$__0.ripple,others=(function(source, exclusion) {var rest = {};var hasOwn = Object.prototype.hasOwnProperty;if (source == null) {throw new TypeError();}for (var key in source) {if (hasOwn.call(source, key) && !hasOwn.call(exclusion, key)) {rest[key] = source[key];}}return rest;})($__0,{children:1,disabled:1,ripple:1});
-		var cn = 'mdl-button mdl-js-button';
-		if (ripple) {
-			cn += ' mdl-js-ripple-effect';
-		}
+			   this.props,children=$__0.children,disabled=$__0.disabled,others=(function(source, exclusion) {var rest = {};var hasOwn = Object.prototype.hasOwnProperty;if (source == null) {throw new TypeError();}for (var key in source) {if (hasOwn.call(source, key) && !hasOwn.call(exclusion, key)) {rest[key] = source[key];}}return rest;})($__0,{children:1,disabled:1});
+		var cn = 'mdl-button mdl-js-button mdl-js-ripple-effect';
 		cn += propClasses('mdl-button--', others);
 		return (
 			React.createElement("button", React.__spread({
