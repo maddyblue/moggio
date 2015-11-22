@@ -326,7 +326,7 @@ func (srv *Server) commands() {
 		broadcast(waitProtocols)
 	}
 	queueChange := func(c cmdQueueChange) {
-		n, clear, err := srv.playlistChange(srv.Queue, PlaylistChange(c), true)
+		n, clear, err := srv.playlistChange(srv.Queue, PlaylistChange(c))
 		if err != nil {
 			broadcastErr(err)
 			return
@@ -340,7 +340,7 @@ func (srv *Server) commands() {
 	}
 	playlistChange := func(c cmdPlaylistChange) {
 		p := srv.Playlists[c.name]
-		n, _, err := srv.playlistChange(p, c.plc, false)
+		n, _, err := srv.playlistChange(p, c.plc)
 		if err != nil {
 			broadcastErr(err)
 			return

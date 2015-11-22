@@ -291,7 +291,7 @@ func (srv *Server) getInstance(name, key string) (protocol.Instance, error) {
 
 type PlaylistChange [][]string
 
-func (srv *Server) playlistChange(p Playlist, plc PlaylistChange, isq bool) (pl Playlist, cleared bool, err error) {
+func (srv *Server) playlistChange(p Playlist, plc PlaylistChange) (pl Playlist, cleared bool, err error) {
 	m := make([]SongID, len(p))
 	copy(m, p)
 	for _, c := range plc {
