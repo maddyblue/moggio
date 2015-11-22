@@ -62,13 +62,7 @@ var Tracks = exports.Tracks = React.createClass({
 				idx = this.getIdx(index);
 				Mog.POST('/api/cmd/play_idx?idx=' + idx);
 			} else {
-				var params = [
-					['clear'],
-					['add', this.getter(index).ID.UID]
-				];
-				Mog.POST('/api/queue/change', params, function() {
-					Mog.POST('/api/cmd/play');
-				});
+				Mog.POST('/api/cmd/play_track', this.getter(index).ID.UID);
 			}
 		}.bind(this);
 	},

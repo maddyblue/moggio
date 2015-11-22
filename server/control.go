@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/bradfitz/slice"
 	"github.com/mjibson/mog/codec"
 	"github.com/mjibson/mog/models"
 	"github.com/mjibson/mog/protocol"
@@ -236,6 +237,56 @@ func (srv *Server) commands() {
 		stop()
 		srv.PlaylistIndex = int(c)
 		play()
+	}
+	playTrack := func(c cmdPlayTrack) {
+		t := SongID(c)
+		info, err := srv.getSong(t)
+		if err != nil {
+			broadcastErr(err)
+			return
+		}
+		album := info.Album
+		p, err := srv.getInstance(t.Protocol(), t.Key())
+		if err != nil {
+			broadcastErr(err)
+			return
+		}
+		list, err := p.List()
+		if err != nil {
+			broadcastErr(err)
+			return
+		}
+		top := codec.NewID(t.Protocol(), t.Key())
+		var ids []codec.ID
+		for id, si := range list {
+			if si.Album == album {
+				ids = append(ids, id)
+			}
+		}
+		slice.Sort(ids, func(i, j int) bool {
+			a := list[ids[i]]
+			b := list[ids[j]]
+			return a.Track < b.Track
+		})
+		plc := PlaylistChange{[]string{"clear"}}
+		for _, v := range ids {
+			plc = append(plc, []string{"add", string(top.Push(string(v)))})
+		}
+		n, _, err := srv.playlistChange(srv.Queue, plc)
+		if err != nil {
+			broadcastErr(err)
+			return
+		}
+		stop()
+		srv.Queue = n
+		srv.PlaylistIndex = 0
+		for i, s := range srv.Queue {
+			if s == t {
+				srv.PlaylistIndex = i
+			}
+		}
+		play()
+		broadcast(waitPlaylist)
 	}
 	removeDeleted := func() {
 		for n, p := range srv.Playlists {
@@ -642,6 +693,8 @@ func (srv *Server) commands() {
 				}
 			case cmdPlayIdx:
 				playIdx(c)
+			case cmdPlayTrack:
+				playTrack(c)
 			case cmdProtocolRemove:
 				protocolRemove(c)
 			case cmdQueueChange:
@@ -774,3 +827,5 @@ type cmdProtocolRefresh struct {
 	list, doDelete bool
 	err            chan error
 }
+
+type cmdPlayTrack SongID

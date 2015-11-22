@@ -138,6 +138,12 @@ func (srv *Server) Cmd(body io.Reader, form url.Values, ps httprouter.Params) (i
 			return nil, err
 		}
 		srv.ch <- cmdPlayIdx(i)
+	case "play_track":
+		var uid string
+		if err := json.NewDecoder(body).Decode(&uid); err != nil {
+			return nil, err
+		}
+		srv.ch <- cmdPlayTrack(uid)
 	case "random":
 		srv.ch <- cmdRandom
 	case "repeat":

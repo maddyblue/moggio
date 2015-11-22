@@ -13,6 +13,11 @@
 			"revisionTime": "2015-08-24T19:23:40-06:00"
 		},
 		{
+			"path": "github.com/bradfitz/slice",
+			"revision": "a665b5dbaad5fc7474c1193c67ed138df1e1b0e7",
+			"revisionTime": "2014-04-30T10:51:40-04:00"
+		},
+		{
 			"path": "github.com/dhowden/tag",
 			"revision": "549eab9b7500add6a9f7381fd8439906b2b2182d",
 			"revisionTime": "2015-07-12T11:27:14+10:00"
