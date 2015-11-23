@@ -29604,56 +29604,6 @@ module.exports = {
     },
 
     /**
-     * Attach handlers to promise that trigger the completed and failed
-     * child publishers, if available.
-     *
-     * @param {Object} The promise to attach to
-     */
-    promise: function promise(_promise) {
-        var me = this;
-
-        var canHandlePromise = this.children.indexOf("completed") >= 0 && this.children.indexOf("failed") >= 0;
-
-        if (!canHandlePromise) {
-            throw new Error("Publisher must have \"completed\" and \"failed\" child publishers");
-        }
-
-        _promise.then(function (response) {
-            return me.completed(response);
-        }, function (error) {
-            return me.failed(error);
-        });
-    },
-
-    /**
-     * Subscribes the given callback for action triggered, which should
-     * return a promise that in turn is passed to `this.promise`
-     *
-     * @param {Function} callback The callback to register as event handler
-     */
-    listenAndPromise: function listenAndPromise(callback, bindContext) {
-        var me = this;
-        bindContext = bindContext || this;
-        this.willCallPromise = (this.willCallPromise || 0) + 1;
-
-        var removeListen = this.listen(function () {
-
-            if (!callback) {
-                throw new Error("Expected a function returning a promise but got " + callback);
-            }
-
-            var args = arguments,
-                promise = callback.apply(bindContext, args);
-            return me.promise.call(me, promise);
-        }, bindContext);
-
-        return function () {
-            me.willCallPromise--;
-            removeListen.call(me);
-        };
-    },
-
-    /**
      * Publishes an event using `this.emitter` (if `shouldEmit` agrees)
      */
     trigger: function trigger() {
@@ -29677,60 +29627,24 @@ module.exports = {
     },
 
     /**
-     * Returns a Promise for the triggered action
+     * Wraps the trigger mechanism with a deferral function.
      *
-     * @return {Promise}
-     *   Resolved by completed child action.
-     *   Rejected by failed child action.
-     *   If listenAndPromise'd, then promise associated to this trigger.
-     *   Otherwise, the promise is for next child action completion.
+     * @param {Function} callback the deferral function,
+     *        first argument is the resolving function and the
+     *        rest are the arguments provided from the previous
+     *        trigger invocation
      */
-    triggerPromise: function triggerPromise() {
-        var me = this;
-        var args = arguments;
-
-        var canHandlePromise = this.children.indexOf("completed") >= 0 && this.children.indexOf("failed") >= 0;
-
-        var promise = _.createPromise(function (resolve, reject) {
-            // If `listenAndPromise` is listening
-            // patch `promise` w/ context-loaded resolve/reject
-            if (me.willCallPromise) {
-                _.nextTick(function () {
-                    var previousPromise = me.promise;
-                    me.promise = function (inputPromise) {
-                        inputPromise.then(resolve, reject);
-                        // Back to your regularly schedule programming.
-                        me.promise = previousPromise;
-                        return me.promise.apply(me, arguments);
-                    };
-                    me.trigger.apply(me, args);
-                });
-                return;
-            }
-
-            if (canHandlePromise) {
-                var removeSuccess = me.completed.listen(function (argsArr) {
-                    removeSuccess();
-                    removeFailed();
-                    resolve(argsArr);
-                });
-
-                var removeFailed = me.failed.listen(function (argsArr) {
-                    removeSuccess();
-                    removeFailed();
-                    reject(argsArr);
-                });
-            }
-
-            me.triggerAsync.apply(me, args);
-
-            if (!canHandlePromise) {
-                resolve();
-            }
-        });
-
-        return promise;
+    deferWith: function deferWith(callback) {
+        var oldTrigger = this.trigger,
+            ctx = this,
+            resolver = function resolver() {
+            oldTrigger.apply(ctx, arguments);
+        };
+        this.trigger = function () {
+            callback.apply(ctx, [resolver].concat([].splice.call(arguments, 0)));
+        };
     }
+
 };
 },{"./utils":262}],255:[function(require,module,exports){
 /**
@@ -29821,7 +29735,7 @@ var createAction = function createAction(definition) {
     }, PublisherMethods, ActionMethods, definition);
 
     var functor = function functor() {
-        var triggerType = functor.sync ? "trigger" : _.environment.hasPromise ? "triggerPromise" : "triggerAsync";
+        var triggerType = functor.sync ? "trigger" : "triggerAsync";
         return functor[triggerType].apply(functor, arguments);
     };
 
@@ -29906,7 +29820,7 @@ Object.defineProperty(exports, "__esModule", {
 });
 var Reflux = {
     version: {
-        "reflux-core": "0.2.1"
+        "reflux-core": "0.3.0"
     }
 };
 
@@ -29974,21 +29888,6 @@ Reflux.createActions = (function () {
  */
 Reflux.setEventEmitter = function (ctx) {
     Reflux.EventEmitter = _.EventEmitter = ctx;
-};
-
-/**
- * Sets the Promise library that Reflux uses
- */
-Reflux.setPromise = function (ctx) {
-    Reflux.Promise = _.Promise = ctx;
-};
-
-/**
- * Sets the Promise factory that creates new promises
- * @param {Function} factory has the signature `function(resolver) { return [new Promise]; }`
- */
-Reflux.setPromiseFactory = function (factory) {
-    _.createPromise = factory;
 };
 
 /**
@@ -30219,25 +30118,6 @@ function callbackName(string, prefix) {
     return prefix + exports.capitalize(string);
 }
 
-var environment = {};
-
-exports.environment = environment;
-function checkEnv(target) {
-    var flag = undefined;
-    try {
-        /*eslint-disable no-eval */
-        if (eval(target)) {
-            flag = true;
-        }
-        /*eslint-enable no-eval */
-    } catch (e) {
-        flag = false;
-    }
-    environment[callbackName(target, "has")] = flag;
-}
-checkEnv("setImmediate");
-checkEnv("Promise");
-
 /*
  * isObject, extend, isFunction, isArguments are taken from undescore/lodash in
  * order to remove the dependency
@@ -30273,15 +30153,9 @@ function isFunction(value) {
 
 exports.EventEmitter = require("eventemitter3");
 
-if (environment.hasSetImmediate) {
-    exports.nextTick = function (callback) {
-        setImmediate(callback);
-    };
-} else {
-    exports.nextTick = function (callback) {
-        setTimeout(callback, 0);
-    };
-}
+exports.nextTick = function (callback) {
+    setTimeout(callback, 0);
+};
 
 function object(keys, vals) {
     var o = {},
@@ -30290,16 +30164,6 @@ function object(keys, vals) {
         o[keys[i]] = vals[i];
     }
     return o;
-}
-
-if (environment.hasPromise) {
-    exports.Promise = Promise;
-    exports.createPromise = function (resolver) {
-        return new exports.Promise(resolver);
-    };
-} else {
-    exports.Promise = null;
-    exports.createPromise = function () {};
 }
 
 function isArguments(value) {
