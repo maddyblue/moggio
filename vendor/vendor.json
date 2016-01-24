@@ -3,11 +3,6 @@
 	"ignore": "test",
 	"package": [
 		{
-			"path": "code.google.com/p/portaudio-go/portaudio",
-			"revision": "effe9be3431c",
-			"revisionTime": "2014-11-18T15:14:02+01:00"
-		},
-		{
 			"path": "github.com/boltdb/bolt",
 			"revision": "90fef389f98027ca55594edd7dbd6e7f3926fdad",
 			"revisionTime": "2015-08-24T19:23:40-06:00"
@@ -36,6 +31,11 @@
 			"path": "github.com/google/google-api-go-client/drive/v2",
 			"revision": "a5c3e2a4792aff40e59840d9ecdff0542a202a80",
 			"revisionTime": "2015-08-07T21:35:18-07:00"
+		},
+		{
+			"path": "github.com/gordonklaus/portaudio",
+			"revision": "c41f752f1e3fa5225a513d761c723f45bfe07b89",
+			"revisionTime": "2015-09-19T22:30:16+02:00"
 		},
 		{
 			"path": "github.com/julienschmidt/httprouter",
