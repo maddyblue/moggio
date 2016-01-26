@@ -2,7 +2,7 @@
 
 package output
 
-import "code.google.com/p/portaudio-go/portaudio"
+import "github.com/gordonklaus/portaudio"
 
 type port struct {
 	st   *portaudio.Stream
