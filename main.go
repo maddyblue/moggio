@@ -42,7 +42,7 @@ var (
 	flagDropbox    = flag.String("dropbox", "rnhpqsbed2q2ezn:ldref688unj74ld", "Dropbox API credentials of the form ClientID:ClientSecret")
 	flagSoundcloud = flag.String("soundcloud", "ec28c2226a0838d01edc6ed0014e462e:a115e94029d698f541960c8dc8560978", "SoundCloud API credentials of the form ClientID:ClientSecret")
 	flagDev        = flag.Bool("dev", false, "enable dev mode")
-	flagCentral = flag.String("central", "https://mog-music-client.appspot.com", "Central Mog data server; empty to disable")
+	//flagCentral = flag.String("central", "https://mog-music-client.appspot.com", "Central Mog data server; empty to disable")
 	stateFile      = flag.String("state", "", "specify non-default statefile location")
 )
 
@@ -99,7 +99,7 @@ func main() {
 			*stateFile = filepath.Join(os.Getenv("HOME"), ".mog.state")
 		}
 	}
-	log.Fatal(server.ListenAndServe(*stateFile, *flagAddr, *flagCentral, *flagDev))
+	log.Fatal(server.ListenAndServe(*stateFile, *flagAddr, "", *flagDev))
 }
 
 func quit() {
