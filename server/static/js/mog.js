@@ -32703,7 +32703,10 @@ var Player = React.createClass({displayName: "Player",
 	},
 	renderSeek: function() {
 		if (this.state.State == 0) {
-			window.requestAnimationFrame(this.renderSeek);
+			window.clearTimeout(this.timeout);
+			this.timeout = setTimeout(function() {
+				window.requestAnimationFrame(this.renderSeek);
+			}.bind(this), 200);
 		}
 		var s = document.getElementById('seek-pos');
 		var pos = 0;
@@ -32711,7 +32714,7 @@ var Player = React.createClass({displayName: "Player",
 			var d = new Date - this.state.songStart;
 			pos = d / this.state.Time * 1e8;
 		}
-		s.setAttribute('style', 'width: ' + pos + '%');
+		s.style.width = pos + '%';
 	},
 	render: function() {
 		var title, album;
