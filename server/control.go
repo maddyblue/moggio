@@ -713,8 +713,8 @@ func (srv *Server) commands() {
 			case cmdAddOAuth:
 				addOAuth(c)
 			case cmdSeek:
-				doSeek(c)
 				save = false
+				doSeek(c)
 			case cmdMinDuration:
 				setMinDuration(c)
 			case cmdTokenRegister:
@@ -745,8 +745,8 @@ func (srv *Server) commands() {
 			default:
 				panic(c)
 			}
-			broadcast(waitStatus)
 			if save {
+				broadcast(waitStatus)
 				queueSave()
 			}
 		}
