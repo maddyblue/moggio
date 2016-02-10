@@ -32678,7 +32678,7 @@ var Player = React.createClass({displayName: "Player",
 		if (!this.state.Song || d.Song.UID != this.state.Song.UID) {
 			Actions.active(d.Song.UID);
 		}
-		d.songStart = new Date() - this.state.Elapsed / 1e6;
+		d.songStart = new Date() - d.Elapsed / 1e6;
 		this.setState(d);
 		var title = 'mog';
 		if (this.state.SongInfo && this.state.SongInfo.Title) {
