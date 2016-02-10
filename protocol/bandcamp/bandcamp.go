@@ -10,6 +10,7 @@ import (
 	"log"
 	"net/http"
 	"reflect"
+	"strings"
 	"time"
 
 	"github.com/mjibson/mog/codec"
@@ -151,6 +152,9 @@ func (b *Bandcamp) Refresh() (protocol.SongList, error) {
 	for _, t := range tracks {
 		if t.File.Mp3_128 == "" {
 			continue
+		}
+		if strings.HasPrefix(t.File.Mp3_128, "//") {
+			t.File.Mp3_128 = "https:" + t.File.Mp3_128
 		}
 		id := codec.Int64(t.ID)
 		tracklist[id] = t
