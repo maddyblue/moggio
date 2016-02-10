@@ -653,13 +653,13 @@ func (srv *Server) commands() {
 			infoTimer()
 		case c := <-ch:
 			if c, ok := c.(cmdSetTime); ok {
-				d := time.Duration(c)
+				d := c.duration
 				change := srv.elapsed - d
 				if change < 0 {
 					change = -change
 				}
 				srv.elapsed = d
-				if change > time.Second {
+				if c.force || change > time.Second {
 					broadcast(waitStatus)
 				}
 				continue
@@ -794,7 +794,10 @@ type cmdAddOAuth struct {
 
 type cmdMinDuration time.Duration
 
-type cmdSetTime time.Duration
+type cmdSetTime struct {
+	duration time.Duration
+	force    bool
+}
 
 type cmdError error
 
