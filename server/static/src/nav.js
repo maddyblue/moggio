@@ -226,7 +226,7 @@ var Player = React.createClass({
 		if (this.state.Song && this.state.Song.ID) {
 			var info = this.state.SongInfo;
 			var song = this.state.Song.UID;
-			title = <div style={{fontWeight: '500'}}>{info.Title}</div>;
+			title = <div style={{fontWeight: '500'}}>{info.SongTitle || info.Title}</div>;
 			var ialbum, iartist, joiner;
 			if (info.Album) {
 				ialbum = <Link to="album" params={info}>{info.Album}</Link>;

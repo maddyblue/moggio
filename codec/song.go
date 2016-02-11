@@ -23,4 +23,8 @@ type SongInfo struct {
 	Album    string
 	Track    float64
 	ImageURL string `json:",omitempty"`
+
+	// SongTitle, if set, is the currently playing song title. Needed for
+	// streaming.
+	SongTitle string
 }

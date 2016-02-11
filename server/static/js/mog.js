@@ -32722,7 +32722,7 @@ var Player = React.createClass({displayName: "Player",
 		if (this.state.Song && this.state.Song.ID) {
 			var info = this.state.SongInfo;
 			var song = this.state.Song.UID;
-			title = React.createElement("div", {style: {fontWeight: '500'}}, info.Title);
+			title = React.createElement("div", {style: {fontWeight: '500'}}, info.SongTitle || info.Title);
 			var ialbum, iartist, joiner;
 			if (info.Album) {
 				ialbum = React.createElement(Link, {to: "album", params: info}, info.Album);

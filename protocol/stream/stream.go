@@ -31,6 +31,10 @@ func New(params []string, token *oauth2.Token) (protocol.Instance, error) {
 	if len(params) != 1 {
 		return nil, fmt.Errorf("expected one parameter")
 	}
+	addr, err := url.Parse(params[0])
+	if err != nil {
+		return nil, err
+	}
 	u, name := tryPLS(params[0])
 	if name == "" {
 		name = params[0]
@@ -39,6 +43,7 @@ func New(params []string, token *oauth2.Token) (protocol.Instance, error) {
 		Orig: params[0],
 		URL:  u,
 		Name: name,
+		Host: addr.Host,
 	}
 	resp, err := s.get()
 	if err != nil {
@@ -87,10 +92,12 @@ func tryPLS(u string) (target, name string) {
 type Stream struct {
 	Orig           string
 	URL            string
+	Host           string
 	Name           string
 	metaint, count int
 	body           io.ReadCloser
 	title          string
+	songtitle      string
 }
 
 type dialer struct {
@@ -165,14 +172,10 @@ func (s *Stream) get() (*http.Response, error) {
 }
 
 func (s *Stream) info() *codec.SongInfo {
-	i := &codec.SongInfo{
+	return &codec.SongInfo{
 		Title: s.Name,
+		Album: s.Host,
 	}
-	if s.title != "" {
-		i.Title = s.title
-		i.Album = s.Name
-	}
-	return i
 }
 
 func (s *Stream) Key() string {
@@ -190,7 +193,9 @@ func (s *Stream) Refresh() (protocol.SongList, error) {
 }
 
 func (s *Stream) Info(codec.ID) (*codec.SongInfo, error) {
-	return s.info(), nil
+	i := s.info()
+	i.SongTitle = s.songtitle
+	return i, nil
 }
 
 func (s *Stream) GetSong(codec.ID) (codec.Song, error) {
@@ -205,6 +210,7 @@ func (s *Stream) reader() codec.Reader {
 		}
 		s.Close()
 		s.body = resp.Body
+		s.songtitle = ""
 		return s, 0, nil
 	}
 }
@@ -233,7 +239,7 @@ func (s *Stream) Read(p []byte) (n int, err error) {
 		}
 		matches := titleRE.FindSubmatch(meta)
 		if len(matches) == 2 {
-			s.title = string(matches[1])
+			s.songtitle = string(matches[1])
 		}
 	}
 	return
