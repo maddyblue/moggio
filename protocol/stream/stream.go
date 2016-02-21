@@ -35,16 +35,11 @@ func New(params []string, token *oauth2.Token) (protocol.Instance, error) {
 	if err != nil {
 		return nil, err
 	}
-	u, name := tryPLS(params[0])
-	if name == "" {
-		name = params[0]
-	}
 	s := Stream{
 		Orig: params[0],
-		URL:  u,
-		Name: name,
 		Host: addr.Host,
 	}
+	s.Refresh()
 	resp, err := s.get()
 	if err != nil {
 		return nil, err
@@ -189,6 +184,12 @@ func (s *Stream) List() (protocol.SongList, error) {
 }
 
 func (s *Stream) Refresh() (protocol.SongList, error) {
+	u, name := tryPLS(s.Orig)
+	if name == "" {
+		name = s.Orig
+	}
+	s.URL = u
+	s.Name = name
 	return s.List()
 }
 
