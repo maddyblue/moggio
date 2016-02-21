@@ -32525,6 +32525,20 @@ var App = React.createClass({displayName: "App",
 	],
 	componentDidMount: function() {
 		this.startWS();
+		var that = this;
+		fetch('https://api.github.com/repos/mjibson/mog/releases/latest')
+		.then(function (r) {
+			r.json().then(function(j) {
+				var v = j.tag_name.substr(1);
+				if (j.tag_name == mogVersion) {
+					return;
+				}
+				that.setState({update: {
+					name: v,
+					link: j.html_url
+				}});
+			});
+		});
 	},
 	getInitialState: function() {
 		return {};
@@ -32622,6 +32636,13 @@ var App = React.createClass({displayName: "App",
 				)
 			);
 		}
+		var update;
+		if (this.state.update) {
+			update = React.createElement("span", {className: "mdl-layout-title"}, 
+				"new version: ", 
+				React.createElement("a", {href: this.state.update.link}, this.state.update.name)
+			);
+		}
 		return (
 			React.createElement("div", null, 
 				overlay, 
@@ -32634,7 +32655,8 @@ var App = React.createClass({displayName: "App",
 							menuItems
 						), 
 						React.createElement("span", {className: "mdl-layout-title"}, "Playlists"), 
-						playlists
+						playlists, 
+						update
 					), 
 					React.createElement("main", {className: "mdl-layout__content"}, 
 						React.createElement("div", {className: "page-content"}, 

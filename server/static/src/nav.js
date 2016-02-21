@@ -29,6 +29,20 @@ var App = React.createClass({
 	],
 	componentDidMount: function() {
 		this.startWS();
+		var that = this;
+		fetch('https://api.github.com/repos/mjibson/mog/releases/latest')
+		.then(function (r) {
+			r.json().then(function(j) {
+				var v = j.tag_name.substr(1);
+				if (j.tag_name == mogVersion) {
+					return;
+				}
+				that.setState({update: {
+					name: v,
+					link: j.html_url
+				}});
+			});
+		});
 	},
 	getInitialState: function() {
 		return {};
@@ -126,6 +140,13 @@ var App = React.createClass({
 				</nav>
 			);
 		}
+		var update;
+		if (this.state.update) {
+			update = <span className="mdl-layout-title">
+				new version:&nbsp;
+				<a href={this.state.update.link}>{this.state.update.name}</a>
+			</span>;
+		}
 		return (
 			<div>
 				{overlay}
@@ -139,6 +160,7 @@ var App = React.createClass({
 						</nav>
 						<span className="mdl-layout-title">Playlists</span>
 						{playlists}
+						{update}
 					</div>
 					<main className="mdl-layout__content">
 						<div className="page-content">

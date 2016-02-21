@@ -1,8 +1,10 @@
 package server
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"io"
 	"io/ioutil"
 	"log"
@@ -16,6 +18,8 @@ import (
 	"golang.org/x/net/websocket"
 )
 
+var MogVersion string
+
 var indexHTML []byte
 
 func (srv *Server) GetMux(devMode bool) *http.ServeMux {
@@ -28,10 +32,20 @@ func (srv *Server) GetMux(devMode bool) *http.ServeMux {
 	if err != nil {
 		log.Fatal(err)
 	}
-	indexHTML, err = ioutil.ReadAll(index)
+	b, err := ioutil.ReadAll(index)
 	if err != nil {
 		log.Fatal(err)
 	}
+	tmpl := template.Must(template.New("").Parse(string(b)))
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, struct {
+		Version string
+	}{
+		MogVersion,
+	}); err != nil {
+		log.Fatal(err)
+	}
+	indexHTML = buf.Bytes()
 	router := httprouter.New()
 	router.GET("/api/cmd/:cmd", JSON(srv.Cmd))
 	router.GET("/api/data/:type", JSON(srv.Data))
