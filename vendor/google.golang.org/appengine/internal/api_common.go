@@ -1,3 +1,7 @@
+// Copyright 2015 Google Inc. All rights reserved.
+// Use of this source code is governed by the Apache 2.0
+// license that can be found in the LICENSE file.
+
 package internal
 
 import (
@@ -5,23 +9,23 @@ import (
 	netcontext "golang.org/x/net/context"
 )
 
-type callOverrideFunc func(ctx netcontext.Context, service, method string, in, out proto.Message) error
+type CallOverrideFunc func(ctx netcontext.Context, service, method string, in, out proto.Message) error
 
-var callOverrideKey = "holds []callOverrideFunc"
+var callOverrideKey = "holds []CallOverrideFunc"
 
-func WithCallOverride(ctx netcontext.Context, f callOverrideFunc) netcontext.Context {
+func WithCallOverride(ctx netcontext.Context, f CallOverrideFunc) netcontext.Context {
 	// We avoid appending to any existing call override
 	// so we don't risk overwriting a popped stack below.
-	var cofs []callOverrideFunc
-	if uf, ok := ctx.Value(&callOverrideKey).([]callOverrideFunc); ok {
+	var cofs []CallOverrideFunc
+	if uf, ok := ctx.Value(&callOverrideKey).([]CallOverrideFunc); ok {
 		cofs = append(cofs, uf...)
 	}
 	cofs = append(cofs, f)
 	return netcontext.WithValue(ctx, &callOverrideKey, cofs)
 }
 
-func callOverrideFromContext(ctx netcontext.Context) (callOverrideFunc, netcontext.Context, bool) {
-	cofs, _ := ctx.Value(&callOverrideKey).([]callOverrideFunc)
+func callOverrideFromContext(ctx netcontext.Context) (CallOverrideFunc, netcontext.Context, bool) {
+	cofs, _ := ctx.Value(&callOverrideKey).([]CallOverrideFunc)
 	if len(cofs) == 0 {
 		return nil, nil, false
 	}
@@ -48,7 +52,7 @@ func WithAppIDOverride(ctx netcontext.Context, appID string) netcontext.Context 
 
 var namespaceKey = "holds the namespace string"
 
-func WithNamespace(ctx netcontext.Context, ns string) netcontext.Context {
+func withNamespace(ctx netcontext.Context, ns string) netcontext.Context {
 	return netcontext.WithValue(ctx, &namespaceKey, ns)
 }
 
@@ -74,4 +78,24 @@ func Logf(ctx netcontext.Context, level int64, format string, args ...interface{
 		return
 	}
 	logf(fromContext(ctx), level, format, args...)
+}
+
+// NamespacedContext wraps a Context to support namespaces.
+func NamespacedContext(ctx netcontext.Context, namespace string) netcontext.Context {
+	n := &namespacedContext{
+		namespace: namespace,
+	}
+	return withNamespace(WithCallOverride(ctx, n.call), namespace)
+}
+
+type namespacedContext struct {
+	namespace string
+}
+
+func (n *namespacedContext) call(ctx netcontext.Context, service, method string, in, out proto.Message) error {
+	// Apply any namespace mods.
+	if mod, ok := NamespaceMods[service]; ok {
+		mod(in, n.namespace)
+	}
+	return Call(ctx, service, method, in, out)
 }

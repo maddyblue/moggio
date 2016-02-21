@@ -22,6 +22,9 @@ Documentation provided by GoDoc.
 
 ## Changes
 
+* Version 1.0.3
+    - Fix decoding of FLAC files with wasted bits-per-sample (see [#12](https://github.com/mewkiz/flac/issues/12)).
+
 * Version 1.0.2
     - Fix decoding of blocking strategy (see [#9](https://github.com/mewkiz/flac/pull/9)). Thanks to [Sergey Didyk](https://github.com/sdidyk).
 

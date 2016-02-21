@@ -29,7 +29,7 @@ package mpa
 // main_data_begin.
 type reservoirReader struct {
 	stream  *bitReader
-	buffer  [1440 - 4 - 17 + 511]byte
+	buffer  [1441 - 4 - 17 + 511]byte
 	head    int  // index of the first unread byte in the buffer
 	limit   int  // index of the first byte not in the buffer
 	current byte // byte being read, left-shifted by the # of bits read so far

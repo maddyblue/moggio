@@ -1,13 +1,17 @@
-# Go App Engine for Managed VMs
+# Go App Engine packages
 
 [![Build Status](https://travis-ci.org/golang/appengine.svg)](https://travis-ci.org/golang/appengine)
 
-This repository supports the Go runtime for Managed VMs on App Engine.
+This repository supports the Go runtime on App Engine,
+including both classic App Engine and Managed VMs.
 It provides APIs for interacting with App Engine services.
 Its canonical import path is `google.golang.org/appengine`.
 
-See https://cloud.google.com/appengine/docs/go/managed-vms/
+See https://cloud.google.com/appengine/docs/go/
 for more information.
+
+File issue reports and feature requests on the [Google App Engine issue
+tracker](https://code.google.com/p/googleappengine/issues/entry?template=Go%20defect).
 
 ## Directory structure
 The top level directory of this repository is the `appengine` package. It
@@ -21,15 +25,14 @@ should not directly import any package under `internal`.
 
 ## Updating a Go App Engine app
 
-This section describes how to update a traditional Go App Engine app to run on Managed VMs.
+This section describes how to update a traditional Go App Engine app to use
+these packages.
 
-### 1. Update YAML files
+### 1. Update YAML files (Managed VMs only)
 
 The `app.yaml` file (and YAML files for modules) should have these new lines added:
 ```
 vm: true
-manual_scaling:
-  instances: 1
 ```
 See https://cloud.google.com/appengine/docs/go/modules/#Go_Instance_scaling_and_class for details.
 
@@ -60,12 +63,11 @@ This list summarises the differences:
 * `search.FieldLoadSaver` now handles document metadata.
 * `urlfetch.Transport` no longer has a Deadline field; set a deadline on the
   `context.Context` instead.
+* `aetest` no longer declares its own Context type, and uses the standard one instead.
 * `taskqueue.QueueStats` no longer takes a maxTasks argument. That argument has been
   deprecated and unused for a long time.
-* `appengine/aetest`, `appengine/cloudsql` and `appengine/runtime` have not been ported yet.
 * `appengine.BackendHostname` and `appengine.BackendInstance` were for the deprecated backends feature.
   Use `appengine.ModuleHostname`and `appengine.ModuleName` instead.
-* `appengine.IsCapabilityDisabled` and `appengine/capability` are obsolete.
 * Most of `appengine/file` and parts of `appengine/blobstore` are deprecated.
   Use [Google Cloud Storage](https://godoc.org/google.golang.org/cloud/storage) instead.
 * `appengine/socket` is not required on Managed VMs. Use the standard `net` package instead.

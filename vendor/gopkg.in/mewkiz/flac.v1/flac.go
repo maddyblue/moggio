@@ -163,6 +163,9 @@ func Open(path string) (stream *Stream, err error) {
 		return nil, err
 	}
 	stream, err = New(f)
+	if err != nil {
+		return nil, err
+	}
 	stream.c = f
 	return stream, err
 }

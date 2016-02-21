@@ -199,7 +199,7 @@ func (block *Block) parseCueSheet() error {
 }
 
 // stringFromSZ converts the provided byte slice to a string after terminating
-// it at the first occurance of a NULL character.
+// it at the first occurrence of a NULL character.
 func stringFromSZ(buf []byte) string {
 	pos := bytes.IndexByte(buf, 0)
 	if pos == -1 {

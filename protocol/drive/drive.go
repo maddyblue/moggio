@@ -8,11 +8,11 @@ import (
 	"net/http"
 	"reflect"
 
-	"github.com/google/google-api-go-client/drive/v2"
 	"github.com/mjibson/mog/codec"
 	"github.com/mjibson/mog/protocol"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
+	"google.golang.org/api/drive/v2"
 )
 
 var config *oauth2.Config

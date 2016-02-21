@@ -37,6 +37,7 @@ import (
 	"bufio"
 	"bytes"
 	"encoding"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -169,20 +170,12 @@ func writeName(w *textWriter, props *Properties) error {
 	return nil
 }
 
-var (
-	messageSetType = reflect.TypeOf((*MessageSet)(nil)).Elem()
-)
-
 // raw is the interface satisfied by RawMessage.
 type raw interface {
 	Bytes() []byte
 }
 
 func writeStruct(w *textWriter, sv reflect.Value) error {
-	if sv.Type() == messageSetType {
-		return writeMessageSet(w, sv.Addr().Interface().(*MessageSet))
-	}
-
 	st := sv.Type()
 	sprops := GetProperties(st)
 	for i := 0; i < sv.NumField(); i++ {
@@ -319,6 +312,33 @@ func writeStruct(w *textWriter, sv reflect.Value) error {
 			// proto3 non-repeated scalar field; skip if zero value
 			if isProto3Zero(fv) {
 				continue
+			}
+		}
+
+		if fv.Kind() == reflect.Interface {
+			// Check if it is a oneof.
+			if st.Field(i).Tag.Get("protobuf_oneof") != "" {
+				// fv is nil, or holds a pointer to generated struct.
+				// That generated struct has exactly one field,
+				// which has a protobuf struct tag.
+				if fv.IsNil() {
+					continue
+				}
+				inner := fv.Elem().Elem() // interface -> *T -> T
+				tag := inner.Type().Field(0).Tag.Get("protobuf")
+				props = new(Properties) // Overwrite the outer props var, but not its pointee.
+				props.Parse(tag)
+				// Write the value in the oneof, not the oneof itself.
+				fv = inner.Field(0)
+
+				// Special case to cope with malformed messages gracefully:
+				// If the value in the oneof is a nil pointer, don't panic
+				// in writeAny.
+				if fv.Kind() == reflect.Ptr && fv.IsNil() {
+					// Use errors.New so writeAny won't render quotes.
+					msg := errors.New("/* nil */")
+					fv = reflect.ValueOf(&msg).Elem()
+				}
 			}
 		}
 
@@ -497,44 +517,6 @@ func writeString(w *textWriter, s string) error {
 	return w.WriteByte('"')
 }
 
-func writeMessageSet(w *textWriter, ms *MessageSet) error {
-	for _, item := range ms.Item {
-		id := *item.TypeId
-		if msd, ok := messageSetMap[id]; ok {
-			// Known message set type.
-			if _, err := fmt.Fprintf(w, "[%s]: <\n", msd.name); err != nil {
-				return err
-			}
-			w.indent()
-
-			pb := reflect.New(msd.t.Elem())
-			if err := Unmarshal(item.Message, pb.Interface().(Message)); err != nil {
-				if _, err := fmt.Fprintf(w, "/* bad message: %v */\n", err); err != nil {
-					return err
-				}
-			} else {
-				if err := writeStruct(w, pb.Elem()); err != nil {
-					return err
-				}
-			}
-		} else {
-			// Unknown type.
-			if _, err := fmt.Fprintf(w, "[%d]: <\n", id); err != nil {
-				return err
-			}
-			w.indent()
-			if err := writeUnknownStruct(w, item.Message); err != nil {
-				return err
-			}
-		}
-		w.unindent()
-		if _, err := w.Write(gtNewline); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 func writeUnknownStruct(w *textWriter, data []byte) (err error) {
 	if !w.compact {
 		if _, err := fmt.Fprintf(w, "/* %d unknown bytes */\n", len(data)); err != nil {
@@ -703,7 +685,14 @@ func (w *textWriter) writeIndent() {
 	w.complete = false
 }
 
-func marshalText(w io.Writer, pb Message, compact bool) error {
+// TextMarshaler is a configurable text format marshaler.
+type TextMarshaler struct {
+	Compact bool // use compact text format (one line).
+}
+
+// Marshal writes a given protocol buffer in text format.
+// The only errors returned are from w.
+func (m *TextMarshaler) Marshal(w io.Writer, pb Message) error {
 	val := reflect.ValueOf(pb)
 	if pb == nil || val.IsNil() {
 		w.Write([]byte("<nil>"))
@@ -718,7 +707,7 @@ func marshalText(w io.Writer, pb Message, compact bool) error {
 	aw := &textWriter{
 		w:        ww,
 		complete: true,
-		compact:  compact,
+		compact:  m.Compact,
 	}
 
 	if tm, ok := pb.(encoding.TextMarshaler); ok {
@@ -745,25 +734,29 @@ func marshalText(w io.Writer, pb Message, compact bool) error {
 	return nil
 }
 
+// Text is the same as Marshal, but returns the string directly.
+func (m *TextMarshaler) Text(pb Message) string {
+	var buf bytes.Buffer
+	m.Marshal(&buf, pb)
+	return buf.String()
+}
+
+var (
+	defaultTextMarshaler = TextMarshaler{}
+	compactTextMarshaler = TextMarshaler{Compact: true}
+)
+
+// TODO: consider removing some of the Marshal functions below.
+
 // MarshalText writes a given protocol buffer in text format.
 // The only errors returned are from w.
-func MarshalText(w io.Writer, pb Message) error {
-	return marshalText(w, pb, false)
-}
+func MarshalText(w io.Writer, pb Message) error { return defaultTextMarshaler.Marshal(w, pb) }
 
 // MarshalTextString is the same as MarshalText, but returns the string directly.
-func MarshalTextString(pb Message) string {
-	var buf bytes.Buffer
-	marshalText(&buf, pb, false)
-	return buf.String()
-}
+func MarshalTextString(pb Message) string { return defaultTextMarshaler.Text(pb) }
 
 // CompactText writes a given protocol buffer in compact text format (one line).
-func CompactText(w io.Writer, pb Message) error { return marshalText(w, pb, true) }
+func CompactText(w io.Writer, pb Message) error { return compactTextMarshaler.Marshal(w, pb) }
 
 // CompactTextString is the same as CompactText, but returns the string directly.
-func CompactTextString(pb Message) string {
-	var buf bytes.Buffer
-	marshalText(&buf, pb, true)
-	return buf.String()
-}
+func CompactTextString(pb Message) string { return compactTextMarshaler.Text(pb) }

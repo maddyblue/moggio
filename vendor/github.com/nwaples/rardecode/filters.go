@@ -94,12 +94,12 @@ func deltaFilterV3(r map[int]uint32, global, buf []byte, offset int64) ([]byte, 
 }
 
 func filterArm(buf []byte, offset int64) ([]byte, error) {
-	for i := 0; len(buf)-i > 3; {
+	for i := 0; len(buf)-i > 3; i += 4 {
 		if buf[i+3] == 0xeb {
 			n := uint(buf[i])
 			n += uint(buf[i+1]) * 0x100
 			n += uint(buf[i+2]) * 0x10000
-			n -= (n + uint(i)) / 4
+			n -= (uint(offset) + uint(i)) / 4
 			buf[i] = byte(n)
 			buf[i+1] = byte(n >> 8)
 			buf[i+2] = byte(n >> 16)

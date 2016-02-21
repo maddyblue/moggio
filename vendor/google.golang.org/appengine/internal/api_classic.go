@@ -1,3 +1,7 @@
+// Copyright 2015 Google Inc. All rights reserved.
+// Use of this source code is governed by the Apache 2.0
+// license that can be found in the LICENSE file.
+
 // +build appengine
 
 package internal
@@ -33,10 +37,19 @@ func withContext(parent netcontext.Context, c appengine.Context) netcontext.Cont
 	s := &basepb.StringProto{}
 	c.Call("__go__", "GetNamespace", &basepb.VoidProto{}, s, nil)
 	if ns := s.GetValue(); ns != "" {
-		ctx = WithNamespace(ctx, ns)
+		ctx = NamespacedContext(ctx, ns)
 	}
 
 	return ctx
+}
+
+func IncomingHeaders(ctx netcontext.Context) http.Header {
+	if c := fromContext(ctx); c != nil {
+		if req, ok := c.Request().(*http.Request); ok {
+			return req.Header
+		}
+	}
+	return nil
 }
 
 func WithContext(parent netcontext.Context, req *http.Request) netcontext.Context {
@@ -47,6 +60,13 @@ func WithContext(parent netcontext.Context, req *http.Request) netcontext.Contex
 func Call(ctx netcontext.Context, service, method string, in, out proto.Message) error {
 	if f, ctx, ok := callOverrideFromContext(ctx); ok {
 		return f(ctx, service, method, in, out)
+	}
+
+	// Handle already-done contexts quickly.
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
 	}
 
 	c := fromContext(ctx)
