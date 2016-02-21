@@ -1,4 +1,4 @@
-FROM golang:cross
+FROM golang
 
 RUN apt-get clean && apt-get update && apt-get install -y \
 		g++ \
