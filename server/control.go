@@ -590,10 +590,9 @@ func (srv *Server) commands() {
 	sendWaitData := func(c cmdWaitData) {
 		c.done <- srv.makeWaitData(c.wt)
 	}
-	isRefreshing := make(map[codec.ID]bool)
 	protocolRefresh := func(c cmdProtocolRefresh) {
 		id := codec.NewID(c.protocol, c.key)
-		if isRefreshing[id] {
+		if srv.inprogress[id] {
 			c.err <- nil
 			return
 		}
@@ -602,10 +601,11 @@ func (srv *Server) commands() {
 			c.err <- err
 			return
 		}
-		isRefreshing[id] = true
+		srv.inprogress[id] = true
+		broadcast(waitProtocols)
 		go func() {
 			defer func() {
-				delete(isRefreshing, id)
+				srv.ch <- cmdRemoveInProgress(id)
 			}()
 			f := inst.Refresh
 			if c.list {
