@@ -198,6 +198,7 @@ func (srv *Server) ProtocolRefresh(body io.Reader, form url.Values, ps httproute
 		key:      pd.Key,
 		list:     false,
 		doDelete: true,
+		err:      ch,
 	}
 	return nil, <-ch
 }
