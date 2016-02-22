@@ -665,9 +665,11 @@ func (srv *Server) commands() {
 				continue
 			}
 			save := true
+			doDroadcast := false
 			log.Printf("%T\n", c)
 			switch c := c.(type) {
 			case controlCmd:
+				doDroadcast = true
 				switch c {
 				case cmdPlay:
 					save = false
@@ -746,8 +748,10 @@ func (srv *Server) commands() {
 				panic(c)
 			}
 			if save {
-				broadcast(waitStatus)
 				queueSave()
+			}
+			if save || doDroadcast {
+				broadcast(waitStatus)
 			}
 		}
 	}
