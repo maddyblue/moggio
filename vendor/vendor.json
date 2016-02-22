@@ -158,7 +158,7 @@
 			"revisionTime": "2016-02-04T14:46:46-08:00"
 		},
 		{
-			"path": "google.golang.org/api/drive/v2",
+			"path": "google.golang.org/api/drive/v3",
 			"revision": "e6294e63a06b2be522ff3d328d8cacded0b1bd31",
 			"revisionTime": "2016-02-19T16:41:36+11:00"
 		},

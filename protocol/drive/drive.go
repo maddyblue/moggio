@@ -5,14 +5,13 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"net/http"
 	"reflect"
 
 	"github.com/mjibson/mog/codec"
 	"github.com/mjibson/mog/protocol"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
-	"google.golang.org/api/drive/v2"
+	"google.golang.org/api/drive/v3"
 )
 
 var config *oauth2.Config
@@ -32,10 +31,9 @@ func Init(clientID, clientSecret, redirect string) {
 	protocol.RegisterOAuth("drive", config, New, reflect.TypeOf(&Drive{}))
 }
 
-func (d *Drive) getService() (*drive.Service, *http.Client, error) {
+func (d *Drive) getService() (*drive.Service, error) {
 	c := config.Client(oauth2.NoContext, d.Token)
-	s, err := drive.New(c)
-	return s, c, err
+	return drive.New(c)
 }
 
 type Drive struct {
@@ -52,15 +50,17 @@ func New(params []string, token *oauth2.Token) (protocol.Instance, error) {
 	d := &Drive{
 		Token: token,
 	}
-	service, _, err := d.getService()
+	service, err := d.getService()
 	if err != nil {
+		panic(err)
 		return nil, err
 	}
-	about, err := service.About.Get().Do()
+	about, err := service.About.Get().Fields("user").Do()
 	if err != nil {
+		panic(err)
 		return nil, err
 	}
-	d.Name = about.Name
+	d.Name = about.User.EmailAddress
 	return d, nil
 }
 
@@ -95,15 +95,16 @@ func (d *Drive) GetSong(id codec.ID) (codec.Song, error) {
 func (d *Drive) reader(id string) codec.Reader {
 	return func() (io.ReadCloser, int64, error) {
 		log.Println("DRIVE", id)
-		service, client, err := d.getService()
+		service, err := d.getService()
 		if err != nil {
 			return nil, 0, err
 		}
-		file, err := service.Files.Get(id).Fields("downloadUrl").Do()
+		fgc := service.Files.Get(id)
+		file, err := fgc.Do()
 		if err != nil {
 			return nil, 0, err
 		}
-		resp, err := client.Get(file.DownloadUrl)
+		resp, err := fgc.Download()
 		if err != nil {
 			return nil, 0, err
 		}
@@ -111,12 +112,12 @@ func (d *Drive) reader(id string) codec.Reader {
 			resp.Body.Close()
 			return nil, 0, fmt.Errorf(resp.Status)
 		}
-		return resp.Body, file.FileSize, nil
+		return resp.Body, file.Size, nil
 	}
 }
 
 func (d *Drive) Refresh() (protocol.SongList, error) {
-	service, _, err := d.getService()
+	service, err := d.getService()
 	if err != nil {
 		return nil, err
 	}
@@ -128,14 +129,14 @@ func (d *Drive) Refresh() (protocol.SongList, error) {
 		fl, err := service.Files.
 			List().
 			PageToken(nextPage).
-			Fields("nextPageToken", "items(id,fileExtension,fileSize,title)").
-			MaxResults(1000).
+			Fields("nextPageToken", "files(fileExtension,id,name,size)").
+			PageSize(1000).
 			Do()
 		if err != nil {
 			return nil, err
 		}
 		nextPage = fl.NextPageToken
-		for _, f := range fl.Items {
+		for _, f := range fl.Files {
 			ss, _, err = codec.ByExtension(f.FileExtension, d.reader(f.Id))
 			if err != nil || len(ss) == 0 {
 				continue
@@ -144,7 +145,7 @@ func (d *Drive) Refresh() (protocol.SongList, error) {
 			for i, v := range ss {
 				info, _ := v.Info()
 				if info.Title == "" {
-					title := f.Title
+					title := f.Name
 					if len(ss) != 1 {
 						title += fmt.Sprintf(":%v", i)
 					}
