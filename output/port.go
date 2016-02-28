@@ -2,7 +2,7 @@
 
 package output
 
-import "github.com/gordonklaus/portaudio"
+import "github.com/helinwang/portaudio"
 
 type port struct {
 	st   *portaudio.Stream

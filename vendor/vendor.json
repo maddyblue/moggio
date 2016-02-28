@@ -28,9 +28,9 @@
 			"revisionTime": "2016-02-17T11:46:17+11:00"
 		},
 		{
-			"path": "github.com/gordonklaus/portaudio",
-			"revision": "c41f752f1e3fa5225a513d761c723f45bfe07b89",
-			"revisionTime": "2015-09-19T22:30:16+02:00"
+			"path": "github.com/helinwang/portaudio",
+			"revision": "035e99fec7e03c0f061bb8df7e2bfc1da1f28e83",
+			"revisionTime": "2016-02-24T16:12:44-08:00"
 		},
 		{
 			"path": "github.com/julienschmidt/httprouter",
