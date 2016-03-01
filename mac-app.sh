@@ -6,7 +6,7 @@ APPNAME=moggio
 DIR="$APPNAME.app/Contents/MacOS"
 OUTPUT="$DIR/$APPNAME"
 PA=libportaudio.2.dylib
-PALIB=/usr/local/lib/$PA
+PALIB=/usr/local/opt/portaudio/lib/$PA
 
 rm -rf $APPNAME.app
 mkdir -p $DIR
