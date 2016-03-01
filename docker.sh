@@ -13,7 +13,7 @@ build()
 		EXT=".exe"
 	fi
 	echo $GOOS $GOARCH $EXT
-	go build -o mog-$GOOS-$GOARCH$EXT -ldflags "-X github.com/mjibson/mog/server.MogVersion=$ver"
+	go build -o moggio-$GOOS-$GOARCH$EXT -ldflags "-X github.com/mjibson/moggio/server.MoggioVersion=$ver"
 }
 
 go version

@@ -1,4 +1,4 @@
-# mog
+# moggio
 
 An audio player written in Go.
 

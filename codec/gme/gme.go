@@ -9,7 +9,7 @@ import (
 	"strconv"
 
 	"github.com/mjibson/gme"
-	"github.com/mjibson/mog/codec"
+	"github.com/mjibson/moggio/codec"
 )
 
 func init() {

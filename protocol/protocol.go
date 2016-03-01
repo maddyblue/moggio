@@ -6,7 +6,7 @@ import (
 	"io"
 	"reflect"
 
-	"github.com/mjibson/mog/codec"
+	"github.com/mjibson/moggio/codec"
 	"golang.org/x/oauth2"
 )
 

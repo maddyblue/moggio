@@ -2,7 +2,7 @@
 
 set -e
 
-APPNAME=mog
+APPNAME=moggio
 DIR="$APPNAME.app/Contents/MacOS"
 OUTPUT="$DIR/$APPNAME"
 PA=libportaudio.2.dylib
@@ -21,11 +21,11 @@ cat > $DIR/../Info.plist << EOF
 <plist version="1.0">
 <dict>
         <key>CFBundleExecutable</key>
-        <string>mog</string>
+        <string>moggio</string>
         <key>CFBundleIdentifier</key>
-        <string>io.mog.Mog</string>
+        <string>io.moggio.Moggio</string>
         <key>CFBundleName</key>
-        <string>mog</string>
+        <string>moggio</string>
         <key>CFBundlePackageType</key>
         <string>APPL</string>
         <key>CFBundleSignature</key>
@@ -34,5 +34,5 @@ cat > $DIR/../Info.plist << EOF
 </plist>
 EOF
 
-rm -f mog.zip
-zip mog -r mog.app
+rm -f moggio.zip
+zip moggio -r moggio.app

@@ -9,10 +9,10 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/mjibson/mog/codec"
-	"github.com/mjibson/mog/codec/mpa"
-	"github.com/mjibson/mog/protocol"
-	"github.com/mjibson/mog/protocol/soundcloud/soundcloud"
+	"github.com/mjibson/moggio/codec"
+	"github.com/mjibson/moggio/codec/mpa"
+	"github.com/mjibson/moggio/protocol"
+	"github.com/mjibson/moggio/protocol/soundcloud/soundcloud"
 	"golang.org/x/oauth2"
 	"google.golang.org/api/googleapi"
 )

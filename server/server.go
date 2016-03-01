@@ -1,4 +1,4 @@
-// Package server implements the mog protocol.
+// Package server implements the moggio protocol.
 package server
 
 import (
@@ -23,8 +23,8 @@ import (
 	"time"
 
 	"github.com/boltdb/bolt"
-	"github.com/mjibson/mog/codec"
-	"github.com/mjibson/mog/protocol"
+	"github.com/mjibson/moggio/codec"
+	"github.com/mjibson/moggio/protocol"
 	"github.com/pkg/browser"
 )
 

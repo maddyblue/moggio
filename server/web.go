@@ -14,11 +14,11 @@ import (
 	"time"
 
 	"github.com/julienschmidt/httprouter"
-	"github.com/mjibson/mog/protocol"
+	"github.com/mjibson/moggio/protocol"
 	"golang.org/x/net/websocket"
 )
 
-var MogVersion string
+var MoggioVersion string
 
 var indexHTML []byte
 
@@ -41,7 +41,7 @@ func (srv *Server) GetMux(devMode bool) *http.ServeMux {
 	if err := tmpl.Execute(&buf, struct {
 		Version string
 	}{
-		MogVersion,
+		MoggioVersion,
 	}); err != nil {
 		log.Fatal(err)
 	}
@@ -57,7 +57,7 @@ func (srv *Server) GetMux(devMode bool) *http.ServeMux {
 	router.POST("/api/protocol/remove", JSON(srv.ProtocolRemove))
 	router.POST("/api/protocol/refresh", JSON(srv.ProtocolRefresh))
 
-	// Needs POST from local mog. Needs GET from App Engine redirect.
+	// Needs POST from local moggio. Needs GET from App Engine redirect.
 	router.GET("/api/token/register", srv.TokenRegister)
 	router.POST("/api/token/register", srv.TokenRegister)
 
@@ -73,7 +73,7 @@ func (srv *Server) GetMux(devMode bool) *http.ServeMux {
 // Serve to handle requests on incoming connections.
 func (srv *Server) ListenAndServe(addr string, devMode bool) error {
 	mux := srv.GetMux(devMode)
-	log.Println("mog: listening on", addr)
+	log.Println("moggio: listening on", addr)
 	return http.ListenAndServe(addr, mux)
 }
 

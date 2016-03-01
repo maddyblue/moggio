@@ -6,7 +6,7 @@ import (
 	"io"
 	"io/ioutil"
 
-	"github.com/mjibson/mog/codec"
+	"github.com/mjibson/moggio/codec"
 	"github.com/nwaples/rardecode"
 )
 

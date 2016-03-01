@@ -7,7 +7,7 @@ import (
 
 	"github.com/dhowden/tag"
 	"github.com/mccoyst/vorbis"
-	"github.com/mjibson/mog/codec"
+	"github.com/mjibson/moggio/codec"
 )
 
 func init() {

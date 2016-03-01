@@ -31906,7 +31906,7 @@ module.exports = function(listenables){
 var exports = module.exports = {};
 
 var FixedDataTable = require('fixed-data-table');
-var Mog = require('./mog.js');
+var Moggio = require('./moggio.js');
 var React = require('react');
 var Reflux = require('reflux');
 var Router = require('react-router');
@@ -31952,11 +31952,11 @@ function group(route, field, name) {
 exports.Artists = group('artist', 'Artist', 'Artists');
 exports.Albums = group('album', 'Album', 'Albums');
 
-},{"./mog.js":273,"fixed-data-table":51,"react":249,"react-router":76,"reflux":266,"underscore":269}],271:[function(require,module,exports){
+},{"./moggio.js":273,"fixed-data-table":51,"react":249,"react-router":76,"reflux":266,"underscore":269}],271:[function(require,module,exports){
 var exports = module.exports = {};
 
 var FixedDataTable = require('fixed-data-table');
-var Mog = require('./mog.js');
+var Moggio = require('./moggio.js');
 var React = require('react');
 var Reflux = require('reflux');
 var Router = require('react-router');
@@ -32003,21 +32003,21 @@ var Tracks = exports.Tracks = React.createClass({displayName: "Tracks",
 	play: function() {
 		var params = this.mkparams();
 		params.unshift(['clear']);
-		Mog.POST('/api/queue/change', params, function() {
-			Mog.POST('/api/cmd/play');
+		Moggio.POST('/api/queue/change', params, function() {
+			Moggio.POST('/api/cmd/play');
 		});
 	},
 	add: function() {
 		var params = this.mkparams();
-		Mog.POST('/api/queue/change', params);
+		Moggio.POST('/api/queue/change', params);
 	},
 	playTrack: function(index) {
 		return function() {
 			if (this.props.isqueue) {
 				idx = this.getIdx(index);
-				Mog.POST('/api/cmd/play_idx?idx=' + idx);
+				Moggio.POST('/api/cmd/play_idx?idx=' + idx);
 			} else {
-				Mog.POST('/api/cmd/play_track', this.getter(index).ID.UID);
+				Moggio.POST('/api/cmd/play_track', this.getter(index).ID.UID);
 			}
 		}.bind(this);
 	},
@@ -32034,7 +32034,7 @@ var Tracks = exports.Tracks = React.createClass({displayName: "Tracks",
 					['add', this.getter(index).ID.UID]
 				];
 			}
-			Mog.POST('/api/queue/change', params);
+			Moggio.POST('/api/queue/change', params);
 		}.bind(this);
 	},
 	sort: function(field) {
@@ -32131,11 +32131,11 @@ var Tracks = exports.Tracks = React.createClass({displayName: "Tracks",
 		return this.getter(index).idx - 1;
 	},
 	timeCellRenderer: function(str, key, data, index) {
-		return React.createElement("div", null, React.createElement(Mog.Time, {time: data.Info.Time}));
+		return React.createElement("div", null, React.createElement(Moggio.Time, {time: data.Info.Time}));
 	},
 	timeHeader: function() {
 		return function() {
-			return React.createElement(Mog.Icon, {name: "schedule", className: this.sortClass('Time'), onClick: this.sort('Time')});
+			return React.createElement(Moggio.Icon, {name: "schedule", className: this.sortClass('Time'), onClick: this.sort('Time')});
 		}.bind(this);
 	},
 	mkHeader: function(name, text) {
@@ -32163,7 +32163,7 @@ var Tracks = exports.Tracks = React.createClass({displayName: "Tracks",
 				React.createElement("span", {className: "nohover", style: {padding: '12px'}}, track), 
 				React.createElement("span", {className: "hover"}, 
 					React.createElement(Button, {onClick: this.playTrack(index), icon: true}, 
-						React.createElement(Mog.Icon, {name: "play_arrow"})
+						React.createElement(Moggio.Icon, {name: "play_arrow"})
 					)
 				)
 			)
@@ -32182,7 +32182,7 @@ var Tracks = exports.Tracks = React.createClass({displayName: "Tracks",
 				data.Info.Title, 
 				React.createElement("span", {className: "hover pull-right"}, 
 					React.createElement(Button, {onClick: this.appendTrack(index), icon: true}, 
-						React.createElement(Mog.Icon, {name: this.props.isqueue ? 'clear' : 'add'})
+						React.createElement(Moggio.Icon, {name: this.props.isqueue ? 'clear' : 'add'})
 					)
 				)
 			)
@@ -32324,7 +32324,7 @@ function searchClass(field, sort) {
 exports.Artist = searchClass('Artist', 'Album');
 exports.Album = searchClass('Album', 'Track');
 
-},{"./mdl.js":272,"./mog.js":273,"fixed-data-table":51,"react":249,"react-router":76,"reflux":266,"underscore":269}],272:[function(require,module,exports){
+},{"./mdl.js":272,"./moggio.js":273,"fixed-data-table":51,"react":249,"react-router":76,"reflux":266,"underscore":269}],272:[function(require,module,exports){
 var React = require('react');
 
 var exports = module.exports = {};
@@ -32506,7 +32506,7 @@ var Link = Router.Link;
 var RouteHandler = Router.RouteHandler;
 var Redirect = Router.Redirect;
 
-var Mog = require('./mog.js');
+var Moggio = require('./moggio.js');
 
 var Group = require('./group.js');
 var List = require('./list.js');
@@ -32526,11 +32526,11 @@ var App = React.createClass({displayName: "App",
 	componentDidMount: function() {
 		this.startWS();
 		var that = this;
-		fetch('https://api.github.com/repos/mjibson/mog/releases/latest')
+		fetch('https://api.github.com/repos/mjibson/moggio/releases/latest')
 		.then(function (r) {
 			r.json().then(function(j) {
 				var v = j.tag_name.substr(1);
-				if (j.tag_name == mogVersion) {
+				if (j.tag_name == moggioVersion) {
 					return;
 				}
 				that.setState({update: {
@@ -32575,7 +32575,7 @@ var App = React.createClass({displayName: "App",
 	},
 	logout: function(event) {
 		event.preventDefault();
-		Mog.POST('/api/token/register');
+		Moggio.POST('/api/token/register');
 	},
 	render: function() {
 		var overlay;
@@ -32583,7 +32583,7 @@ var App = React.createClass({displayName: "App",
 			overlay = (
 				React.createElement("div", {id: "overlay"}, 
 					React.createElement("div", {id: "overlay-text"}, 
-						"mog lost connection with server", 
+						"moggio lost connection with server", 
 						React.createElement("p", null), 
 						"attempting to reconnect..."
 					)
@@ -32650,7 +32650,7 @@ var App = React.createClass({displayName: "App",
 				React.createElement("div", {className: "mdl-layout mdl-js-layout mdl-layout--fixed-drawer" + ' ' +
 					"mdl-layout--overlay-drawer-button"}, 
 					React.createElement("div", {className: "mdl-layout__drawer"}, 
-						React.createElement("span", {className: "mdl-layout-title"}, "mog"), 
+						React.createElement("span", {className: "mdl-layout-title"}, "moggio"), 
 						React.createElement("nav", {className: "mdl-navigation"}, 
 							menuItems
 						), 
@@ -32690,7 +32690,7 @@ var Player = React.createClass({displayName: "Player",
 	],
 	cmd: function(cmd) {
 		return function() {
-			Mog.POST('/api/cmd/' + cmd);
+			Moggio.POST('/api/cmd/' + cmd);
 		};
 	},
 	getInitialState: function() {
@@ -32702,7 +32702,7 @@ var Player = React.createClass({displayName: "Player",
 		}
 		d.songStart = new Date() - d.Elapsed / 1e6;
 		this.setState(d);
-		var title = 'mog';
+		var title = 'moggio';
 		if (this.state.SongInfo && this.state.SongInfo.Title) {
 			title = this.state.SongInfo.Title + ' - ' + title;
 		}
@@ -32718,7 +32718,7 @@ var Player = React.createClass({displayName: "Player",
 		var offset = 80;
 		var pos = (event.clientX - offset) / (window.innerWidth - offset);
 		var s = pos * this.state.Time;
-		Mog.POST('/api/cmd/seek?pos=' + s + 'ns');
+		Moggio.POST('/api/cmd/seek?pos=' + s + 'ns');
 	},
 	openQueue: function() {
 		this.transitionTo('queue');
@@ -32868,11 +32868,11 @@ Router.run(routes, Router.HistoryLocation, function (Handler, state) {
 	React.render(React.createElement(Handler, {params: params}), document.getElementById('main'));
 });
 
-},{"./group.js":270,"./list.js":271,"./mdl.js":272,"./mog.js":273,"./playlist.js":275,"./protocol.js":276,"react":249,"react-router":76,"reflux":266,"underscore":269}],275:[function(require,module,exports){
+},{"./group.js":270,"./list.js":271,"./mdl.js":272,"./moggio.js":273,"./playlist.js":275,"./protocol.js":276,"react":249,"react-router":76,"reflux":266,"underscore":269}],275:[function(require,module,exports){
 var exports = module.exports = {};
 
 var List = require('./list.js');
-var Mog = require('./mog.js');
+var Moggio = require('./moggio.js');
 var React = require('react');
 var Reflux = require('reflux');
 var _ = require('underscore');
@@ -32886,7 +32886,7 @@ exports.Queue = React.createClass({displayName: "Queue",
 	},
 	clear: function() {
 		var params = [['clear']];
-		Mog.POST('/api/queue/change', params);
+		Moggio.POST('/api/queue/change', params);
 	},
 	save: function() {
 		var name = prompt("Playlist name:");
@@ -32902,7 +32902,7 @@ exports.Queue = React.createClass({displayName: "Queue",
 			return ['add', t.ID.UID];
 		});
 		params.unshift(['clear']);
-		Mog.POST('/api/playlist/change/' + name, params);
+		Moggio.POST('/api/playlist/change/' + name, params);
 	},
 	render: function() {
 		return (
@@ -32929,7 +32929,7 @@ exports.Playlist = React.createClass({displayName: "Playlist",
 			return;
 		}
 		var params = [['clear']];
-		Mog.POST('/api/playlist/change/' + this.props.params.Playlist, params);
+		Moggio.POST('/api/playlist/change/' + this.props.params.Playlist, params);
 	},
 	render: function() {
 		return (
@@ -32942,10 +32942,10 @@ exports.Playlist = React.createClass({displayName: "Playlist",
 	}
 });
 
-},{"./list.js":271,"./mdl.js":272,"./mog.js":273,"react":249,"reflux":266,"underscore":269}],276:[function(require,module,exports){
+},{"./list.js":271,"./mdl.js":272,"./moggio.js":273,"react":249,"reflux":266,"underscore":269}],276:[function(require,module,exports){
 var exports = module.exports = {};
 
-var Mog = require('./mog.js');
+var Moggio = require('./moggio.js');
 var React = require('react');
 var Reflux = require('reflux');
 var _ = require('underscore');
@@ -33064,7 +33064,7 @@ var Protocol = React.createClass({displayName: "Protocol",
 			protocol: this.props.protocol,
 			params: this.state.params,
 		};
-		Mog.POST('/api/protocol/add', params, function() {
+		Moggio.POST('/api/protocol/add', params, function() {
 			this.setState(this.getInitialState());
 		}.bind(this));
 	},
@@ -33105,13 +33105,13 @@ var Protocol = React.createClass({displayName: "Protocol",
 
 var ProtocolRow = React.createClass({displayName: "ProtocolRow",
 	remove: function() {
-		Mog.POST('/api/protocol/remove', {
+		Moggio.POST('/api/protocol/remove', {
 			protocol: this.props.protocol,
 			key: this.props.name,
 		});
 	},
 	refresh: function() {
-		Mog.POST('/api/protocol/refresh', {
+		Moggio.POST('/api/protocol/refresh', {
 			protocol: this.props.protocol,
 			key: this.props.name,
 		});
@@ -33136,7 +33136,7 @@ var ProtocolRow = React.createClass({displayName: "ProtocolRow",
 	}
 });
 
-},{"./mdl.js":272,"./mog.js":273,"react":249,"reflux":266,"underscore":269}],277:[function(require,module,exports){
+},{"./mdl.js":272,"./moggio.js":273,"react":249,"reflux":266,"underscore":269}],277:[function(require,module,exports){
 // shim for using process in browser
 
 var process = module.exports = {};

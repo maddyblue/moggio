@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/mjibson/mog/codec"
+	"github.com/mjibson/moggio/codec"
 	"gopkg.in/mewkiz/flac.v1"
 	"gopkg.in/mewkiz/flac.v1/frame"
 	"gopkg.in/mewkiz/flac.v1/meta"

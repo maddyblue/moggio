@@ -13,26 +13,26 @@ import (
 	"time"
 
 	"github.com/facebookgo/httpcontrol"
-	"github.com/mjibson/mog/server"
+	"github.com/mjibson/moggio/server"
 	"gopkg.in/fsnotify.v1"
 
 	// codecs
-	_ "github.com/mjibson/mog/codec/flac"
-	_ "github.com/mjibson/mog/codec/gme"
-	_ "github.com/mjibson/mog/codec/mpa"
-	_ "github.com/mjibson/mog/codec/nsf"
-	_ "github.com/mjibson/mog/codec/rar"
-	_ "github.com/mjibson/mog/codec/vorbis"
-	_ "github.com/mjibson/mog/codec/wav"
+	_ "github.com/mjibson/moggio/codec/flac"
+	_ "github.com/mjibson/moggio/codec/gme"
+	_ "github.com/mjibson/moggio/codec/mpa"
+	_ "github.com/mjibson/moggio/codec/nsf"
+	_ "github.com/mjibson/moggio/codec/rar"
+	_ "github.com/mjibson/moggio/codec/vorbis"
+	_ "github.com/mjibson/moggio/codec/wav"
 
 	// protocols
-	_ "github.com/mjibson/mog/protocol/bandcamp"
-	"github.com/mjibson/mog/protocol/drive"
-	"github.com/mjibson/mog/protocol/dropbox"
-	_ "github.com/mjibson/mog/protocol/file"
-	_ "github.com/mjibson/mog/protocol/gmusic"
-	"github.com/mjibson/mog/protocol/soundcloud"
-	_ "github.com/mjibson/mog/protocol/stream"
+	_ "github.com/mjibson/moggio/protocol/bandcamp"
+	"github.com/mjibson/moggio/protocol/drive"
+	"github.com/mjibson/moggio/protocol/dropbox"
+	_ "github.com/mjibson/moggio/protocol/file"
+	_ "github.com/mjibson/moggio/protocol/gmusic"
+	"github.com/mjibson/moggio/protocol/soundcloud"
+	_ "github.com/mjibson/moggio/protocol/stream"
 )
 
 var (
@@ -42,7 +42,7 @@ var (
 	flagDropbox    = flag.String("dropbox", "rnhpqsbed2q2ezn:ldref688unj74ld", "Dropbox API credentials of the form ClientID:ClientSecret")
 	flagSoundcloud = flag.String("soundcloud", "ec28c2226a0838d01edc6ed0014e462e:a115e94029d698f541960c8dc8560978", "SoundCloud API credentials of the form ClientID:ClientSecret")
 	flagDev        = flag.Bool("dev", false, "enable dev mode")
-	//flagCentral = flag.String("central", "https://mog-music-client.appspot.com", "Central Mog data server; empty to disable")
+	//flagCentral = flag.String("central", "https://moggio-music-client.appspot.com", "Central Moggio data server; empty to disable")
 	stateFile      = flag.String("state", "", "specify non-default statefile location")
 )
 
@@ -88,15 +88,15 @@ func main() {
 	if *stateFile == "" {
 		switch {
 		case *flagDev:
-			*stateFile = "mog.state"
+			*stateFile = "moggio.state"
 		case runtime.GOOS == "windows":
-			dir := filepath.Join(os.Getenv("APPDATA"), "mog")
+			dir := filepath.Join(os.Getenv("APPDATA"), "moggio")
 			if err := os.MkdirAll(dir, 0600); err != nil {
 				log.Fatal(err)
 			}
-			*stateFile = filepath.Join(dir, "mog.state")
+			*stateFile = filepath.Join(dir, "moggio.state")
 		default:
-			*stateFile = filepath.Join(os.Getenv("HOME"), ".mog.state")
+			*stateFile = filepath.Join(os.Getenv("HOME"), ".moggio.state")
 		}
 	}
 	log.Fatal(server.ListenAndServe(*stateFile, *flagAddr, "", *flagDev))
@@ -114,7 +114,7 @@ func browserify() {
 	c := exec.Command("watchify",
 		"-t", "[", "reactify", "--es6", "]",
 		filepath.Join(src, "nav.js"),
-		"-o", filepath.Join(js, "mog.js"),
+		"-o", filepath.Join(js, "moggio.js"),
 		"--verbose",
 	)
 	c.Stderr = os.Stderr
@@ -188,5 +188,5 @@ func watch(root, pattern string, f func()) {
 	}()
 }
 
-//go:generate browserify -t [ reactify --es6 ] server/static/src/nav.js -o server/static/js/mog.js
+//go:generate browserify -t [ reactify --es6 ] server/static/src/nav.js -o server/static/js/moggio.js
 //go:generate esc -o server/static.go -pkg server -prefix server server/static/index.html server/static/css server/static/fonts server/static/js

@@ -10,7 +10,7 @@ var Link = Router.Link;
 var RouteHandler = Router.RouteHandler;
 var Redirect = Router.Redirect;
 
-var Mog = require('./mog.js');
+var Moggio = require('./moggio.js');
 
 var Group = require('./group.js');
 var List = require('./list.js');
@@ -30,11 +30,11 @@ var App = React.createClass({
 	componentDidMount: function() {
 		this.startWS();
 		var that = this;
-		fetch('https://api.github.com/repos/mjibson/mog/releases/latest')
+		fetch('https://api.github.com/repos/mjibson/moggio/releases/latest')
 		.then(function (r) {
 			r.json().then(function(j) {
 				var v = j.tag_name.substr(1);
-				if (j.tag_name == mogVersion) {
+				if (j.tag_name == moggioVersion) {
 					return;
 				}
 				that.setState({update: {
@@ -79,7 +79,7 @@ var App = React.createClass({
 	},
 	logout: function(event) {
 		event.preventDefault();
-		Mog.POST('/api/token/register');
+		Moggio.POST('/api/token/register');
 	},
 	render: function() {
 		var overlay;
@@ -87,7 +87,7 @@ var App = React.createClass({
 			overlay = (
 				<div id="overlay">
 					<div id="overlay-text">
-						mog lost connection with server
+						moggio lost connection with server
 						<p/>
 						attempting to reconnect...
 					</div>
@@ -154,7 +154,7 @@ var App = React.createClass({
 				<div className="mdl-layout mdl-js-layout mdl-layout--fixed-drawer
 					mdl-layout--overlay-drawer-button">
 					<div className="mdl-layout__drawer">
-						<span className="mdl-layout-title">mog</span>
+						<span className="mdl-layout-title">moggio</span>
 						<nav className="mdl-navigation">
 							{menuItems}
 						</nav>
@@ -194,7 +194,7 @@ var Player = React.createClass({
 	],
 	cmd: function(cmd) {
 		return function() {
-			Mog.POST('/api/cmd/' + cmd);
+			Moggio.POST('/api/cmd/' + cmd);
 		};
 	},
 	getInitialState: function() {
@@ -206,7 +206,7 @@ var Player = React.createClass({
 		}
 		d.songStart = new Date() - d.Elapsed / 1e6;
 		this.setState(d);
-		var title = 'mog';
+		var title = 'moggio';
 		if (this.state.SongInfo && this.state.SongInfo.Title) {
 			title = this.state.SongInfo.Title + ' - ' + title;
 		}
@@ -222,7 +222,7 @@ var Player = React.createClass({
 		var offset = 80;
 		var pos = (event.clientX - offset) / (window.innerWidth - offset);
 		var s = pos * this.state.Time;
-		Mog.POST('/api/cmd/seek?pos=' + s + 'ns');
+		Moggio.POST('/api/cmd/seek?pos=' + s + 'ns');
 	},
 	openQueue: function() {
 		this.transitionTo('queue');

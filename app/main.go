@@ -14,7 +14,7 @@ import (
 
 	"github.com/mjibson/appstats"
 	"github.com/mjibson/goon"
-	"github.com/mjibson/mog/models"
+	"github.com/mjibson/moggio/models"
 	"golang.org/x/net/context"
 	"google.golang.org/appengine/datastore"
 	"google.golang.org/appengine/user"

@@ -1,7 +1,7 @@
 var exports = module.exports = {};
 
 var List = require('./list.js');
-var Mog = require('./mog.js');
+var Moggio = require('./moggio.js');
 var React = require('react');
 var Reflux = require('reflux');
 var _ = require('underscore');
@@ -15,7 +15,7 @@ exports.Queue = React.createClass({
 	},
 	clear: function() {
 		var params = [['clear']];
-		Mog.POST('/api/queue/change', params);
+		Moggio.POST('/api/queue/change', params);
 	},
 	save: function() {
 		var name = prompt("Playlist name:");
@@ -31,7 +31,7 @@ exports.Queue = React.createClass({
 			return ['add', t.ID.UID];
 		});
 		params.unshift(['clear']);
-		Mog.POST('/api/playlist/change/' + name, params);
+		Moggio.POST('/api/playlist/change/' + name, params);
 	},
 	render: function() {
 		return (
@@ -58,7 +58,7 @@ exports.Playlist = React.createClass({
 			return;
 		}
 		var params = [['clear']];
-		Mog.POST('/api/playlist/change/' + this.props.params.Playlist, params);
+		Moggio.POST('/api/playlist/change/' + this.props.params.Playlist, params);
 	},
 	render: function() {
 		return (

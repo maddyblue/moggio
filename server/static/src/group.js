@@ -1,7 +1,7 @@
 var exports = module.exports = {};
 
 var FixedDataTable = require('fixed-data-table');
-var Mog = require('./mog.js');
+var Moggio = require('./moggio.js');
 var React = require('react');
 var Reflux = require('reflux');
 var Router = require('react-router');

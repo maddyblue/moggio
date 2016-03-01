@@ -12,9 +12,9 @@ import (
 	"time"
 
 	"github.com/bradfitz/slice"
-	"github.com/mjibson/mog/codec"
-	"github.com/mjibson/mog/models"
-	"github.com/mjibson/mog/protocol"
+	"github.com/mjibson/moggio/codec"
+	"github.com/mjibson/moggio/models"
+	"github.com/mjibson/moggio/protocol"
 	"golang.org/x/net/websocket"
 	"golang.org/x/oauth2"
 )

@@ -1,7 +1,7 @@
 var exports = module.exports = {};
 
 var FixedDataTable = require('fixed-data-table');
-var Mog = require('./mog.js');
+var Moggio = require('./moggio.js');
 var React = require('react');
 var Reflux = require('reflux');
 var Router = require('react-router');
@@ -48,21 +48,21 @@ var Tracks = exports.Tracks = React.createClass({
 	play: function() {
 		var params = this.mkparams();
 		params.unshift(['clear']);
-		Mog.POST('/api/queue/change', params, function() {
-			Mog.POST('/api/cmd/play');
+		Moggio.POST('/api/queue/change', params, function() {
+			Moggio.POST('/api/cmd/play');
 		});
 	},
 	add: function() {
 		var params = this.mkparams();
-		Mog.POST('/api/queue/change', params);
+		Moggio.POST('/api/queue/change', params);
 	},
 	playTrack: function(index) {
 		return function() {
 			if (this.props.isqueue) {
 				idx = this.getIdx(index);
-				Mog.POST('/api/cmd/play_idx?idx=' + idx);
+				Moggio.POST('/api/cmd/play_idx?idx=' + idx);
 			} else {
-				Mog.POST('/api/cmd/play_track', this.getter(index).ID.UID);
+				Moggio.POST('/api/cmd/play_track', this.getter(index).ID.UID);
 			}
 		}.bind(this);
 	},
@@ -79,7 +79,7 @@ var Tracks = exports.Tracks = React.createClass({
 					['add', this.getter(index).ID.UID]
 				];
 			}
-			Mog.POST('/api/queue/change', params);
+			Moggio.POST('/api/queue/change', params);
 		}.bind(this);
 	},
 	sort: function(field) {
@@ -176,11 +176,11 @@ var Tracks = exports.Tracks = React.createClass({
 		return this.getter(index).idx - 1;
 	},
 	timeCellRenderer: function(str, key, data, index) {
-		return <div><Mog.Time time={data.Info.Time} /></div>;
+		return <div><Moggio.Time time={data.Info.Time} /></div>;
 	},
 	timeHeader: function() {
 		return function() {
-			return <Mog.Icon name='schedule' className={this.sortClass('Time')} onClick={this.sort('Time')} />;
+			return <Moggio.Icon name='schedule' className={this.sortClass('Time')} onClick={this.sort('Time')} />;
 		}.bind(this);
 	},
 	mkHeader: function(name, text) {
@@ -208,7 +208,7 @@ var Tracks = exports.Tracks = React.createClass({
 				<span className="nohover" style={{padding: '12px'}}>{track}</span>
 				<span className="hover">
 					<Button onClick={this.playTrack(index)} icon={true}>
-						<Mog.Icon name="play_arrow"/>
+						<Moggio.Icon name="play_arrow"/>
 					</Button>
 				</span>
 			</div>
@@ -227,7 +227,7 @@ var Tracks = exports.Tracks = React.createClass({
 				{data.Info.Title}
 				<span className="hover pull-right">
 					<Button onClick={this.appendTrack(index)} icon={true}>
-						<Mog.Icon name={this.props.isqueue ? 'clear' : 'add'} />
+						<Moggio.Icon name={this.props.isqueue ? 'clear' : 'add'} />
 					</Button>
 				</span>
 			</div>

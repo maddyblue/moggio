@@ -6,7 +6,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/mjibson/mog/output"
+	"github.com/mjibson/moggio/output"
 )
 
 func (srv *Server) audio() {
@@ -59,7 +59,7 @@ func (srv *Server) audio() {
 	setParams := func(c audioSetParams) {
 		out, err = output.Get(c.sr, c.ch)
 		if err != nil {
-			c.err <- fmt.Errorf("mog: could not open audio (%v, %v): %v", c.sr, c.ch, err)
+			c.err <- fmt.Errorf("moggio: could not open audio (%v, %v): %v", c.sr, c.ch, err)
 			return
 		}
 		dur = time.Second / (time.Duration(c.sr * c.ch))

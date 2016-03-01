@@ -6,7 +6,7 @@ import (
 	"io/ioutil"
 
 	"github.com/mjibson/go-dsp/wav"
-	"github.com/mjibson/mog/codec"
+	"github.com/mjibson/moggio/codec"
 )
 
 func init() {

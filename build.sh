@@ -7,7 +7,7 @@ if [ -z "$1" ]; then
 	exit
 fi
 
-docker build -t mjibson/mog .
+docker build -t mjibson/moggio .
 
-DIR=/go/src/github.com/mjibson/mog
-docker run --rm -v "$(pwd)":$DIR -w $DIR mjibson/mog sh docker.sh $1
+DIR=/go/src/github.com/mjibson/moggio
+docker run --rm -v "$(pwd)":$DIR -w $DIR mjibson/moggio sh docker.sh $1

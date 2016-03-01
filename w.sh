@@ -4,7 +4,7 @@ set -e
 
 while true; do
 	time go install
-	GOTRACEBACK=all mog -w -dev
+	GOTRACEBACK=all moggio -w -dev
 	if [ $? != 0 ] ; then
 		exit
 	fi

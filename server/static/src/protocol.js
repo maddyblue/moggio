@@ -1,6 +1,6 @@
 var exports = module.exports = {};
 
-var Mog = require('./mog.js');
+var Moggio = require('./moggio.js');
 var React = require('react');
 var Reflux = require('reflux');
 var _ = require('underscore');
@@ -119,7 +119,7 @@ var Protocol = React.createClass({
 			protocol: this.props.protocol,
 			params: this.state.params,
 		};
-		Mog.POST('/api/protocol/add', params, function() {
+		Moggio.POST('/api/protocol/add', params, function() {
 			this.setState(this.getInitialState());
 		}.bind(this));
 	},
@@ -160,13 +160,13 @@ var Protocol = React.createClass({
 
 var ProtocolRow = React.createClass({
 	remove: function() {
-		Mog.POST('/api/protocol/remove', {
+		Moggio.POST('/api/protocol/remove', {
 			protocol: this.props.protocol,
 			key: this.props.name,
 		});
 	},
 	refresh: function() {
-		Mog.POST('/api/protocol/refresh', {
+		Moggio.POST('/api/protocol/refresh', {
 			protocol: this.props.protocol,
 			key: this.props.name,
 		});

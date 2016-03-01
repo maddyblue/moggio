@@ -11,9 +11,9 @@ import (
 	"testing"
 	"time"
 
-	_ "github.com/mjibson/mog/codec/mpa"
-	_ "github.com/mjibson/mog/codec/nsf"
-	_ "github.com/mjibson/mog/protocol/file"
+	_ "github.com/mjibson/moggio/codec/mpa"
+	_ "github.com/mjibson/moggio/codec/nsf"
+	_ "github.com/mjibson/moggio/protocol/file"
 )
 
 func TestServer(t *testing.T) {

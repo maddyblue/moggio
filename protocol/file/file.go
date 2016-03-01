@@ -9,8 +9,8 @@ import (
 	"path/filepath"
 	"reflect"
 
-	"github.com/mjibson/mog/codec"
-	"github.com/mjibson/mog/protocol"
+	"github.com/mjibson/moggio/codec"
+	"github.com/mjibson/moggio/protocol"
 	"golang.org/x/oauth2"
 )
 

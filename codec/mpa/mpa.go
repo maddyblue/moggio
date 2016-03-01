@@ -9,7 +9,7 @@ import (
 	"github.com/dhowden/tag"
 	"github.com/korandiz/mpa"
 	"github.com/korandiz/mpseek"
-	"github.com/mjibson/mog/codec"
+	"github.com/mjibson/moggio/codec"
 )
 
 func init() {

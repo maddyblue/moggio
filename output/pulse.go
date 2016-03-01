@@ -18,7 +18,7 @@ func get(sampleRate, channels int) (Output, error) {
 	o := new(output)
 	var err error
 	ss := pulse.SampleSpec{pulse.SAMPLE_FLOAT32LE, uint32(sampleRate), uint8(channels)}
-	o.st, err = pulse.Playback("mog", "mog", &ss)
+	o.st, err = pulse.Playback("moggio", "moggio", &ss)
 	if err != nil {
 		return nil, err
 	}

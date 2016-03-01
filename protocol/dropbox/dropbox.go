@@ -8,9 +8,9 @@ import (
 	"path"
 	"reflect"
 
-	"github.com/mjibson/mog/codec"
-	"github.com/mjibson/mog/protocol"
-	"github.com/mjibson/mog/protocol/dropbox/dropbox"
+	"github.com/mjibson/moggio/codec"
+	"github.com/mjibson/moggio/protocol"
+	"github.com/mjibson/moggio/protocol/dropbox/dropbox"
 	"golang.org/x/oauth2"
 )
 

@@ -10,9 +10,9 @@ import (
 	"time"
 
 	"github.com/mjibson/gmusic"
-	"github.com/mjibson/mog/codec"
-	"github.com/mjibson/mog/codec/mpa"
-	"github.com/mjibson/mog/protocol"
+	"github.com/mjibson/moggio/codec"
+	"github.com/mjibson/moggio/codec/mpa"
+	"github.com/mjibson/moggio/protocol"
 	"golang.org/x/oauth2"
 )
 
