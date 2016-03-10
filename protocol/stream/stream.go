@@ -6,6 +6,7 @@ import (
 	"encoding/gob"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
@@ -48,7 +49,7 @@ func New(params []string, token *oauth2.Token) (protocol.Instance, error) {
 	return &s, nil
 }
 
-// tryPLS checks if u is a URL to a .pls file. If it is, it returns the
+// tryPLS checks if u is a URL to a .pls or .m3u file. If it is, it returns the
 // first File entry of as target and first Title entry as name.
 func tryPLS(u string) (target, name string) {
 	target = u
@@ -57,8 +58,13 @@ func tryPLS(u string) (target, name string) {
 		return
 	}
 	defer resp.Body.Close()
-	sc := bufio.NewScanner(io.LimitReader(resp.Body, 1024))
+	b, err := ioutil.ReadAll(io.LimitReader(resp.Body, 1024))
+	if err != nil {
+		return
+	}
+	sc := bufio.NewScanner(bytes.NewReader(b))
 	i := 0
+	// Attempt to parse as PLS.
 	for sc.Scan() {
 		if i > 5 {
 			break
@@ -78,6 +84,18 @@ func tryPLS(u string) (target, name string) {
 			name = sp[1]
 		}
 		if target != u && name != "" {
+			return
+		}
+	}
+	// Attempt to parse as M3U.
+	sc = bufio.NewScanner(bytes.NewReader(b))
+	for sc.Scan() {
+		t := sc.Text()
+		if strings.HasPrefix(t, "#") {
+			continue
+		}
+		if _, err := url.Parse(t); err == nil {
+			target = t
 			return
 		}
 	}
