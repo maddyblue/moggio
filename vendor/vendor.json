@@ -268,11 +268,6 @@
 			"revisionTime": "2016-02-19T16:30:36+11:00"
 		},
 		{
-			"path": "gopkg.in/fsnotify.v1",
-			"revision": "8611c35ab31c1c28aa903d33cf8b6e44a399b09e",
-			"revisionTime": "2016-01-10T16:04:37+01:00"
-		},
-		{
 			"path": "gopkg.in/mewkiz/flac.v1",
 			"revision": "2da5e163354062e6e36a4fee26e126b694a6029b",
 			"revisionTime": "2016-02-02T15:06:04+01:00"
