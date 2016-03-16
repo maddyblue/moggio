@@ -30,7 +30,7 @@ func (srv *Server) makeWaitData(wt waitType) *waitData {
 	switch wt {
 	case waitProtocols:
 		protos := make(map[string][]string)
-		for p, m := range srv.Protocols {
+		for p, m := range srv.protocols {
 			for key := range m {
 				protos[p] = append(protos[p], key)
 			}
@@ -60,7 +60,7 @@ func (srv *Server) makeWaitData(wt waitType) *waitData {
 		}
 	case waitTracks:
 		var songs []listItem
-		for name, protos := range srv.Protocols {
+		for name, protos := range srv.protocols {
 			for key, inst := range protos {
 				sl, _ := inst.List()
 				for id, info := range sl {

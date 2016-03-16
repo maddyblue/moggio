@@ -171,7 +171,7 @@ func (srv *Server) commands() {
 			} else {
 				srv.info = *info
 			}
-			inst = srv.Protocols[sid.Protocol()][sid.Key()]
+			inst = srv.protocols[sid.Protocol()][sid.Key()]
 			song, err := inst.GetSong(sid.ID())
 			if err != nil {
 				forceNext = true
@@ -309,7 +309,7 @@ func (srv *Server) commands() {
 		broadcast(waitPlaylist)
 	}
 	protocolRemove := func(c cmdProtocolRemove) {
-		prots, ok := srv.Protocols[c.protocol]
+		prots, ok := srv.protocols[c.protocol]
 		if !ok {
 			return
 		}
@@ -366,7 +366,7 @@ func (srv *Server) commands() {
 		}()
 	}
 	protocolAddInstance := func(c cmdProtocolAddInstance) {
-		srv.Protocols[c.Name][c.Instance.Key()] = c.Instance
+		srv.protocols[c.Name][c.Instance.Key()] = c.Instance
 		if srv.Token != "" {
 			srv.ch <- cmdPutSource{
 				protocol: c.Name,
@@ -403,17 +403,19 @@ func (srv *Server) commands() {
 		}
 		broadcast(waitPlaylist)
 	}
-	queueSave := func() {
-		if srv.savePending {
+	savePending := make(map[string]bool)
+	queueSave := func(name string) {
+		if savePending[name] {
 			return
 		}
-		srv.savePending = true
+		savePending[name] = true
 		time.AfterFunc(time.Second, func() {
-			srv.ch <- cmdDoSave{}
+			srv.ch <- cmdDoSave{name}
 		})
 	}
-	doSave := func() {
-		if err := srv.save(); err != nil {
+	doSave := func(name string) {
+		savePending[name] = false
+		if err := srv.save(name); err != nil {
 			broadcastErr(err)
 		}
 	}
@@ -459,7 +461,7 @@ func (srv *Server) commands() {
 	makeSource := func(protocol, key string) ([]*models.Source, error) {
 		// name and key may be empty to match all
 		var ss []*models.Source
-		for prot, m := range srv.Protocols {
+		for prot, m := range srv.protocols {
 			if prot != protocol && protocol != "" {
 				continue
 			}
@@ -572,7 +574,7 @@ func (srv *Server) commands() {
 			}
 			ps[s.Protocol][s.Name] = p
 		}
-		srv.Protocols = ps
+		srv.protocols = ps
 		go func() {
 			// protocolRefresh uses srv.Protocols, so
 			for i, s := range c {
@@ -664,29 +666,30 @@ func (srv *Server) commands() {
 				}
 				continue
 			}
-			save := true
-			doDroadcast := false
+			var save string
+			doBroadcast := false
 			log.Printf("%T\n", c)
 			switch c := c.(type) {
 			case controlCmd:
-				doDroadcast = true
+				doBroadcast = true
 				switch c {
 				case cmdPlay:
-					save = false
 					play()
 				case cmdStop:
-					save = false
 					stop()
 				case cmdNext:
+					save = dbServer
 					next()
 				case cmdPause:
-					save = false
 					pause()
 				case cmdPrev:
+					save = dbServer
 					prev()
 				case cmdRandom:
+					save = dbServer
 					srv.Random = !srv.Random
 				case cmdRepeat:
+					save = dbServer
 					srv.Repeat = !srv.Repeat
 				case cmdRestartSong:
 					restart()
@@ -694,63 +697,69 @@ func (srv *Server) commands() {
 					panic(c)
 				}
 			case cmdPlayIdx:
+				save = dbServer
 				playIdx(c)
 			case cmdPlayTrack:
+				save = dbServer
 				playTrack(c)
 			case cmdProtocolRemove:
+				save = dbProtocols
 				protocolRemove(c)
 			case cmdQueueChange:
+				save = dbServer
 				queueChange(c)
 			case cmdPlaylistChange:
+				save = dbServer
 				playlistChange(c)
 			case cmdNewWS:
-				save = false
 				newWS(c)
 			case cmdDeleteWS:
-				save = false
 				deleteWS(c)
 			case cmdDoSave:
-				save = false
-				doSave()
+				doSave(c.name)
 			case cmdAddOAuth:
 				addOAuth(c)
 			case cmdSeek:
-				save = false
 				doSeek(c)
 			case cmdMinDuration:
+				save = dbServer
 				setMinDuration(c)
 			case cmdTokenRegister:
+				save = dbServer
 				tokenRegister(c)
 			case cmdSetUsername:
+				save = dbServer
 				setUsername(c)
 			case cmdSetSources:
+				save = dbServer
 				setSources(c)
 			case cmdProtocolAdd:
 				protocolAdd(c)
 			case cmdProtocolAddInstance:
+				save = dbProtocols
 				protocolAddInstance(c)
 			case cmdRemoveDeleted:
+				save = dbServer
 				removeDeleted()
 			case cmdRemoveInProgress:
 				removeInProgress(c)
 			case cmdError:
 				broadcastErr(error(c))
-				save = false
 			case cmdWaitData:
 				sendWaitData(c)
-				save = false
 			case cmdPutSource:
 				putSource(c)
-				save = false
 			case cmdProtocolRefresh:
 				protocolRefresh(c)
+			case cmdQueueSave:
+				queueSave(c.name)
 			default:
 				panic(c)
 			}
-			if save {
-				queueSave()
+			if save != "" {
+				queueSave(save)
 			}
-			if save || doDroadcast {
+			if save != "" || doBroadcast {
 				broadcast(waitStatus)
 			}
 		}
@@ -788,7 +797,9 @@ type cmdPlaylistChange struct {
 	name string
 }
 
-type cmdDoSave struct{}
+type cmdDoSave struct{
+	name string
+}
 
 type cmdAddOAuth struct {
 	name string
@@ -836,3 +847,7 @@ type cmdProtocolRefresh struct {
 }
 
 type cmdPlayTrack SongID
+
+type cmdQueueSave struct {
+	name string
+}

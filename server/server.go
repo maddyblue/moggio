@@ -17,6 +17,7 @@ import (
 	"net/http"
 	"net/url"
 	"path/filepath"
+	"reflect"
 	"runtime"
 	"strconv"
 	"strings"
@@ -133,7 +134,7 @@ type Server struct {
 
 	Repeat      bool
 	Random      bool
-	Protocols   map[string]map[string]protocol.Instance
+	protocols   map[string]map[string]protocol.Instance
 	MinDuration time.Duration
 
 	// Current song data.
@@ -143,13 +144,12 @@ type Server struct {
 	info          codec.SongInfo
 	elapsed       time.Duration
 
-	centralURL  string
-	inprogress  map[codec.ID]bool
-	ch          chan interface{}
-	audioch     chan interface{}
-	state       State
-	db          *bolt.DB
-	savePending bool
+	centralURL string
+	inprogress map[codec.ID]bool
+	ch         chan interface{}
+	audioch    chan interface{}
+	state      State
+	db         *bolt.DB
 }
 
 func (srv *Server) removeDeleted(p Playlist) Playlist {
@@ -183,7 +183,7 @@ func New(stateFile, central string) (*Server, error) {
 	srv := Server{
 		ch:          make(chan interface{}),
 		audioch:     make(chan interface{}),
-		Protocols:   protocol.Map(),
+		protocols:   protocol.Map(),
 		Playlists:   make(map[string]Playlist),
 		MinDuration: time.Second * 30,
 		centralURL:  central,
@@ -204,12 +204,13 @@ func New(stateFile, central string) (*Server, error) {
 }
 
 const (
-	dbBucket = "bucket"
-	dbServer = "server"
+	dbBucket    = "bucket"
+	dbServer    = "server"
+	dbProtocols = "protocols"
 )
 
 func (srv *Server) restore() error {
-	decode := func(name string, dst interface{}) error {
+	fetch := func(name string) ([]byte, error) {
 		var data []byte
 		err := srv.db.View(func(tx *bolt.Tx) error {
 			b := tx.Bucket([]byte(dbBucket))
@@ -219,6 +220,31 @@ func (srv *Server) restore() error {
 			data = b.Get([]byte(name))
 			return nil
 		})
+		return data, err
+	}
+	if err := func() error {
+		data, err := fetch(dbServer)
+		if err != nil {
+			return err
+		}
+		gr, err := gzip.NewReader(bytes.NewReader(data))
+		if err == io.EOF {
+			return nil
+		}
+		if err != nil {
+			panic(err)
+			return err
+		}
+		if err := gob.NewDecoder(gr).Decode(srv); err != nil {
+			panic(err)
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return err
+	}
+	{
+		data, err := fetch(dbProtocols)
 		if err != nil {
 			return err
 		}
@@ -226,59 +252,77 @@ func (srv *Server) restore() error {
 		if err != nil {
 			return err
 		}
-		defer gr.Close()
-		return gob.NewDecoder(gr).Decode(dst)
-	}
-	if err := decode(dbServer, srv); err != nil {
-		return err
+		dec := json.NewDecoder(gr)
+		var pname, iname string
+		for {
+			if err := dec.Decode(&pname); err == io.EOF {
+				break
+			} else if err != nil {
+				panic(err)
+				return err
+			}
+			if err := dec.Decode(&iname); err != nil {
+				panic(err)
+				return err
+			}
+			t := reflect.New(protocol.Protocols[pname].InstType)
+			inst := t.Interface()
+			fmt.Printf("INST: %v, %v, %v, %T, %v\n", pname, iname, inst, inst, protocol.Protocols[pname].InstType)
+			if err := dec.Decode(inst); err != nil {
+				panic(err)
+				return err
+			}
+			srv.protocols[pname][iname] = reflect.Indirect(t).Interface().(protocol.Instance)
+		}
 	}
 	return nil
 }
 
-func (srv *Server) save() error {
-	defer func() {
-		srv.savePending = false
-	}()
-	store := map[string]interface{}{
-		dbServer: srv,
+func (srv *Server) save(name string) error {
+	f := new(bytes.Buffer)
+	gz := gzip.NewWriter(f)
+	switch name {
+	case dbServer:
+		if err := gob.NewEncoder(gz).Encode(srv); err != nil {
+			return err
+		}
+	case dbProtocols:
+		enc := json.NewEncoder(gz)
+		for pname, prots := range srv.protocols {
+			for iname, inst := range prots {
+				for _, e := range []interface{}{pname, iname, inst} {
+					if err := enc.Encode(e); err != nil {
+						return err
+					}
+				}
+			}
+		}
+	default:
+		panic(name)
 	}
-	tostore := make(map[string][]byte)
-	for name, data := range store {
-		f := new(bytes.Buffer)
-		gz := gzip.NewWriter(f)
-		enc := gob.NewEncoder(gz)
-		if err := enc.Encode(data); err != nil {
-			return err
-		}
-		if err := gz.Flush(); err != nil {
-			return err
-		}
-		if err := gz.Close(); err != nil {
-			return err
-		}
-		tostore[name] = f.Bytes()
+	if err := gz.Flush(); err != nil {
+		return err
 	}
+	if err := gz.Close(); err != nil {
+		return err
+	}
+	data := f.Bytes()
 	err := srv.db.Update(func(tx *bolt.Tx) error {
 		b, err := tx.CreateBucketIfNotExists([]byte(dbBucket))
 		if err != nil {
 			return err
 		}
-		for name, data := range tostore {
-			if err := b.Put([]byte(name), data); err != nil {
-				return err
-			}
-		}
-		return nil
+		return b.Put([]byte(name), data)
 	})
 	if err != nil {
 		return err
 	}
-	log.Println("save to db complete")
+	log.Printf("save %s complete", name)
 	return nil
 }
 
 func (srv *Server) getInstance(name, key string) (protocol.Instance, error) {
-	prots, ok := srv.Protocols[name]
+	prots, ok := srv.protocols[name]
 	if !ok {
 		return nil, fmt.Errorf("unknown protocol: %s", name)
 	}
@@ -381,7 +425,7 @@ func (srv *Server) request(path string, body interface{}) (io.ReadCloser, error)
 
 func (srv *Server) getSong(id SongID) (*codec.SongInfo, error) {
 	name, key, cid := id.Triple()
-	p, ok := srv.Protocols[name]
+	p, ok := srv.protocols[name]
 	if !ok {
 		return nil, fmt.Errorf("unknown protocol: %s", name)
 	}

@@ -14,7 +14,7 @@ type Protocol struct {
 	*Params
 	OAuth       *oauth2.Config
 	newInstance func([]string, *oauth2.Token) (Instance, error)
-	instType    reflect.Type
+	InstType    reflect.Type
 }
 
 type Params struct {
@@ -42,10 +42,10 @@ func (p *Protocol) NewInstance(params []string, token *oauth2.Token) (Instance, 
 }
 
 func (p *Protocol) Decode(r io.Reader) (Instance, error) {
-	if p.instType == nil {
+	if p.InstType == nil {
 		panic("NIL")
 	}
-	v := reflect.New(p.instType)
+	v := reflect.New(p.InstType)
 	i := v.Interface()
 	if err := gob.NewDecoder(r).Decode(i); err != nil {
 		return nil, err
@@ -53,31 +53,31 @@ func (p *Protocol) Decode(r io.Reader) (Instance, error) {
 	return reflect.Indirect(v).Interface().(Instance), nil
 }
 
-var protocols = make(map[string]*Protocol)
+var Protocols = make(map[string]*Protocol)
 
 func Register(name string, params []string, newInstance func([]string, *oauth2.Token) (Instance, error), instType reflect.Type) {
-	protocols[name] = &Protocol{
+	Protocols[name] = &Protocol{
 		Params: &Params{
 			Params: params,
 		},
 		newInstance: newInstance,
-		instType:    instType,
+		InstType:    instType,
 	}
 }
 
 func RegisterOAuth(name string, config *oauth2.Config, newInstance func([]string, *oauth2.Token) (Instance, error), instType reflect.Type) {
-	protocols[name] = &Protocol{
+	Protocols[name] = &Protocol{
 		Params: &Params{
 			OAuthURL: config.AuthCodeURL(""),
 		},
 		OAuth:       config,
 		newInstance: newInstance,
-		instType:    instType,
+		InstType:    instType,
 	}
 }
 
 func ByName(name string) (*Protocol, error) {
-	p, ok := protocols[name]
+	p, ok := Protocols[name]
 	if !ok {
 		return nil, fmt.Errorf("unknown protocol")
 	}
@@ -86,7 +86,7 @@ func ByName(name string) (*Protocol, error) {
 
 func Get() map[string]Params {
 	m := make(map[string]Params)
-	for n, p := range protocols {
+	for n, p := range Protocols {
 		m[n] = *p.Params
 	}
 	return m
