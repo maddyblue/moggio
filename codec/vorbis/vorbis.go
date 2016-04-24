@@ -1,12 +1,10 @@
-// +build cgo
-
 package vorbis
 
 import (
 	"io"
 
 	"github.com/dhowden/tag"
-	"github.com/mccoyst/vorbis"
+	"github.com/jfreymuth/go-vorbis/ogg/vorbis"
 	"github.com/mjibson/moggio/codec"
 )
 
@@ -43,7 +41,7 @@ func (v *Vorbis) Init() (sampleRate, channels int, err error) {
 		if err != nil {
 			return 0, 0, err
 		}
-		vr, err := vorbis.New(r)
+		vr, err := vorbis.Open(r)
 		if err != nil {
 			r.Close()
 			return 0, 0, err
@@ -51,7 +49,7 @@ func (v *Vorbis) Init() (sampleRate, channels int, err error) {
 		v.r = r
 		v.v = vr
 	}
-	return v.v.SampleRate, v.v.Channels, nil
+	return v.v.SampleRate(), v.v.Channels(), nil
 }
 
 func (v *Vorbis) Info() (info codec.SongInfo, err error) {
@@ -62,18 +60,27 @@ func (v *Vorbis) Info() (info codec.SongInfo, err error) {
 	if err != nil {
 		return
 	}
-	si.Time, _ = vorbis.Length(b)
+	_ = b
+	// TODO(mjibson): get the song length somehow
+	//si.Time, _ = vorbis.Length(b)
 	v.info = si
 	return *si, nil
 }
 
 func (v *Vorbis) Play(n int) ([]float32, error) {
 	var err error
-	var data []float32
 	for len(v.samples) < n && err == nil {
-		data, err = v.v.Decode()
+		samples, err := v.v.DecodePacket()
 		if err != nil {
 			break
+		}
+		n := len(samples[0])
+		c := len(samples)
+		data := make([]float32, c*n)
+		for i, cs := range samples {
+			for j, s := range cs {
+				data[j*c+i] = s
+			}
 		}
 		v.samples = append(v.samples, data...)
 	}
@@ -88,9 +95,7 @@ func (v *Vorbis) Play(n int) ([]float32, error) {
 func (v *Vorbis) Close() {
 	if v.r != nil {
 		v.r.Close()
+		v.r = nil
 	}
-	if v.v != nil {
-		v.v.Close()
-		v.v = nil
-	}
+	v.v = nil
 }

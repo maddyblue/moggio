@@ -33,6 +33,18 @@
 			"revisionTime": "2016-02-24T16:12:44-08:00"
 		},
 		{
+			"checksumSHA1": "qL5OVjfmIY9rzF9FvEZb4NlKNpI=",
+			"path": "github.com/jfreymuth/go-vorbis/ogg",
+			"revision": "c32ca76280a2ba7967c7b56423e266837e338691",
+			"revisionTime": "2016-04-20T14:54:58Z"
+		},
+		{
+			"checksumSHA1": "QtcsZZ84uUpDRQfw/MjSDDUGcUM=",
+			"path": "github.com/jfreymuth/go-vorbis/ogg/vorbis",
+			"revision": "c32ca76280a2ba7967c7b56423e266837e338691",
+			"revisionTime": "2016-04-20T14:54:58Z"
+		},
+		{
 			"path": "github.com/julienschmidt/httprouter",
 			"revision": "77366a47451a56bb3ba682481eed85b64fea14e8",
 			"revisionTime": "2016-02-19T16:40:26+01:00"
@@ -46,11 +58,6 @@
 			"path": "github.com/korandiz/mpseek",
 			"revision": "7fdfba007a2f3054ae56e63b5581a8b67023628f",
 			"revisionTime": "2015-06-23T17:15:14+02:00"
-		},
-		{
-			"path": "github.com/mccoyst/vorbis",
-			"revision": "9dbc0f6a44d4c242c03121df78584382b6a27061",
-			"revisionTime": "2015-10-16T16:53:06-04:00"
 		},
 		{
 			"path": "github.com/mesilliac/pulse-simple",
@@ -302,5 +309,6 @@
 			"revision": "576638dc68739d767ffde05d1b4f62e3c0659639",
 			"revisionTime": "2014-09-30T02:32:37+02:00"
 		}
-	]
+	],
+	"rootPath": "github.com/mjibson/moggio"
 }
