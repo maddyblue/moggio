@@ -79,9 +79,10 @@ func (v *Vorbis) Info() (info codec.SongInfo, err error) {
 
 func (v *Vorbis) Play(n int) ([]float32, error) {
 	var err error
+	var samples [][]float32
 	for len(v.samples) < n && err == nil {
-		samples, err := v.v.DecodePacket()
-		if err != nil {
+		samples, err = v.v.DecodePacket()
+		if len(samples) == 0 {
 			break
 		}
 		n := len(samples[0])
