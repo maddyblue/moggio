@@ -1,9 +1,12 @@
 package vorbis
 
 import (
+	"bytes"
 	"io"
+	"time"
 
 	"github.com/dhowden/tag"
+	"github.com/jfreymuth/go-vorbis/ogg"
 	"github.com/jfreymuth/go-vorbis/ogg/vorbis"
 	"github.com/mjibson/moggio/codec"
 )
@@ -60,9 +63,16 @@ func (v *Vorbis) Info() (info codec.SongInfo, err error) {
 	if err != nil {
 		return
 	}
-	_ = b
-	// TODO(mjibson): get the song length somehow
-	//si.Time, _ = vorbis.Length(b)
+	or := ogg.NewReader(bytes.NewReader(b))
+	vr, err := vorbis.OpenOgg(or)
+	if err != nil {
+		return
+	}
+	l, err := or.Length()
+	if err != nil {
+		return
+	}
+	si.Time = time.Duration(l/uint64(vr.SampleRate())) * time.Second
 	v.info = si
 	return *si, nil
 }

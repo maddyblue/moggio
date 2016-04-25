@@ -11,6 +11,7 @@ var pageHeaderPattern = [4]byte{'O', 'g', 'g', 'S'}
 
 var ErrCorruptStream = errors.New("ogg: corrupt stream")
 var ErrChecksum = errors.New("ogg: wrong checksum")
+var ErrSeek = errors.New("ogg: reader is not seekable")
 
 const (
 	headerFlagContinuedPacket   = 1
@@ -54,6 +55,14 @@ func (h *pageHeader) ReadFrom(r io.Reader) error {
 	h.headerChecksum = crcUpdate(0, data)
 	h.headerChecksum = crcUpdate(h.headerChecksum, h.SegmentTable)
 	return nil
+}
+
+func (h *pageHeader) PageSize() int {
+	size := 0
+	for _, s := range h.SegmentTable {
+		size += int(s)
+	}
+	return size
 }
 
 func (h *pageHeader) IsFirstPage() bool { return h.HeaderTypeFlag&headerFlagBeginningOfStream != 0 }

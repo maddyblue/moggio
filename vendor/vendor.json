@@ -33,16 +33,18 @@
 			"revisionTime": "2016-02-24T16:12:44-08:00"
 		},
 		{
-			"checksumSHA1": "qL5OVjfmIY9rzF9FvEZb4NlKNpI=",
+			"checksumSHA1": "raVfSIuDwzbB/ayLbkBHsTTpyLs=",
+			"origin": "github.com/mjibson/moggio/vendor/github.com/jfreymuth/go-vorbis/ogg",
 			"path": "github.com/jfreymuth/go-vorbis/ogg",
-			"revision": "c32ca76280a2ba7967c7b56423e266837e338691",
-			"revisionTime": "2016-04-20T14:54:58Z"
+			"revision": "630983dd5ccd768b792190158382a157a4cb7eb9",
+			"revisionTime": "2016-04-24T09:05:43Z"
 		},
 		{
-			"checksumSHA1": "QtcsZZ84uUpDRQfw/MjSDDUGcUM=",
+			"checksumSHA1": "dnwohaKxkKrxRy+Ur73AIQtZ6Jc=",
+			"origin": "github.com/mjibson/moggio/vendor/github.com/jfreymuth/go-vorbis/ogg/vorbis",
 			"path": "github.com/jfreymuth/go-vorbis/ogg/vorbis",
-			"revision": "c32ca76280a2ba7967c7b56423e266837e338691",
-			"revisionTime": "2016-04-20T14:54:58Z"
+			"revision": "630983dd5ccd768b792190158382a157a4cb7eb9",
+			"revisionTime": "2016-04-24T09:05:43Z"
 		},
 		{
 			"path": "github.com/julienschmidt/httprouter",

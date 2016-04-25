@@ -51,7 +51,7 @@ func OpenOgg(in *ogg.Reader) (*Vorbis, error) {
 
 // DecodePacket decodes a packet from the input.
 // The result is a two-dimensional array, the first index corresponds to the channel, the second to the sample position.
-// The number of samples decoded can vary.
+// The number of samples decoded can vary, but will never exceed MaxBlockSize()
 func (v *Vorbis) DecodePacket() ([][]float32, error) {
 	var out [][]float32
 	if v.overlap == nil {
@@ -69,6 +69,11 @@ func (v *Vorbis) DecodePacket() ([][]float32, error) {
 	out, v.overlap, err = v.setup.decodePacket(r, v.overlap)
 	v.position += uint64(len(out[0]))
 	return out, err
+}
+
+// MaxBlockSize returns the highest number of samples that will be decoded from one packet.
+func (v *Vorbis) MaxBlockSize() int {
+	return v.setup.blocksize[1] / 2
 }
 
 // SamplePosition returns the number of the first sample that will be returned by the next call to DecodePacket.
