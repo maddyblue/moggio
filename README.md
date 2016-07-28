@@ -23,6 +23,6 @@ An audio player written in Go.
   - [ ] youtube
 - [x] Support for archive files (.zip, .rar, .nsf).
 - [ ] Pure Go except for sound driver interfaces.
-  - [ ] Port SPC and Vorbis C libraries to Go
+  - [ ] Port SPC library to Go
 - [x] Runs on Windows, Linux, Mac OSX.
 - [ ] Mobile apps for Android and iOS that can play themselves and act as a remote.
