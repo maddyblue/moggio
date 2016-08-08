@@ -14,6 +14,7 @@ import (
 	"github.com/mjibson/moggio/server"
 
 	// codecs
+	_ "github.com/mjibson/moggio/codec/aac"
 	_ "github.com/mjibson/moggio/codec/flac"
 	_ "github.com/mjibson/moggio/codec/gme"
 	_ "github.com/mjibson/moggio/codec/mpa"
@@ -30,6 +31,7 @@ import (
 	_ "github.com/mjibson/moggio/protocol/gmusic"
 	"github.com/mjibson/moggio/protocol/soundcloud"
 	_ "github.com/mjibson/moggio/protocol/stream"
+	_ "github.com/mjibson/moggio/protocol/youtube"
 )
 
 var (
