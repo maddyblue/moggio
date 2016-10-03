@@ -10,7 +10,6 @@ func TestYoutube(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_ = p
 	s, err := p.GetSong("")
 	if err != nil {
 		t.Fatal(err)

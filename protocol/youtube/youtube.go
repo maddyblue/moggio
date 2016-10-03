@@ -4,13 +4,14 @@ import (
 	"encoding/gob"
 	"fmt"
 	"io"
+	"io/ioutil"
+	"net/http"
 	"net/url"
 	"reflect"
 
 	"github.com/mjibson/moggio/codec"
-	"github.com/mjibson/moggio/codec/aac"
 	"github.com/mjibson/moggio/protocol"
-	"github.com/otium/ytdl"
+	"github.com/rylio/ytdl"
 	"golang.org/x/oauth2"
 )
 
@@ -47,12 +48,13 @@ func (y *Youtube) getInfo() (*ytdl.VideoInfo, ytdl.Format, error) {
 		return nil, ytdl.Format{}, err
 	}
 	var f ytdl.Format
+	const itag = 43 // webm
 	for _, f = range v.Formats {
-		if f.Itag == 140 {
+		if f.Itag == itag {
 			break
 		}
 	}
-	if f.Itag != 140 {
+	if f.Itag != itag {
 		return nil, ytdl.Format{}, fmt.Errorf("could not find audio-only stream")
 	}
 	return v, f, nil
@@ -93,25 +95,20 @@ func (y *Youtube) Info(codec.ID) (*codec.SongInfo, error) {
 }
 
 func (y *Youtube) GetSong(codec.ID) (codec.Song, error) {
-	return aac.NewSong(func() (io.ReadCloser, int64, error) {
-		return nil, 0, nil
+	return webm.NewSong(func() (io.ReadCloser, int64, error) {
+		u, err := y.getURL()
+		if err != nil {
+			return nil, 0, err
+		}
+		resp, err := http.Get(u.String())
+		if err != nil {
+			return nil, 0, err
+		}
+		if resp.StatusCode != 200 {
+			b, _ := ioutil.ReadAll(io.LimitReader(resp.Body, 1024))
+			resp.Body.Close()
+			return nil, 0, fmt.Errorf("%v: %s", resp.Status, b)
+		}
+		return resp.Body, 0, nil
 	})
-	/*
-		return aac.NewSong(func() (io.ReadCloser, int64, error) {
-			u, err := y.getURL()
-			if err != nil {
-				return nil, 0, err
-			}
-			resp, err := http.Get(u.String())
-			if err != nil {
-				return nil, 0, err
-			}
-			if resp.StatusCode != 200 {
-				b, _ := ioutil.ReadAll(io.LimitReader(resp.Body, 1024))
-				resp.Body.Close()
-				return nil, 0, fmt.Errorf("%v: %s", resp.Status, b)
-			}
-			return resp.Body, 0, nil
-		})
-	*/
 }
