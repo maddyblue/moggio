@@ -4,8 +4,6 @@ import (
 	"encoding/gob"
 	"fmt"
 	"io"
-	"io/ioutil"
-	"net/http"
 	"net/url"
 	"reflect"
 
@@ -96,19 +94,24 @@ func (y *Youtube) Info(codec.ID) (*codec.SongInfo, error) {
 
 func (y *Youtube) GetSong(codec.ID) (codec.Song, error) {
 	return aac.NewSong(func() (io.ReadCloser, int64, error) {
-		u, err := y.getURL()
-		if err != nil {
-			return nil, 0, err
-		}
-		resp, err := http.Get(u.String())
-		if err != nil {
-			return nil, 0, err
-		}
-		if resp.StatusCode != 200 {
-			b, _ := ioutil.ReadAll(io.LimitReader(resp.Body, 1024))
-			resp.Body.Close()
-			return nil, 0, fmt.Errorf("%v: %s", resp.Status, b)
-		}
-		return resp.Body, 0, nil
+		return nil, 0, nil
 	})
+	/*
+		return aac.NewSong(func() (io.ReadCloser, int64, error) {
+			u, err := y.getURL()
+			if err != nil {
+				return nil, 0, err
+			}
+			resp, err := http.Get(u.String())
+			if err != nil {
+				return nil, 0, err
+			}
+			if resp.StatusCode != 200 {
+				b, _ := ioutil.ReadAll(io.LimitReader(resp.Body, 1024))
+				resp.Body.Close()
+				return nil, 0, fmt.Errorf("%v: %s", resp.Status, b)
+			}
+			return resp.Body, 0, nil
+		})
+	*/
 }

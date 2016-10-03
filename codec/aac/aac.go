@@ -3,14 +3,12 @@
 package aac
 
 import (
-	"bytes"
 	"fmt"
-	"io/ioutil"
 
 	"github.com/mjibson/moggio/codec"
 	"github.com/nareix/joy4/av"
+	"github.com/nareix/joy4/av/avutil"
 	"github.com/nareix/joy4/cgo/ffmpeg"
-	"github.com/nareix/joy4/format/mp4"
 )
 
 func init() {
@@ -33,8 +31,9 @@ func NewSong(rf codec.Reader) (codec.Song, error) {
 }
 
 type AAC struct {
-	Reader  codec.Reader
-	dm      *mp4.Demuxer
+	Reader codec.Reader
+	//dm      *mp4.Demuxer
+	dmc     av.DemuxCloser
 	dec     *ffmpeg.AudioDecoder
 	stream  int8
 	samples []float32
@@ -42,18 +41,29 @@ type AAC struct {
 
 func (v *AAC) Init() (sampleRate, channels int, err error) {
 	if v.dec == nil {
-		r, _, err := v.Reader()
+		/*
+			r, _, err := v.Reader()
+			if err != nil {
+				return 0, 0, err
+			}
+			b, err := ioutil.ReadAll(r)
+			r.Close()
+			if err != nil {
+				return 0, 0, err
+			}
+			fmt.Println("LB", len(b))
+			v.dm = mp4.NewDemuxer(bytes.NewReader(b))
+			streams, err := v.dm.Streams()
+			if err != nil {
+				return 0, 0, err
+			}
+		*/
+		file, err := avutil.Open("test.file")
 		if err != nil {
 			return 0, 0, err
 		}
-		b, err := ioutil.ReadAll(r)
-		r.Close()
-		if err != nil {
-			return 0, 0, err
-		}
-		fmt.Println("LB", len(b))
-		v.dm = mp4.NewDemuxer(bytes.NewReader(b))
-		streams, err := v.dm.Streams()
+		v.dmc = file
+		streams, err := file.Streams()
 		if err != nil {
 			return 0, 0, err
 		}
@@ -88,7 +98,8 @@ func (v *AAC) Play(n int) ([]float32, error) {
 	var frame av.AudioFrame
 	for len(v.samples) < n && err == nil {
 		println(1)
-		pkt, err = v.dm.ReadPacket()
+		pkt, err = v.dmc.ReadPacket()
+		fmt.Println("ERR", err, "PKT", pkt)
 		if err != nil {
 			println(2)
 			break
@@ -122,6 +133,7 @@ func (v *AAC) Close() {
 	if v.dec != nil {
 		v.dec.Close()
 		v.dec = nil
-		v.dm = nil
+		v.dmc.Close()
+		v.dmc = nil
 	}
 }
