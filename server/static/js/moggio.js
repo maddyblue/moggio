@@ -31903,7 +31903,7 @@ module.exports = function(listenables){
 }.call(this));
 
 },{}],270:[function(require,module,exports){
-var exports = module.exports = {};
+var exports = (module.exports = {});
 
 var FixedDataTable = require('fixed-data-table');
 var Moggio = require('./moggio.js');
@@ -31929,23 +31929,29 @@ function group(route, field, name) {
 				}
 			});
 			var list = _.keys(entries);
-			list.sort(function (a, b) {
+			list.sort(function(a, b) {
 				return a.toLowerCase().localeCompare(b.toLowerCase());
 			});
 			var lis = _.map(list, function(val) {
 				var params = {};
 				params[field] = val;
-				return React.createElement("li", {key: val}, React.createElement(Link, {to: route, params: params}, val));
+				return (
+					React.createElement("li", {key: val}, 
+						React.createElement(Link, {to: route, params: params}, 
+							val
+						)
+					)
+				);
 			});
 			return (
 				React.createElement("div", null, 
-					React.createElement("div", {className: "mdl-typography--display-3 mdl-color-text--grey-600"}, React.createElement(Link, {to: "app"}, "Music"), " > ", name), 
-					React.createElement("ul", null, 
-						lis
-					)
+					React.createElement("div", {className: "mdl-typography--display-3 mdl-color-text--grey-600"}, 
+						React.createElement(Link, {to: "app"}, "Music"), " > ", name
+					), 
+					React.createElement("ul", null, lis)
 				)
 			);
-		}
+		},
 	});
 }
 
@@ -31953,7 +31959,7 @@ exports.Artists = group('artist', 'Artist', 'Artists');
 exports.Albums = group('album', 'Album', 'Albums');
 
 },{"./moggio.js":273,"fixed-data-table":51,"react":249,"react-router":76,"reflux":266,"underscore":269}],271:[function(require,module,exports){
-var exports = module.exports = {};
+var exports = (module.exports = {});
 
 var FixedDataTable = require('fixed-data-table');
 var Moggio = require('./moggio.js');
@@ -31968,11 +31974,11 @@ var Column = FixedDataTable.Column;
 var Link = Router.Link;
 var Table = FixedDataTable.Table;
 
-var Tracks = exports.Tracks = React.createClass({displayName: "Tracks",
+var Tracks = (exports.Tracks = React.createClass({displayName: "Tracks",
 	mixins: [Reflux.listenTo(Stores.active, 'setActive')],
 	getDefaultProps: function() {
 		return {
-			tracks: []
+			tracks: [],
 		};
 	},
 	getInitialState: function() {
@@ -32026,13 +32032,9 @@ var Tracks = exports.Tracks = React.createClass({displayName: "Tracks",
 			var params;
 			if (this.props.isqueue) {
 				var idx = this.getIdx(index);
-				params = [
-					['rem', idx.toString()],
-				];
+				params = [['rem', idx.toString()]];
 			} else {
-				params = [
-					['add', this.getter(index).ID.UID]
-				];
+				params = [['add', this.getter(index).ID.UID]];
 			}
 			Moggio.POST('/api/queue/change', params);
 		}.bind(this);
@@ -32040,9 +32042,9 @@ var Tracks = exports.Tracks = React.createClass({displayName: "Tracks",
 	sort: function(field) {
 		return function() {
 			if (this.state.sort == field) {
-				this.update({asc: !this.state.asc});
+				this.update({ asc: !this.state.asc });
 			} else {
-				this.update({sort: field});
+				this.update({ sort: field });
 			}
 		}.bind(this);
 	},
@@ -32062,7 +32064,7 @@ var Tracks = exports.Tracks = React.createClass({displayName: "Tracks",
 	getTableWidth: function() {
 		var n = React.findDOMNode(this.refs.table);
 		var w = window.innerWidth - n.offsetLeft;
-		return {tableWidth: w};
+		return { tableWidth: w };
 	},
 	componentDidMount: function() {
 		window.addEventListener('resize', this.handleResize);
@@ -32079,7 +32081,7 @@ var Tracks = exports.Tracks = React.createClass({displayName: "Tracks",
 		if (this.refs && this.refs.table) {
 			var d = this.refs.table.getDOMNode();
 			height = window.innerHeight - d.offsetTop - 82;
-			this.setState({height: height});
+			this.setState({ height: height });
 		}
 		if (obj) {
 			this.setState(obj);
@@ -32099,30 +32101,34 @@ var Tracks = exports.Tracks = React.createClass({displayName: "Tracks",
 				return t.indexOf(s) > -1;
 			});
 		}
-		var useIdx = (obj.sort == 'Track' && this.props.useIdxAsNum) || this.props.isqueue;
+		var useIdx =
+			(obj.sort == 'Track' && this.props.useIdxAsNum) || this.props.isqueue;
 		tracks = _.sortBy(tracks, function(v) {
 			return v.Info.Track;
 		});
-		tracks = _.sortBy(tracks, function(v) {
-			if (useIdx) {
-				return v.idx;
-			}
-			var d = v.Info[obj.sort];
-			if (obj.sort == "Source") {
-				d = v.ID.UID;
-			}
-			if (_.isString(d)) {
-				d = d.toLocaleLowerCase();
-			}
-			return d;
-		}.bind(this));
+		tracks = _.sortBy(
+			tracks,
+			function(v) {
+				if (useIdx) {
+					return v.idx;
+				}
+				var d = v.Info[obj.sort];
+				if (obj.sort == 'Source') {
+					d = v.ID.UID;
+				}
+				if (_.isString(d)) {
+					d = d.toLocaleLowerCase();
+				}
+				return d;
+			}.bind(this)
+		);
 		if (!obj.asc) {
 			tracks.reverse();
 		}
-		this.setState({tracks: tracks});
+		this.setState({ tracks: tracks });
 	},
 	search: function(event) {
-		this.update({search: event.target.value});
+		this.update({ search: event.target.value });
 	},
 	getter: function(index) {
 		return this.state.tracks[index];
@@ -32131,11 +32137,21 @@ var Tracks = exports.Tracks = React.createClass({displayName: "Tracks",
 		return this.getter(index).idx - 1;
 	},
 	timeCellRenderer: function(str, key, data, index) {
-		return React.createElement("div", null, React.createElement(Moggio.Time, {time: data.Info.Time}));
+		return (
+			React.createElement("div", null, 
+				React.createElement(Moggio.Time, {time: data.Info.Time})
+			)
+		);
 	},
 	timeHeader: function() {
 		return function() {
-			return React.createElement(Moggio.Icon, {name: "schedule", className: this.sortClass('Time'), onClick: this.sort('Time')});
+			return (
+				React.createElement(Moggio.Icon, {
+					name: "schedule", 
+					className: this.sortClass('Time'), 
+					onClick: this.sort('Time')}
+				)
+			);
 		}.bind(this);
 	},
 	mkHeader: function(name, text) {
@@ -32148,7 +32164,11 @@ var Tracks = exports.Tracks = React.createClass({displayName: "Tracks",
 			};
 		}
 		return function() {
-			return React.createElement("div", {className: this.sortClass(name), onClick: this.sort(name)}, text);
+			return (
+				React.createElement("div", {className: this.sortClass(name), onClick: this.sort(name)}, 
+					text
+				)
+			);
 		}.bind(this);
 	},
 	trackRenderer: function(str, key, data, index) {
@@ -32159,8 +32179,10 @@ var Tracks = exports.Tracks = React.createClass({displayName: "Tracks",
 			track = '';
 		}
 		return (
-			React.createElement("div", {style: {padding: '0'}}, 
-				React.createElement("span", {className: "nohover", style: {padding: '12px'}}, track), 
+			React.createElement("div", {style: { padding: '0'}}, 
+				React.createElement("span", {className: "nohover", style: { padding: '12px'}}, 
+					track
+				), 
 				React.createElement("span", {className: "hover"}, 
 					React.createElement(Button, {onClick: this.playTrack(index), icon: true}, 
 						React.createElement(Moggio.Icon, {name: "play_arrow"})
@@ -32189,13 +32211,29 @@ var Tracks = exports.Tracks = React.createClass({displayName: "Tracks",
 		);
 	},
 	artistCellRenderer: function(str, key, data, index) {
-		return React.createElement("div", null, React.createElement(Link, {to: "artist", params: data.Info}, data.Info.Artist));
+		return (
+			React.createElement("div", null, 
+				React.createElement(Link, {to: "artist", params: data.Info}, 
+					data.Info.Artist
+				)
+			)
+		);
 	},
 	albumCellRenderer: function(str, key, data, index) {
-		return React.createElement("div", null, React.createElement(Link, {to: "album", params: data.Info}, data.Info.Album));
+		return (
+			React.createElement("div", null, 
+				React.createElement(Link, {to: "album", params: data.Info}, 
+					data.Info.Album
+				)
+			)
+		);
 	},
 	sourceCellRenderer: function(str, key, data, index) {
-		return React.createElement("div", {title: data.ID.ID + "|" + data.ID.Key + "|" + data.ID.Protocol}, data.ID.Protocol);
+		return (
+			React.createElement("div", {title: data.ID.ID + '|' + data.ID.Key + '|' + data.ID.Protocol}, 
+				data.ID.Protocol
+			)
+		);
 	},
 	rowClassNameGetter: function(index) {
 		var g = this.getter(index);
@@ -32210,20 +32248,36 @@ var Tracks = exports.Tracks = React.createClass({displayName: "Tracks",
 		if (!this.props.isqueue) {
 			queue = (
 				React.createElement("div", null, 
-					React.createElement(Button, {onClick: this.play, raised: true, primary: true}, "play"), 
+					React.createElement(Button, {onClick: this.play, raised: true, primary: true}, 
+						"play"
+					), 
 					" ", 
-					React.createElement(Button, {onClick: this.add, raised: true, accent: true}, "add"), 
-					" " + ' ' +
-					"(", this.state.tracks.length, " tracks)"
+					React.createElement(Button, {onClick: this.add, raised: true, accent: true}, 
+						"add"
+					), 
+					"  (", this.state.tracks.length, " tracks)"
 				)
 			);
-		};
-		var track = this.props.isqueue ? React.createElement("th", null) : React.createElement("th", {className: this.sortClass('Track'), onClick: this.sort('Track')}, "#");
+		}
+		var track = this.props.isqueue ? (
+			React.createElement("th", null)
+		) : (
+			React.createElement("th", {className: this.sortClass('Track'), onClick: this.sort('Track')}, 
+				"#"
+			)
+		);
 		return (
 			React.createElement("div", null, 
 				queue, 
-				React.createElement(TextField, {style: {width: this.state.tableWidth - 2}, onChange: this.search, value: this.state.search}, "search"), 
-				React.createElement(Table, {ref: "table", 
+				React.createElement(TextField, {
+					style: { width: this.state.tableWidth - 2}, 
+					onChange: this.search, 
+					value: this.state.search
+				}, 
+					"search"
+				), 
+				React.createElement(Table, {
+					ref: "table", 
 					headerHeight: 50, 
 					rowHeight: 50, 
 					rowGetter: this.getter, 
@@ -32232,7 +32286,7 @@ var Tracks = exports.Tracks = React.createClass({displayName: "Tracks",
 					width: this.state.tableWidth, 
 					height: height, 
 					overflowX: 'hidden'
-					}, 
+				}, 
 					React.createElement(Column, {
 						width: 50, 
 						dataKey: 'Track', 
@@ -32279,8 +32333,8 @@ var Tracks = exports.Tracks = React.createClass({displayName: "Tracks",
 				)
 			)
 		);
-	}
-});
+	},
+}));
 
 exports.TrackList = React.createClass({displayName: "TrackList",
 	mixins: [Reflux.listenTo(Stores.tracks, 'setState')],
@@ -32290,11 +32344,13 @@ exports.TrackList = React.createClass({displayName: "TrackList",
 	render: function() {
 		return (
 			React.createElement("div", null, 
-				React.createElement("div", {className: "mdl-typography--display-3 mdl-color-text--grey-600"}, "Music"), 
+				React.createElement("div", {className: "mdl-typography--display-3 mdl-color-text--grey-600"}, 
+					"Music"
+				), 
 				React.createElement(Tracks, {tracks: this.state.Tracks})
 			)
 		);
-	}
+	},
 });
 
 function searchClass(field, sort) {
@@ -32313,11 +32369,13 @@ function searchClass(field, sort) {
 			});
 			return (
 				React.createElement("div", null, 
-					React.createElement("div", {className: "mdl-typography--display-3 mdl-color-text--grey-600"}, React.createElement(Link, {to: "app"}, "Music"), " > ", prop), 
+					React.createElement("div", {className: "mdl-typography--display-3 mdl-color-text--grey-600"}, 
+						React.createElement(Link, {to: "app"}, "Music"), " > ", prop
+					), 
 					React.createElement(Tracks, {tracks: tracks, initSort: sort})
 				)
 			);
-		}
+		},
 	});
 }
 
@@ -32327,7 +32385,7 @@ exports.Album = searchClass('Album', 'Track');
 },{"./mdl.js":272,"./moggio.js":273,"fixed-data-table":51,"react":249,"react-router":76,"reflux":266,"underscore":269}],272:[function(require,module,exports){
 var React = require('react');
 
-var exports = module.exports = {};
+var exports = (module.exports = {});
 
 function propClasses(prefix, props) {
 	var cn = '';
@@ -32335,7 +32393,7 @@ function propClasses(prefix, props) {
 		if (!props[i]) {
 			continue;
 		}
-		
+
 		cn += ' ' + prefix + i;
 	}
 	return cn;
@@ -32346,12 +32404,7 @@ exports.TextField = React.createClass({displayName: "TextField",
 		componentHandler.upgradeDom();
 	},
 	render: function() {
-		var $__0=
-			
-			
-			
-			
-			   this.props,children=$__0.children,error=$__0.error,floating=$__0.floating,pattern=$__0.pattern,others=(function(source, exclusion) {var rest = {};var hasOwn = Object.prototype.hasOwnProperty;if (source == null) {throw new TypeError();}for (var key in source) {if (hasOwn.call(source, key) && !hasOwn.call(exclusion, key)) {rest[key] = source[key];}}return rest;})($__0,{children:1,error:1,floating:1,pattern:1});
+		var $__0=        this.props,children=$__0.children,error=$__0.error,floating=$__0.floating,pattern=$__0.pattern,others=(function(source, exclusion) {var rest = {};var hasOwn = Object.prototype.hasOwnProperty;if (source == null) {throw new TypeError();}for (var key in source) {if (hasOwn.call(source, key) && !hasOwn.call(exclusion, key)) {rest[key] = source[key];}}return rest;})($__0,{children:1,error:1,floating:1,pattern:1});
 		var cn = 'mdl-textfield mdl-js-textfield';
 		if (floating) {
 			cn += ' mdl-textfield--floating-label';
@@ -32360,39 +32413,30 @@ exports.TextField = React.createClass({displayName: "TextField",
 			error = React.createElement("span", {className: "mdl-textfield__error"}, error);
 		}
 		return (
-			React.createElement("div", {
-				className: cn
-				}, 
+			React.createElement("div", {className: cn}, 
 				React.createElement("input", React.__spread({className: "mdl-textfield__input", pattern: pattern},  others)), 
 				React.createElement("label", {className: "mdl-textfield__label"}, children), 
 				error
 			)
 		);
-	}
+	},
 });
 
 exports.Button = React.createClass({displayName: "Button",
 	render: function() {
-		var $__0=
-			
-			
-			   this.props,children=$__0.children,disabled=$__0.disabled,others=(function(source, exclusion) {var rest = {};var hasOwn = Object.prototype.hasOwnProperty;if (source == null) {throw new TypeError();}for (var key in source) {if (hasOwn.call(source, key) && !hasOwn.call(exclusion, key)) {rest[key] = source[key];}}return rest;})($__0,{children:1,disabled:1});
+		var $__0=      this.props,children=$__0.children,disabled=$__0.disabled,others=(function(source, exclusion) {var rest = {};var hasOwn = Object.prototype.hasOwnProperty;if (source == null) {throw new TypeError();}for (var key in source) {if (hasOwn.call(source, key) && !hasOwn.call(exclusion, key)) {rest[key] = source[key];}}return rest;})($__0,{children:1,disabled:1});
 		var cn = 'mdl-button mdl-js-button mdl-js-ripple-effect';
 		cn += propClasses('mdl-button--', others);
 		return (
-			React.createElement("button", React.__spread({
-				className: cn, 
-				disabled: disabled}, 
-				others
-				), 
+			React.createElement("button", React.__spread({className: cn, disabled: disabled},  others), 
 				children
 			)
 		);
-	}
+	},
 });
 
 },{"react":249}],273:[function(require,module,exports){
-var exports = module.exports = {};
+var exports = (module.exports = {});
 
 var React = require('react');
 var Reflux = require('reflux');
@@ -32417,18 +32461,18 @@ _.each(exports.Actions, function(action, name) {
 		update: function(data) {
 			this.data = data;
 			this.trigger.apply(this, arguments);
-		}
+		},
 	});
 });
 
-var POST = exports.POST = function(path, body, success) {
+var POST = (exports.POST = function(path, body, success) {
 	var f = fetch(path, {
 		method: 'post',
 		headers: {
-			'Accept': 'application/json',
-			'Content-Type': 'application/json'
+			Accept: 'application/json',
+			'Content-Type': 'application/json',
 		},
-		body: JSON.stringify(body)
+		body: JSON.stringify(body),
 	});
 	f.then(function(response) {
 		if (response.status >= 200 && response.status < 300) {
@@ -32447,7 +32491,7 @@ var POST = exports.POST = function(path, body, success) {
 		f.then(success);
 	}
 	return f;
-}
+});
 
 document.addEventListener('keydown', function(e) {
 	if (document.activeElement != document.body) {
@@ -32455,17 +32499,17 @@ document.addEventListener('keydown', function(e) {
 	}
 	var cmd;
 	switch (e.keyCode) {
-	case 32: // space
-		cmd = 'pause';
-		break;
-	case 37: // left
-		cmd = 'prev';
-		break;
-	case 39: // right
-		cmd = 'next';
-		break;
-	default:
-		return;
+		case 32: // space
+			cmd = 'pause';
+			break;
+		case 37: // left
+			cmd = 'prev';
+			break;
+		case 39: // right
+			cmd = 'next';
+			break;
+		default:
+			return;
 	}
 	POST('/api/cmd/' + cmd);
 	e.preventDefault();
@@ -32477,8 +32521,12 @@ exports.Icon = React.createClass({displayName: "Icon",
 		if (this.props.className) {
 			cn += ' ' + this.props.className;
 		}
-		return React.createElement("i", React.__spread({},  this.props, {className: cn}), this.props.name);
-	}
+		return (
+			React.createElement("i", React.__spread({},  this.props, {className: cn}), 
+				this.props.name
+			)
+		);
+	},
 });
 
 exports.Time = React.createClass({displayName: "Time",
@@ -32487,10 +32535,14 @@ exports.Time = React.createClass({displayName: "Time",
 		var m = Math.floor(t / 60);
 		var s = Math.floor(t % 60);
 		if (s < 10) {
-			s = "0" + s;
+			s = '0' + s;
 		}
-		return React.createElement("span", null, m, ":", s);
-	}
+		return (
+			React.createElement("span", null, 
+				m, ":", s
+			)
+		);
+	},
 });
 
 },{"react":249,"reflux":266,"underscore":269}],274:[function(require,module,exports){
@@ -32526,19 +32578,22 @@ var App = React.createClass({displayName: "App",
 	componentDidMount: function() {
 		this.startWS();
 		var that = this;
-		fetch('https://api.github.com/repos/mjibson/moggio/releases/latest')
-		.then(function (r) {
-			r.json().then(function(j) {
-				var v = j.tag_name.substr(1);
-				if (j.tag_name == moggioVersion) {
-					return;
-				}
-				that.setState({update: {
-					name: v,
-					link: j.html_url
-				}});
-			});
-		});
+		fetch('https://api.github.com/repos/mjibson/moggio/releases/latest').then(
+			function(r) {
+				r.json().then(function(j) {
+					var v = j.tag_name.substr(1);
+					if (j.tag_name == moggioVersion) {
+						return;
+					}
+					that.setState({
+						update: {
+							name: v,
+							link: j.html_url,
+						},
+					});
+				});
+			}
+		);
 	},
 	getInitialState: function() {
 		return {};
@@ -32546,24 +32601,24 @@ var App = React.createClass({displayName: "App",
 	startWS: function() {
 		var ws = new WebSocket('ws://' + window.location.host + '/ws/');
 		ws.onmessage = function(e) {
-			this.setState({connected: true});
+			this.setState({ connected: true });
 			var d = JSON.parse(e.data);
 			if (Actions[d.Type]) {
 				Actions[d.Type](d.Data);
 			} else {
-				console.log("missing action", d.Type);
+				console.log('missing action', d.Type);
 			}
 		}.bind(this);
 		ws.onclose = function() {
-			this.setState({connected: false});
+			this.setState({ connected: false });
 			setTimeout(this.startWS, 1000);
 		}.bind(this);
 	},
 	error: function(d) {
-		this.setState({error: d});
+		this.setState({ error: d });
 	},
 	clearError: function() {
-		this.setState({error: null});
+		this.setState({ error: null });
 	},
 	routeClass: function(route, params) {
 		var active = this.context.router.isActive(route, params);
@@ -32594,77 +32649,113 @@ var App = React.createClass({displayName: "App",
 		if (this.state.error) {
 			var time = new Date(this.state.error.Time);
 			error = (
-				React.createElement("div", {style: {padding: '10px'}}, 
-					React.createElement(Button, {onClick: this.clearError, raised: true, primary: true}, "clear"), 
-					React.createElement("span", {style: {paddingLeft: '10px'}}, 
+				React.createElement("div", {style: { padding: '10px'}}, 
+					React.createElement(Button, {onClick: this.clearError, raised: true, primary: true}, 
+						"clear"
+					), 
+					React.createElement("span", {style: { paddingLeft: '10px'}}, 
 						"error at ", time.toString(), ": ", this.state.error.Error
 					)
 				)
 			);
 		}
-		var menuItems = _.map(navMenuItems, function(v, k) {
-			return React.createElement(Link, {key: k, className: "mdl-navigation__link" + this.routeClass(v.route), to: v.route}, v.text);
-		}.bind(this));
+		var menuItems = _.map(
+			navMenuItems,
+			function(v, k) {
+				return (
+					React.createElement(Link, {
+						key: k, 
+						className: 'mdl-navigation__link' + this.routeClass(v.route), 
+						to: v.route
+					}, 
+						v.text
+					)
+				);
+			}.bind(this)
+		);
 		if (this.state.CentralURL) {
 			if (this.state.Username) {
 				var un = (
 					React.createElement("span", {key: "username", className: "mdl-navigation__link"}, 
 						this.state.Username, 
 						React.createElement("br", null), 
-						React.createElement("a", {href: "", onClick: this.logout}, "[logout]")
+						React.createElement("a", {href: "", onClick: this.logout}, 
+							"[logout]"
+						)
 					)
 				);
 				menuItems.unshift(un);
 			} else {
-				var origin = location.protocol + '//' + location.host + '/api/token/register';
-				var params = "?redirect=" + encodeURIComponent(origin);
+				var origin =
+					location.protocol + '//' + location.host + '/api/token/register';
+				var params = '?redirect=' + encodeURIComponent(origin);
 				if (this.state.Hostname) {
 					params += '&hostname=' + encodeURIComponent(this.state.Hostname);
 				}
-				menuItems.unshift(React.createElement("a", {key: "username", href: this.state.CentralURL + '/token' + params, className: "mdl-navigation__link"}, "login"));
+				menuItems.unshift(
+					React.createElement("a", {
+						key: "username", 
+						href: this.state.CentralURL + '/token' + params, 
+						className: "mdl-navigation__link"
+					}, 
+						"login"
+					)
+				);
 			}
 		}
 		var playlists;
 		if (this.state.Playlists) {
-			var entries = _.map(this.state.Playlists, function(_, key) {
-				var params = {Playlist: key};
-				return React.createElement(Link, {key: "playlist-" + key, className: "mdl-navigation__link" + this.routeClass('playlist', params), to: "playlist", params: params}, key);
-			}.bind(this));
-			playlists = (
-				React.createElement("nav", {className: "mdl-navigation"}, 
-					entries
-				)
+			var entries = _.map(
+				this.state.Playlists,
+				function(_, key) {
+					var params = { Playlist: key };
+					return (
+						React.createElement(Link, {
+							key: 'playlist-' + key, 
+							className: 
+								'mdl-navigation__link' + this.routeClass('playlist', params), 
+							
+							to: "playlist", 
+							params: params
+						}, 
+							key
+						)
+					);
+				}.bind(this)
 			);
+			playlists = React.createElement("nav", {className: "mdl-navigation"}, entries);
 		}
 		var update;
 		if (this.state.update) {
-			update = React.createElement("span", {className: "mdl-layout-title"}, 
-				"new version: ", 
-				React.createElement("a", {href: this.state.update.link}, this.state.update.name)
+			update = (
+				React.createElement("span", {className: "mdl-layout-title"}, 
+					"new version: ", 
+					React.createElement("a", {href: this.state.update.link}, this.state.update.name)
+				)
 			);
 		}
 		return (
 			React.createElement("div", null, 
 				overlay, 
 				React.createElement("div", {className: "top-main"}, 
-				React.createElement("div", {className: "mdl-layout mdl-js-layout mdl-layout--fixed-drawer" + ' ' +
-					"mdl-layout--overlay-drawer-button"}, 
-					React.createElement("div", {className: "mdl-layout__drawer"}, 
-						React.createElement("span", {className: "mdl-layout-title"}, "moggio"), 
-						React.createElement("nav", {className: "mdl-navigation"}, 
-							menuItems
+					React.createElement("div", {
+						className: "mdl-layout mdl-js-layout mdl-layout--fixed-drawer" + ' ' +
+					"mdl-layout--overlay-drawer-button"
+					}, 
+						React.createElement("div", {className: "mdl-layout__drawer"}, 
+							React.createElement("span", {className: "mdl-layout-title"}, "moggio"), 
+							React.createElement("nav", {className: "mdl-navigation"}, menuItems), 
+							React.createElement("span", {className: "mdl-layout-title"}, "Playlists"), 
+							playlists, 
+							update
 						), 
-						React.createElement("span", {className: "mdl-layout-title"}, "Playlists"), 
-						playlists, 
-						update
-					), 
-					React.createElement("main", {className: "mdl-layout__content"}, 
-						React.createElement("div", {className: "page-content"}, 
-							error, 
-							React.createElement(RouteHandler, React.__spread({},  this.props))
+						React.createElement("main", {className: "mdl-layout__content"}, 
+							React.createElement("div", {className: "page-content"}, 
+								error, 
+								React.createElement(RouteHandler, React.__spread({},  this.props))
+							)
 						)
 					)
-				)
 				), 
 
 				React.createElement("footer", null, 
@@ -32672,7 +32763,7 @@ var App = React.createClass({displayName: "App",
 				)
 			)
 		);
-	}
+	},
 });
 
 var navMenuItems = [
@@ -32684,10 +32775,7 @@ var navMenuItems = [
 ];
 
 var Player = React.createClass({displayName: "Player",
-	mixins: [
-		Reflux.listenTo(Stores.status, 'setStatus'),
-		Router.Navigation
-	],
+	mixins: [Reflux.listenTo(Stores.status, 'setStatus'), Router.Navigation],
 	cmd: function(cmd) {
 		return function() {
 			Moggio.POST('/api/cmd/' + cmd);
@@ -32726,14 +32814,17 @@ var Player = React.createClass({displayName: "Player",
 	renderSeek: function() {
 		if (this.state.State == 0) {
 			window.clearTimeout(this.timeout);
-			this.timeout = setTimeout(function() {
-				window.requestAnimationFrame(this.renderSeek);
-			}.bind(this), 200);
+			this.timeout = setTimeout(
+				function() {
+					window.requestAnimationFrame(this.renderSeek);
+				}.bind(this),
+				200
+			);
 		}
 		var s = document.getElementById('seek-pos');
 		var pos = 0;
 		if (this.state.songStart) {
-			var d = new Date - this.state.songStart;
+			var d = new Date() - this.state.songStart;
 			pos = d / this.state.Time * 1e8;
 		}
 		s.style.width = pos + '%';
@@ -32744,16 +32835,26 @@ var Player = React.createClass({displayName: "Player",
 		if (this.state.Song && this.state.Song.ID) {
 			var info = this.state.SongInfo;
 			var song = this.state.Song.UID;
-			title = React.createElement("div", {style: {fontWeight: '500'}}, info.SongTitle || info.Title);
+			title = (
+				React.createElement("div", {style: { fontWeight: '500'}}, info.SongTitle || info.Title)
+			);
 			var ialbum, iartist, joiner;
 			if (info.Album) {
-				ialbum = React.createElement(Link, {to: "album", params: info}, info.Album);
+				ialbum = (
+					React.createElement(Link, {to: "album", params: info}, 
+						info.Album
+					)
+				);
 				if (info.Artist) {
 					joiner = ' - ';
 				}
 			}
 			if (info.Artist) {
-				iartist = React.createElement(Link, {to: "artist", params: info}, info.Artist);
+				iartist = (
+					React.createElement(Link, {to: "artist", params: info}, 
+						info.Artist
+					)
+				);
 			}
 			album = (
 				React.createElement("div", null, 
@@ -32781,7 +32882,7 @@ var Player = React.createClass({displayName: "Player",
 			} else {
 				img = React.createElement("div", {style: istyle, className: "mdl-color--grey-300"});
 			}
-		};
+		}
 		var play = this.state.State == 0 ? 'pause' : 'play_circle_filled';
 		var ctrlStyle = {
 			position: 'absolute',
@@ -32817,7 +32918,16 @@ var Player = React.createClass({displayName: "Player",
 					React.createElement("div", {id: "seek-pos", className: "mdl-color--orange-500"})
 				), 
 				img, 
-				React.createElement("div", {style: {position: 'absolute', left: '80px', bottom: '0', right: '0', height: '70px', textAlign: 'center'}}, 
+				React.createElement("div", {
+					style: {
+						position: 'absolute',
+						left: '80px',
+						bottom: '0',
+						right: '0',
+						height: '70px',
+						textAlign: 'center',
+					}
+				}, 
 					React.createElement("div", {style: statusStyle}, 
 						title, 
 						album
@@ -32828,26 +32938,41 @@ var Player = React.createClass({displayName: "Player",
 						)
 					), 
 					React.createElement("div", {style: ctrlStyle, className: "mdl-color--grey-100"}, 
-						React.createElement(Button, {onClick: this.cmd('repeat'), style: btnStyle, accent: this.state.Repeat, icon: true}, 
+						React.createElement(Button, {
+							onClick: this.cmd('repeat'), 
+							style: btnStyle, 
+							accent: this.state.Repeat, 
+							icon: true
+						}, 
 							React.createElement("i", {className: "material-icons"}, "repeat")
 						), 
 						React.createElement(Button, {onClick: this.cmd('prev'), style: btnStyle, icon: true}, 
 							React.createElement("i", {className: "material-icons"}, "skip_previous")
 						), 
-						React.createElement(Button, {onClick: this.cmd('pause'), style: btnStyle, accent: true, icon: true}, 
+						React.createElement(Button, {
+							onClick: this.cmd('pause'), 
+							style: btnStyle, 
+							accent: true, 
+							icon: true
+						}, 
 							React.createElement("i", {className: "material-icons"}, play)
 						), 
 						React.createElement(Button, {onClick: this.cmd('next'), style: btnStyle, icon: true}, 
 							React.createElement("i", {className: "material-icons"}, "skip_next")
 						), 
-						React.createElement(Button, {onClick: this.cmd('random'), style: btnStyle, accent: this.state.Random, icon: true}, 
+						React.createElement(Button, {
+							onClick: this.cmd('random'), 
+							style: btnStyle, 
+							accent: this.state.Random, 
+							icon: true
+						}, 
 							React.createElement("i", {className: "material-icons"}, "shuffle")
 						)
 					)
 				)
 			)
 		);
-	}
+	},
 });
 
 var routes = (
@@ -32857,19 +32982,23 @@ var routes = (
 		React.createElement(Route, {name: "albums", path: "/albums", handler: Group.Albums}), 
 		React.createElement(Route, {name: "artist", path: "/artist/:Artist", handler: List.Artist}), 
 		React.createElement(Route, {name: "artists", path: "/artists", handler: Group.Artists}), 
-		React.createElement(Route, {name: "playlist", path: "/playlist/:Playlist", handler: Playlist.Playlist}), 
+		React.createElement(Route, {
+			name: "playlist", 
+			path: "/playlist/:Playlist", 
+			handler: Playlist.Playlist}
+		), 
 		React.createElement(Route, {name: "protocols", handler: Protocol.Protocols}), 
 		React.createElement(Route, {name: "queue", handler: Playlist.Queue})
 	)
 );
 
-Router.run(routes, Router.HistoryLocation, function (Handler, state) {
+Router.run(routes, Router.HistoryLocation, function(Handler, state) {
 	var params = state.params;
 	React.render(React.createElement(Handler, {params: params}), document.getElementById('main'));
 });
 
 },{"./group.js":270,"./list.js":271,"./mdl.js":272,"./moggio.js":273,"./playlist.js":275,"./protocol.js":276,"react":249,"react-router":76,"reflux":266,"underscore":269}],275:[function(require,module,exports){
-var exports = module.exports = {};
+var exports = (module.exports = {});
 
 var List = require('./list.js');
 var Moggio = require('./moggio.js');
@@ -32889,12 +33018,12 @@ exports.Queue = React.createClass({displayName: "Queue",
 		Moggio.POST('/api/queue/change', params);
 	},
 	save: function() {
-		var name = prompt("Playlist name:");
+		var name = prompt('Playlist name:');
 		if (!name) {
 			return;
 		}
 		if (this.state.Playlists[name]) {
-			if (!window.confirm("Overwrite existing playlist?")) {
+			if (!window.confirm('Overwrite existing playlist?')) {
 				return;
 			}
 		}
@@ -32907,25 +33036,33 @@ exports.Queue = React.createClass({displayName: "Queue",
 	render: function() {
 		return (
 			React.createElement("div", null, 
-				React.createElement("div", {className: "mdl-typography--display-3 mdl-color-text--grey-600"}, "Queue"), 
-				React.createElement(Button, {raised: true, onClick: this.clear}, "clear"), 
+				React.createElement("div", {className: "mdl-typography--display-3 mdl-color-text--grey-600"}, 
+					"Queue"
+				), 
+				React.createElement(Button, {raised: true, onClick: this.clear}, 
+					"clear"
+				), 
 				" ", 
-				React.createElement(Button, {raised: true, onClick: this.save}, "save"), 
+				React.createElement(Button, {raised: true, onClick: this.save}, 
+					"save"
+				), 
 				React.createElement(List.Tracks, {tracks: this.state.Queue, noIdx: true, isqueue: true})
 			)
 		);
-	}
+	},
 });
 
 exports.Playlist = React.createClass({displayName: "Playlist",
 	mixins: [Reflux.listenTo(Stores.playlist, 'setState')],
 	getInitialState: function() {
-		return Stores.playlist.data || {
-			Playlists: {}
-		};
+		return (
+			Stores.playlist.data || {
+				Playlists: {},
+			}
+		);
 	},
 	clear: function() {
-		if (!confirm("Delete playlist?")) {
+		if (!confirm('Delete playlist?')) {
 			return;
 		}
 		var params = [['clear']];
@@ -32934,16 +33071,23 @@ exports.Playlist = React.createClass({displayName: "Playlist",
 	render: function() {
 		return (
 			React.createElement("div", null, 
-				React.createElement("div", {className: "mdl-typography--display-3 mdl-color-text--grey-600"}, this.props.params.Playlist), 
-				React.createElement(Button, {raised: true, onClick: this.clear}, "delete playlist"), 
-				React.createElement(List.Tracks, {tracks: this.state.Playlists[this.props.params.Playlist], useIdxAsNum: true})
+				React.createElement("div", {className: "mdl-typography--display-3 mdl-color-text--grey-600"}, 
+					this.props.params.Playlist
+				), 
+				React.createElement(Button, {raised: true, onClick: this.clear}, 
+					"delete playlist"
+				), 
+				React.createElement(List.Tracks, {
+					tracks: this.state.Playlists[this.props.params.Playlist], 
+					useIdxAsNum: true}
+				)
 			)
 		);
-	}
+	},
 });
 
 },{"./list.js":271,"./mdl.js":272,"./moggio.js":273,"react":249,"reflux":266,"underscore":269}],276:[function(require,module,exports){
-var exports = module.exports = {};
+var exports = (module.exports = {});
 
 var Moggio = require('./moggio.js');
 var React = require('react');
@@ -32968,36 +33112,57 @@ exports.Protocols = React.createClass({displayName: "Protocols",
 		var selectedIndex = _.indexOf(keys, this.state.Selected);
 		var dropdown;
 		if (keys.length) {
-			var tabs = keys.map(function(protocol) {
-				var click = function(evt) {
-					evt.preventDefault();
-					this.setState({Selected: protocol});
-				}.bind(this);
-				var cn = 'mdl-tabs__tab';
-				if (this.state.Selected == protocol) {
-					cn += ' is-active';
-				}
-				return React.createElement("a", {href: true, key: protocol, className: cn, onClick: click}, protocol);
-			}.bind(this));
+			var tabs = keys.map(
+				function(protocol) {
+					var click = function(evt) {
+						evt.preventDefault();
+						this.setState({ Selected: protocol });
+					}.bind(this);
+					var cn = 'mdl-tabs__tab';
+					if (this.state.Selected == protocol) {
+						cn += ' is-active';
+					}
+					return (
+						React.createElement("a", {href: true, key: protocol, className: cn, onClick: click}, 
+							protocol
+						)
+					);
+				}.bind(this)
+			);
 			dropdown = (
 				React.createElement("div", {className: "mdl-tabs mdl-js-tabs mdl-js-ripple-effect"}, 
-					React.createElement("div", {className: "mdl-tabs__tab-bar"}, 
-						tabs
-					)
+					React.createElement("div", {className: "mdl-tabs__tab-bar"}, tabs)
 				)
 			);
 		}
 		var protocols = [];
-		_.each(this.state.Current, function(instances, protocol) {
-			_.each(instances, function(key) {
-				protocols.push(React.createElement(ProtocolRow, {key: protocol + "\n" + key, protocol: protocol, name: key}));
-			}, this);
-		}, this);
+		_.each(
+			this.state.Current,
+			function(instances, protocol) {
+				_.each(
+					instances,
+					function(key) {
+						protocols.push(
+							React.createElement(ProtocolRow, {
+								key: protocol + '\n' + key, 
+								protocol: protocol, 
+								name: key}
+							)
+						);
+					},
+					this
+				);
+			},
+			this
+		);
 		var selected;
 		if (this.state.Selected) {
 			selected = (
 				React.createElement("div", {className: "mdl-tabs__panel is-active"}, 
-					React.createElement(Protocol, {protocol: this.state.Selected, params: this.state.Available[this.state.Selected]})
+					React.createElement(Protocol, {
+						protocol: this.state.Selected, 
+						params: this.state.Available[this.state.Selected]}
+					)
 				)
 			);
 		}
@@ -33014,7 +33179,9 @@ exports.Protocols = React.createClass({displayName: "Protocols",
 			});
 			inprogress = (
 				React.createElement("div", null, 
-					React.createElement("div", {className: "mdl-typography--display-3 mdl-color-text--grey-600"}, "Adding In Progress..."), 
+					React.createElement("div", {className: "mdl-typography--display-3 mdl-color-text--grey-600"}, 
+						"Adding In Progress..."
+					), 
 					React.createElement("table", {className: "mdl-data-table mdl-js-data-table"}, 
 						React.createElement("thead", null, 
 							React.createElement("tr", null, 
@@ -33022,34 +33189,36 @@ exports.Protocols = React.createClass({displayName: "Protocols",
 								React.createElement("th", {className: "mdl-data-table__cell--non-numeric"}, "name")
 							)
 						), 
-						React.createElement("tbody", null, 
-							insts
-						)
+						React.createElement("tbody", null, insts)
 					)
 				)
 			);
 		}
-		return React.createElement("div", null, 
-			React.createElement("div", {className: "mdl-typography--display-3 mdl-color-text--grey-600"}, "New Protocol"), 
-			dropdown, 
-			selected, 
-			inprogress, 
-			React.createElement("div", {className: "mdl-typography--display-3 mdl-color-text--grey-600"}, "Existing Protocols"), 
-			React.createElement("table", {className: "mdl-data-table mdl-js-data-table"}, 
-				React.createElement("thead", null, 
-					React.createElement("tr", null, 
-						React.createElement("th", {className: "mdl-data-table__cell--non-numeric"}, "protocol"), 
-						React.createElement("th", {className: "mdl-data-table__cell--non-numeric"}, "name"), 
-						React.createElement("th", {className: "mdl-data-table__cell--non-numeric"}, "remove"), 
-						React.createElement("th", {className: "mdl-data-table__cell--non-numeric"}, "refresh")
-					)
+		return (
+			React.createElement("div", null, 
+				React.createElement("div", {className: "mdl-typography--display-3 mdl-color-text--grey-600"}, 
+					"New Protocol"
 				), 
-				React.createElement("tbody", null, 
-					protocols
+				dropdown, 
+				selected, 
+				inprogress, 
+				React.createElement("div", {className: "mdl-typography--display-3 mdl-color-text--grey-600"}, 
+					"Existing Protocols"
+				), 
+				React.createElement("table", {className: "mdl-data-table mdl-js-data-table"}, 
+					React.createElement("thead", null, 
+						React.createElement("tr", null, 
+							React.createElement("th", {className: "mdl-data-table__cell--non-numeric"}, "protocol"), 
+							React.createElement("th", {className: "mdl-data-table__cell--non-numeric"}, "name"), 
+							React.createElement("th", {className: "mdl-data-table__cell--non-numeric"}, "remove"), 
+							React.createElement("th", {className: "mdl-data-table__cell--non-numeric"}, "refresh")
+						)
+					), 
+					React.createElement("tbody", null, protocols)
 				)
 			)
 		);
-	}
+	},
 });
 
 var Protocol = React.createClass({displayName: "Protocol",
@@ -33064,9 +33233,13 @@ var Protocol = React.createClass({displayName: "Protocol",
 			protocol: this.props.protocol,
 			params: this.state.params,
 		};
-		Moggio.POST('/api/protocol/add', params, function() {
-			this.setState(this.getInitialState());
-		}.bind(this));
+		Moggio.POST(
+			'/api/protocol/add',
+			params,
+			function() {
+				this.setState(this.getInitialState());
+			}.bind(this)
+		);
 	},
 	render: function() {
 		if (!this.props.params) {
@@ -33074,17 +33247,31 @@ var Protocol = React.createClass({displayName: "Protocol",
 		}
 		var params = [];
 		if (this.props.params.Params) {
-			params = this.props.params.Params.map(function(param, idx) {
-				var change = function(event) {
-					var p = this.state.params.slice();
-					p[idx] = event.target.value;
-					this.setState({
-						params: p,
-						save: true,
-					});
-				}.bind(this);
-				return React.createElement("div", {key: idx}, React.createElement(TextField, {style: {width: '75%'}, onChange: change, value: this.state.params[idx], floating: true, type: param}, param));
-			}.bind(this));
+			params = this.props.params.Params.map(
+				function(param, idx) {
+					var change = function(event) {
+						var p = this.state.params.slice();
+						p[idx] = event.target.value;
+						this.setState({
+							params: p,
+							save: true,
+						});
+					}.bind(this);
+					return (
+						React.createElement("div", {key: idx}, 
+							React.createElement(TextField, {
+								style: { width: '75%'}, 
+								onChange: change, 
+								value: this.state.params[idx], 
+								floating: true, 
+								type: param
+							}, 
+								param
+							)
+						)
+					);
+				}.bind(this)
+			);
 		}
 		if (this.props.params.OAuthURL) {
 			params.push(
@@ -33093,14 +33280,20 @@ var Protocol = React.createClass({displayName: "Protocol",
 				)
 			);
 		} else {
-			params.push(React.createElement(Button, {key: "save", raised: true, colored: true, onClick: this.save, disabled: !this.state.save}, "save"));
+			params.push(
+				React.createElement(Button, {
+					key: "save", 
+					raised: true, 
+					colored: true, 
+					onClick: this.save, 
+					disabled: !this.state.save
+				}, 
+					"save"
+				)
+			);
 		}
-		return (
-			React.createElement("div", null, 
-				params
-			)
-		);
-	}
+		return React.createElement("div", null, params);
+	},
 });
 
 var ProtocolRow = React.createClass({displayName: "ProtocolRow",
@@ -33119,7 +33312,9 @@ var ProtocolRow = React.createClass({displayName: "ProtocolRow",
 	render: function() {
 		return (
 			React.createElement("tr", null, 
-				React.createElement("td", {className: "mdl-data-table__cell--non-numeric"}, this.props.protocol), 
+				React.createElement("td", {className: "mdl-data-table__cell--non-numeric"}, 
+					this.props.protocol
+				), 
 				React.createElement("td", {className: "mdl-data-table__cell--non-numeric"}, this.props.name), 
 				React.createElement("td", {className: "mdl-data-table__cell--non-numeric"}, 
 					React.createElement(Button, {onClick: this.remove, icon: true}, 
@@ -33133,19 +33328,108 @@ var ProtocolRow = React.createClass({displayName: "ProtocolRow",
 				)
 			)
 		);
-	}
+	},
 });
 
 },{"./mdl.js":272,"./moggio.js":273,"react":249,"reflux":266,"underscore":269}],277:[function(require,module,exports){
 // shim for using process in browser
-
 var process = module.exports = {};
+
+// cached from whatever global is present so that test runners that stub it
+// don't break things.  But we need to wrap it in a try catch in case it is
+// wrapped in strict mode code which doesn't define any globals.  It's inside a
+// function because try/catches deoptimize in certain engines.
+
+var cachedSetTimeout;
+var cachedClearTimeout;
+
+function defaultSetTimout() {
+    throw new Error('setTimeout has not been defined');
+}
+function defaultClearTimeout () {
+    throw new Error('clearTimeout has not been defined');
+}
+(function () {
+    try {
+        if (typeof setTimeout === 'function') {
+            cachedSetTimeout = setTimeout;
+        } else {
+            cachedSetTimeout = defaultSetTimout;
+        }
+    } catch (e) {
+        cachedSetTimeout = defaultSetTimout;
+    }
+    try {
+        if (typeof clearTimeout === 'function') {
+            cachedClearTimeout = clearTimeout;
+        } else {
+            cachedClearTimeout = defaultClearTimeout;
+        }
+    } catch (e) {
+        cachedClearTimeout = defaultClearTimeout;
+    }
+} ())
+function runTimeout(fun) {
+    if (cachedSetTimeout === setTimeout) {
+        //normal enviroments in sane situations
+        return setTimeout(fun, 0);
+    }
+    // if setTimeout wasn't available but was latter defined
+    if ((cachedSetTimeout === defaultSetTimout || !cachedSetTimeout) && setTimeout) {
+        cachedSetTimeout = setTimeout;
+        return setTimeout(fun, 0);
+    }
+    try {
+        // when when somebody has screwed with setTimeout but no I.E. maddness
+        return cachedSetTimeout(fun, 0);
+    } catch(e){
+        try {
+            // When we are in I.E. but the script has been evaled so I.E. doesn't trust the global object when called normally
+            return cachedSetTimeout.call(null, fun, 0);
+        } catch(e){
+            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error
+            return cachedSetTimeout.call(this, fun, 0);
+        }
+    }
+
+
+}
+function runClearTimeout(marker) {
+    if (cachedClearTimeout === clearTimeout) {
+        //normal enviroments in sane situations
+        return clearTimeout(marker);
+    }
+    // if clearTimeout wasn't available but was latter defined
+    if ((cachedClearTimeout === defaultClearTimeout || !cachedClearTimeout) && clearTimeout) {
+        cachedClearTimeout = clearTimeout;
+        return clearTimeout(marker);
+    }
+    try {
+        // when when somebody has screwed with setTimeout but no I.E. maddness
+        return cachedClearTimeout(marker);
+    } catch (e){
+        try {
+            // When we are in I.E. but the script has been evaled so I.E. doesn't  trust the global object when called normally
+            return cachedClearTimeout.call(null, marker);
+        } catch (e){
+            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error.
+            // Some versions of I.E. have different rules for clearTimeout vs setTimeout
+            return cachedClearTimeout.call(this, marker);
+        }
+    }
+
+
+
+}
 var queue = [];
 var draining = false;
 var currentQueue;
 var queueIndex = -1;
 
 function cleanUpNextTick() {
+    if (!draining || !currentQueue) {
+        return;
+    }
     draining = false;
     if (currentQueue.length) {
         queue = currentQueue.concat(queue);
@@ -33161,7 +33445,7 @@ function drainQueue() {
     if (draining) {
         return;
     }
-    var timeout = setTimeout(cleanUpNextTick);
+    var timeout = runTimeout(cleanUpNextTick);
     draining = true;
 
     var len = queue.length;
@@ -33178,7 +33462,7 @@ function drainQueue() {
     }
     currentQueue = null;
     draining = false;
-    clearTimeout(timeout);
+    runClearTimeout(timeout);
 }
 
 process.nextTick = function (fun) {
@@ -33190,7 +33474,7 @@ process.nextTick = function (fun) {
     }
     queue.push(new Item(fun, args));
     if (queue.length === 1 && !draining) {
-        setTimeout(drainQueue, 0);
+        runTimeout(drainQueue);
     }
 };
 
@@ -33218,6 +33502,10 @@ process.off = noop;
 process.removeListener = noop;
 process.removeAllListeners = noop;
 process.emit = noop;
+process.prependListener = noop;
+process.prependOnceListener = noop;
+
+process.listeners = function (name) { return [] }
 
 process.binding = function (name) {
     throw new Error('process.binding is not supported');
