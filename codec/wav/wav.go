@@ -69,7 +69,7 @@ func (w *Wav) Info() (info codec.SongInfo, err error) {
 	}, nil
 }
 
-func (w *Wav) Play(n int) ([]float32, error) {
+func (w *Wav) Read(p []byte) (n int, err error) {
 	return w.w.ReadFloats(n)
 }
 

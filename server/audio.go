@@ -6,11 +6,11 @@ import (
 	"log"
 	"time"
 
-	"github.com/mjibson/moggio/output"
+	"github.com/hajimehoshi/oto"
 )
 
 func (srv *Server) audio() {
-	var out output.Output
+	var player *oto.Player
 	var t chan interface{}
 	var seek *Seek
 	var dur time.Duration
@@ -26,14 +26,15 @@ func (srv *Server) audio() {
 			force:    force,
 		})
 	}
+	const expected = 4096
 	tick := func() {
-		const expected = 4096
 		if seek == nil {
 			return
 		}
 		next, err := seek.Read(expected)
 		if len(next) > 0 {
-			out.Push(next)
+			// TODO: check for error?
+			player.Write(next)
 			setTime(false)
 		}
 		if err != nil {
@@ -57,7 +58,7 @@ func (srv *Server) audio() {
 		setTime(true)
 	}
 	setParams := func(c audioSetParams) {
-		out, err = output.Get(c.sr, c.ch)
+		player, err = oto.NewPlayer(c.sr, c.ch, 2, expected)
 		if err != nil {
 			c.err <- fmt.Errorf("moggio: could not open audio (%v, %v): %v", c.sr, c.ch, err)
 			return
@@ -95,7 +96,7 @@ type audioSetParams struct {
 	sr   int
 	ch   int
 	dur  time.Duration
-	play func(int) ([]float32, error)
+	play io.Reader
 	err  chan error
 }
 

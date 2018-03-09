@@ -2,35 +2,39 @@ package server
 
 import (
 	"errors"
+	"io"
 	"time"
 )
 
 type Seek struct {
-	b   []float32
+	b   []byte
 	pos int
 	sr  time.Duration
-	f   func(int) ([]float32, error)
+	r   io.Reader
 }
 
-func NewSeek(canSeek bool, sr time.Duration, f func(int) ([]float32, error)) *Seek {
+func NewSeek(canSeek bool, sr time.Duration, r io.Reader) *Seek {
 	s := Seek{
-		f:  f,
+		r:  r,
 		sr: sr,
 	}
 	if canSeek {
-		s.b = make([]float32, 4096)
+		s.b = make([]byte, 4096)
 	}
 	return &s
 }
 
-func (s *Seek) Read(n int) (b []float32, err error) {
+const bytesPerTick = 1
+
+func (s *Seek) Read(n int) (b []byte, err error) {
+	b = make([]byte, n)
 	if s.b == nil {
-		b, err = s.f(n)
+		_, err = io.ReadFull(s.r, b)
 		s.pos += len(b)
 		return
 	}
 	for len(s.b)-s.pos < n {
-		b, err = s.f(n)
+		_, err = io.ReadFull(s.r, b)
 		s.b = append(s.b, b...)
 		if err != nil || len(b) == 0 {
 			break

@@ -192,7 +192,7 @@ func (srv *Server) commands() {
 				sr:   sr,
 				ch:   ch,
 				dur:  srv.info.Time,
-				play: srv.song.Play,
+				play: srv.song.Reader,
 				err:  make(chan error),
 			}
 			srv.audioch <- params
