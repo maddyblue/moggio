@@ -16,7 +16,7 @@ import (
 	// codecs
 	_ "github.com/mjibson/moggio/codec/flac"
 	_ "github.com/mjibson/moggio/codec/gme"
-	_ "github.com/mjibson/moggio/codec/mpa"
+	_ "github.com/mjibson/moggio/codec/mp3"
 	_ "github.com/mjibson/moggio/codec/nsf"
 	_ "github.com/mjibson/moggio/codec/rar"
 	_ "github.com/mjibson/moggio/codec/vorbis"
