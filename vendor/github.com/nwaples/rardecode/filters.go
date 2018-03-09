@@ -13,6 +13,8 @@ const (
 	vmGlobalAddr      = 0x3C000
 	vmGlobalSize      = 0x02000
 	vmFixedGlobalSize = 0x40
+
+	maxUint32 = 1<<32 - 1
 )
 
 // v3Filter is the interface type for RAR V3 filters.
@@ -30,8 +32,14 @@ var (
 	}{
 		{0xad576887, 53, e8FilterV3},
 		{0x3cd7e57e, 57, e8e9FilterV3},
+		{0x3769893f, 120, itaniumFilterV3},
 		{0x0e06077d, 29, deltaFilterV3},
+		{0x1c2c5dc8, 149, filterRGBV3},
+		{0xbc85e701, 216, filterAudioV3},
 	}
+
+	// itanium filter byte masks
+	byteMask = []int{4, 4, 6, 6, 0, 0, 7, 7, 4, 4, 0, 0, 4, 4, 0, 0}
 )
 
 func filterE8(c byte, v5 bool, buf []byte, offset int64) ([]byte, error) {
@@ -68,6 +76,48 @@ func e8e9FilterV3(r map[int]uint32, global, buf []byte, offset int64) ([]byte, e
 	return filterE8(0xe9, false, buf, offset)
 }
 
+func getBits(buf []byte, pos, count uint) uint32 {
+	n := binary.LittleEndian.Uint32(buf[pos/8:])
+	n >>= pos & 7
+	mask := uint32(maxUint32) >> (32 - count)
+	return n & mask
+}
+
+func setBits(buf []byte, pos, count uint, bits uint32) {
+	mask := uint32(maxUint32) >> (32 - count)
+	mask <<= pos & 7
+	bits <<= pos & 7
+	n := binary.LittleEndian.Uint32(buf[pos/8:])
+	n = (n & ^mask) | (bits & mask)
+	binary.LittleEndian.PutUint32(buf[pos/8:], n)
+}
+
+func itaniumFilterV3(r map[int]uint32, global, buf []byte, offset int64) ([]byte, error) {
+	fileOffset := uint32(offset) >> 4
+
+	for b := buf; len(b) > 21; b = b[16:] {
+		c := int(b[0]&0x1f) - 0x10
+		if c >= 0 {
+			mask := byteMask[c]
+			if mask != 0 {
+				for i := uint(0); i <= 2; i++ {
+					if mask&(1<<i) == 0 {
+						continue
+					}
+					pos := i*41 + 18
+					if getBits(b, pos+24, 4) == 5 {
+						n := getBits(b, pos, 20)
+						n -= fileOffset
+						setBits(b, pos, 20, n)
+					}
+				}
+			}
+		}
+		fileOffset++
+	}
+	return buf, nil
+}
+
 func filterDelta(n int, buf []byte) ([]byte, error) {
 	var res []byte
 	l := len(buf)
@@ -91,6 +141,135 @@ func filterDelta(n int, buf []byte) ([]byte, error) {
 
 func deltaFilterV3(r map[int]uint32, global, buf []byte, offset int64) ([]byte, error) {
 	return filterDelta(int(r[0]), buf)
+}
+
+func abs(n int) int {
+	if n < 0 {
+		n = -n
+	}
+	return n
+}
+
+func filterRGBV3(r map[int]uint32, global, buf []byte, offset int64) ([]byte, error) {
+	width := int(r[0] - 3)
+	posR := int(r[1])
+	if posR < 0 || width < 0 {
+		return buf, nil
+	}
+
+	var res []byte
+	l := len(buf)
+	if cap(buf) >= 2*l {
+		res = buf[l : 2*l] // use unused capacity
+	} else {
+		res = make([]byte, l, 2*l)
+	}
+
+	for c := 0; c < 3; c++ {
+		var prevByte int
+		for i := c; i < len(res); i += 3 {
+			var predicted int
+			upperPos := i - width
+			if upperPos >= 3 {
+				upperByte := int(res[upperPos])
+				upperLeftByte := int(res[upperPos-3])
+				predicted = prevByte + upperByte - upperLeftByte
+				pa := abs(predicted - prevByte)
+				pb := abs(predicted - upperByte)
+				pc := abs(predicted - upperLeftByte)
+				if pa <= pb && pa <= pc {
+					predicted = prevByte
+				} else if pb <= pc {
+					predicted = upperByte
+				} else {
+					predicted = upperLeftByte
+				}
+			} else {
+				predicted = prevByte
+			}
+			prevByte = (predicted - int(buf[0])) & 0xFF
+			res[i] = uint8(prevByte)
+			buf = buf[1:]
+		}
+
+	}
+	for i := posR; i < len(res)-2; i += 3 {
+		c := res[i+1]
+		res[i] += c
+		res[i+2] += c
+	}
+	return res, nil
+}
+
+func filterAudioV3(r map[int]uint32, global, buf []byte, offset int64) ([]byte, error) {
+	var res []byte
+	l := len(buf)
+	if cap(buf) >= 2*l {
+		res = buf[l : 2*l] // use unused capacity
+	} else {
+		res = make([]byte, l, 2*l)
+	}
+
+	chans := int(r[0])
+	for c := 0; c < chans; c++ {
+		var prevByte, byteCount int
+		var diff [7]int
+		var d, k [3]int
+
+		for i := c; i < len(res); i += chans {
+			predicted := prevByte<<3 + k[0]*d[0] + k[1]*d[1] + k[2]*d[2]
+			predicted = int(int8(predicted >> 3))
+
+			curByte := int(int8(buf[0]))
+			buf = buf[1:]
+			predicted -= curByte
+			res[i] = uint8(predicted)
+
+			dd := curByte << 3
+			diff[0] += abs(dd)
+			diff[1] += abs(dd - d[0])
+			diff[2] += abs(dd + d[0])
+			diff[3] += abs(dd - d[1])
+			diff[4] += abs(dd + d[1])
+			diff[5] += abs(dd - d[2])
+			diff[6] += abs(dd + d[2])
+
+			prevDelta := int(int8(predicted - prevByte))
+			prevByte = predicted
+			d[2] = d[1]
+			d[1] = prevDelta - d[0]
+			d[0] = prevDelta
+
+			if byteCount&0x1f == 0 {
+				min := diff[0]
+				diff[0] = 0
+				n := 0
+				for j := 1; j < len(diff); j++ {
+					if diff[j] < min {
+						min = diff[j]
+						n = j
+					}
+					diff[j] = 0
+				}
+				n--
+				if n >= 0 {
+					m := n / 2
+					if n%2 == 0 {
+						if k[m] >= -16 {
+							k[m]--
+						}
+					} else {
+						if k[m] < 16 {
+							k[m]++
+						}
+					}
+				}
+			}
+			byteCount++
+		}
+
+	}
+	return res, nil
 }
 
 func filterArm(buf []byte, offset int64) ([]byte, error) {

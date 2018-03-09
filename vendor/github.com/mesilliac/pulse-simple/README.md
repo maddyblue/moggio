@@ -7,6 +7,19 @@ for easily playing or capturing raw audio.
 The full Simple API is supported,
 including channel mapping and setting buffer attributes.
 
+prerequisites
+-------------
+
+These bindings require the pulseaudio C headers to be available.
+On Ubuntu they can be installed by `sudo apt install libpulse-dev`,
+and on other distros there should be a similar package available.
+
+quick test
+----------
+
+If everything is configured correctly,
+`go run examples/sinewave.go` should output some simple tones via pulseaudio.
+
 usage
 -----
 
@@ -39,9 +52,4 @@ license
 -------
 
 MIT (see the included LICENSE file for full license text)
-
-authors
--------
-
-Thomas Iorns <mesilliac@tomanui.net.nz>
 

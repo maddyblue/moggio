@@ -51,6 +51,10 @@ var (
 	// MemcacheGetTimeout is the amount of time to wait for all memcache Get
 	// requests.
 	MemcacheGetTimeout = time.Millisecond * 10
+
+	// IgnoreFieldMismatch decides whether *datastore.ErrFieldMismatch errors
+	// should be silently ignored. This allows you to easily remove fields from structs.
+	IgnoreFieldMismatch = true
 )
 
 // Goon holds the app engine context and the request memory cache.
@@ -59,6 +63,7 @@ type Goon struct {
 	cache         map[string]interface{}
 	cacheLock     sync.RWMutex // protect the cache from concurrent goroutines to speed up RPC access
 	inTransaction bool
+	txnCacheLock  sync.Mutex // protects toSet / toDelete / toDeleteMC
 	toSet         map[string]interface{}
 	toDelete      map[string]bool
 	toDeleteMC    map[string]bool
@@ -67,7 +72,8 @@ type Goon struct {
 	KindNameResolver KindNameResolver
 }
 
-func memkey(k *datastore.Key) string {
+// MemcacheKey returns key string of Memcache.
+var MemcacheKey = func(k *datastore.Key) string {
 	// Versioning, so that incompatible changes to the cache system won't cause problems
 	return "g2:" + k.Encode()
 }
@@ -173,6 +179,8 @@ func (g *Goon) RunInTransaction(f func(tg *Goon) error, opts *datastore.Transact
 	}, opts)
 
 	if err == nil {
+		ng.txnCacheLock.Lock()
+		defer ng.txnCacheLock.Unlock()
 		if len(ng.toDeleteMC) > 0 {
 			var memkeys []string
 			for k := range ng.toDeleteMC {
@@ -180,13 +188,11 @@ func (g *Goon) RunInTransaction(f func(tg *Goon) error, opts *datastore.Transact
 			}
 			memcache.DeleteMulti(g.Context, memkeys)
 		}
-
 		g.cacheLock.Lock()
 		defer g.cacheLock.Unlock()
 		for k, v := range ng.toSet {
 			g.cache[k] = v
 		}
-
 		for k := range ng.toDelete {
 			delete(g.cache, k)
 		}
@@ -223,25 +229,8 @@ func (g *Goon) PutMulti(src interface{}) ([]*datastore.Key, error) {
 		return nil, err
 	}
 
-	var memkeys []string
-	for _, key := range keys {
-		if !key.Incomplete() {
-			memkeys = append(memkeys, memkey(key))
-		}
-	}
-
-	// Memcache needs to be updated after the datastore to prevent a common race condition,
-	// where a concurrent request will fetch the not-yet-updated data from the datastore
-	// and populate memcache with it.
-	if g.inTransaction {
-		for _, mk := range memkeys {
-			g.toDeleteMC[mk] = true
-		}
-	} else {
-		defer memcache.DeleteMulti(g.Context, memkeys)
-	}
-
 	v := reflect.Indirect(reflect.ValueOf(src))
+	mu := new(sync.Mutex)
 	multiErr, any := make(appengine.MultiError, len(keys)), false
 	goroutines := (len(keys)-1)/putMultiLimit + 1
 	var wg sync.WaitGroup
@@ -256,7 +245,9 @@ func (g *Goon) PutMulti(src interface{}) ([]*datastore.Key, error) {
 			}
 			rkeys, pmerr := datastore.PutMulti(g.Context, keys[lo:hi], v.Slice(lo, hi).Interface())
 			if pmerr != nil {
+				mu.Lock()
 				any = true // this flag tells PutMulti to return multiErr later
+				mu.Unlock()
 				merr, ok := pmerr.(appengine.MultiError)
 				if !ok {
 					g.error(pmerr)
@@ -275,12 +266,15 @@ func (g *Goon) PutMulti(src interface{}) ([]*datastore.Key, error) {
 				vi := v.Index(lo + i).Interface()
 				if key.Incomplete() {
 					g.setStructKey(vi, rkeys[i])
-					keys[i] = rkeys[i]
+					keys[lo+i] = rkeys[i]
 				}
 				if g.inTransaction {
-					mk := memkey(rkeys[i])
+					mk := MemcacheKey(rkeys[i])
+					g.txnCacheLock.Lock()
 					delete(g.toDelete, mk)
 					g.toSet[mk] = vi
+					g.toDeleteMC[mk] = true
+					g.txnCacheLock.Unlock()
 				} else {
 					g.putMemory(vi)
 				}
@@ -288,6 +282,20 @@ func (g *Goon) PutMulti(src interface{}) ([]*datastore.Key, error) {
 		}(i)
 	}
 	wg.Wait()
+
+	// Memcache needs to be updated after the datastore to prevent a common race condition,
+	// where a concurrent request will fetch the not-yet-updated data from the datastore
+	// and populate memcache with it.
+	if !g.inTransaction {
+		var memkeys []string
+		for _, key := range keys {
+			if !key.Incomplete() {
+				memkeys = append(memkeys, MemcacheKey(key))
+			}
+		}
+		memcache.DeleteMulti(g.Context, memkeys)
+	}
+
 	if any {
 		return keys, realError(multiErr)
 	}
@@ -308,7 +316,7 @@ func (g *Goon) putMemory(src interface{}) {
 	key, _, _ := g.getStructKey(src)
 	g.cacheLock.Lock()
 	defer g.cacheLock.Unlock()
-	g.cache[memkey(key)] = src
+	g.cache[MemcacheKey(key)] = src
 }
 
 // FlushLocalCache clears the local memory cache.
@@ -338,7 +346,7 @@ func (g *Goon) putMemcache(srcs []interface{}, exists []byte) error {
 		// payloadSize will overflow if we push 2+ gigs on a 32bit machine
 		payloadSize += len(data)
 		items[i] = &memcache.Item{
-			Key:   memkey(key),
+			Key:   MemcacheKey(key),
 			Value: data,
 		}
 	}
@@ -401,9 +409,30 @@ func (g *Goon) GetMulti(dst interface{}) error {
 
 	v := reflect.Indirect(reflect.ValueOf(dst))
 
+	multiErr, anyErr := make(appengine.MultiError, len(keys)), false
+
 	if g.inTransaction {
 		// todo: support getMultiLimit in transactions
-		return datastore.GetMulti(g.Context, keys, v.Interface())
+		if err := datastore.GetMulti(g.Context, keys, v.Interface()); err != nil {
+			if merr, ok := err.(appengine.MultiError); ok {
+				for i := 0; i < len(keys); i++ {
+					if merr[i] != nil && (!IgnoreFieldMismatch || !errFieldMismatch(merr[i])) {
+						anyErr = true // this flag tells GetMulti to return multiErr later
+						multiErr[i] = merr[i]
+					}
+				}
+			} else {
+				g.error(err)
+				anyErr = true // this flag tells GetMulti to return multiErr later
+				for i := 0; i < len(keys); i++ {
+					multiErr[i] = err
+				}
+			}
+			if anyErr {
+				return realError(multiErr)
+			}
+		}
+		return nil
 	}
 
 	var dskeys []*datastore.Key
@@ -415,7 +444,7 @@ func (g *Goon) GetMulti(dst interface{}) error {
 
 	g.cacheLock.RLock()
 	for i, key := range keys {
-		m := memkey(key)
+		m := MemcacheKey(key)
 		vi := v.Index(i)
 
 		if vi.Kind() == reflect.Struct {
@@ -426,7 +455,6 @@ func (g *Goon) GetMulti(dst interface{}) error {
 			if vi.Kind() == reflect.Interface {
 				vi = vi.Elem()
 			}
-
 			reflect.Indirect(vi).Set(reflect.Indirect(reflect.ValueOf(s)))
 		} else {
 			memkeys = append(memkeys, m)
@@ -441,8 +469,6 @@ func (g *Goon) GetMulti(dst interface{}) error {
 	if len(memkeys) == 0 {
 		return nil
 	}
-
-	multiErr, any := make(appengine.MultiError, len(keys)), false
 
 	tc, cf := context.WithTimeout(g.Context, MemcacheGetTimeout)
 	memvalues, err := memcache.GetMulti(tc, memkeys)
@@ -468,14 +494,14 @@ func (g *Goon) GetMulti(dst interface{}) error {
 			}
 			if s, present := memvalues[m]; present {
 				err := deserializeStruct(d, s.Value)
-				if err == datastore.ErrNoSuchEntity {
-					any = true // this flag tells GetMulti to return multiErr later
+				if err == nil || (IgnoreFieldMismatch && errFieldMismatch(err)) {
+					g.putMemory(d)
+				} else if err == datastore.ErrNoSuchEntity || errFieldMismatch(err) {
+					anyErr = true // this flag tells GetMulti to return multiErr later
 					multiErr[mixs[i]] = err
-				} else if err != nil {
+				} else {
 					g.error(err)
 					return err
-				} else {
-					g.putMemory(d)
 				}
 			} else {
 				dskeys = append(dskeys, keys[mixs[i]])
@@ -484,13 +510,14 @@ func (g *Goon) GetMulti(dst interface{}) error {
 			}
 		}
 		if len(dskeys) == 0 {
-			if any {
+			if anyErr {
 				return realError(multiErr)
 			}
 			return nil
 		}
 	}
 
+	mu := new(sync.Mutex)
 	goroutines := (len(dskeys)-1)/getMultiLimit + 1
 	var wg sync.WaitGroup
 	wg.Add(goroutines)
@@ -506,7 +533,9 @@ func (g *Goon) GetMulti(dst interface{}) error {
 			}
 			gmerr := datastore.GetMulti(g.Context, dskeys[lo:hi], dsdst[lo:hi])
 			if gmerr != nil {
-				any = true // this flag tells GetMulti to return multiErr later
+				mu.Lock()
+				anyErr = true // this flag tells GetMulti to return multiErr later
+				mu.Unlock()
 				merr, ok := gmerr.(appengine.MultiError)
 				if !ok {
 					g.error(gmerr)
@@ -516,7 +545,7 @@ func (g *Goon) GetMulti(dst interface{}) error {
 					return
 				}
 				for i, idx := range dixs[lo:hi] {
-					if merr[i] == nil {
+					if merr[i] == nil || (IgnoreFieldMismatch && errFieldMismatch(merr[i])) {
 						toCache = append(toCache, dsdst[lo+i])
 						exists = append(exists, 1)
 					} else {
@@ -542,7 +571,7 @@ func (g *Goon) GetMulti(dst interface{}) error {
 		}(i)
 	}
 	wg.Wait()
-	if any {
+	if anyErr {
 		return realError(multiErr)
 	}
 	return nil
@@ -601,12 +630,14 @@ func (g *Goon) DeleteMulti(keys []*datastore.Key) error {
 
 	g.cacheLock.Lock()
 	for i, k := range keys {
-		mk := memkey(k)
+		mk := MemcacheKey(k)
 		memkeys[i] = mk
 
 		if g.inTransaction {
+			g.txnCacheLock.Lock()
 			delete(g.toSet, mk)
 			g.toDelete[mk] = true
+			g.txnCacheLock.Unlock()
 		} else {
 			delete(g.cache, mk)
 		}
@@ -617,13 +648,16 @@ func (g *Goon) DeleteMulti(keys []*datastore.Key) error {
 	// where a concurrent request will fetch the not-yet-updated data from the datastore
 	// and populate memcache with it.
 	if g.inTransaction {
+		g.txnCacheLock.Lock()
 		for _, mk := range memkeys {
 			g.toDeleteMC[mk] = true
 		}
+		g.txnCacheLock.Unlock()
 	} else {
 		defer memcache.DeleteMulti(g.Context, memkeys)
 	}
 
+	mu := new(sync.Mutex)
 	multiErr, any := make(appengine.MultiError, len(keys)), false
 	goroutines := (len(keys)-1)/deleteMultiLimit + 1
 	var wg sync.WaitGroup
@@ -638,7 +672,9 @@ func (g *Goon) DeleteMulti(keys []*datastore.Key) error {
 			}
 			dmerr := datastore.DeleteMulti(g.Context, keys[lo:hi])
 			if dmerr != nil {
+				mu.Lock()
 				any = true // this flag tells DeleteMulti to return multiErr later
+				mu.Unlock()
 				merr, ok := dmerr.(appengine.MultiError)
 				if !ok {
 					g.error(dmerr)
@@ -664,4 +700,10 @@ func NotFound(err error, idx int) bool {
 		return idx < len(merr) && merr[idx] == datastore.ErrNoSuchEntity
 	}
 	return false
+}
+
+// errFieldMismatch returns true if err is *datastore.ErrFieldMismatch
+func errFieldMismatch(err error) bool {
+	_, ok := err.(*datastore.ErrFieldMismatch)
+	return ok
 }

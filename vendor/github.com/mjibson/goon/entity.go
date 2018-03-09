@@ -177,7 +177,7 @@ func generateFieldInfoAndMetadata(t reflect.Type, namePrefix string, indexPrefix
 	numFields := t.NumField()
 	for i := 0; i < numFields; i++ {
 		tf := t.Field(i)
-		if tf.PkgPath != "" {
+		if tf.PkgPath != "" && !tf.Anonymous {
 			continue
 		}
 
@@ -603,6 +603,7 @@ func deserializeStruct(dst interface{}, b []byte) error {
 	defer freeSerializationDecoder(sd)
 	structHistory := make(map[string]map[string]bool, 8)
 	fieldMap, _ := getFieldInfoAndMetadata(t)
+	var notFoundField string
 
 	for _, metaData := range smd.metaDatas {
 		fieldName, slice, zeroValue := metaData, false, false
@@ -613,16 +614,23 @@ func deserializeStruct(dst interface{}, b []byte) error {
 		}
 		nameParts := strings.Split(fieldName, ".")
 
-		fi, ok := fieldMap[fieldName]
-		if !ok {
-			return fmt.Errorf("goon: Could not find field %v", fieldName)
-		}
-
-		if err := deserializeStructInternal(sd.dec, fi, fieldName, nameParts, slice, zeroValue, structHistory, v, t); err != nil {
-			return err
+		if fi, ok := fieldMap[fieldName]; ok {
+			if err := deserializeStructInternal(sd.dec, fi, fieldName, nameParts, slice, zeroValue, structHistory, v, t); err != nil {
+				return err
+			}
+		} else {
+			sd.dec.Decode(nil) // Discard the value
+			notFoundField = fieldName
 		}
 	}
 
+	if notFoundField != "" {
+		return &datastore.ErrFieldMismatch{
+			StructType: t,
+			FieldName:  notFoundField,
+			Reason:     "no such struct field",
+		}
+	}
 	return nil
 }
 

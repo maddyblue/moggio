@@ -1,7 +1,6 @@
 package rardecode
 
 import (
-	"bufio"
 	"errors"
 	"io"
 )
@@ -128,17 +127,16 @@ func (w *window) read(p []byte) (n int) {
 
 // decodeReader implements io.Reader for decoding compressed data in RAR archives.
 type decodeReader struct {
-	win     window        // sliding window buffer used as decode dictionary
-	dec     decoder       // decoder being used to unpack file
-	r       *bufio.Reader // reader for unprocessed file contents
-	tot     int64         // total bytes read
-	buf     []byte        // filter input/output buffer
-	outbuf  []byte        // filter output not yet read
+	win     window  // sliding window buffer used as decode dictionary
+	dec     decoder // decoder being used to unpack file
+	tot     int64   // total bytes read
+	buf     []byte  // filter input/output buffer
+	outbuf  []byte  // filter output not yet read
 	err     error
 	filters []*filterBlock // list of filterBlock's, each with offset relative to previous in list
 }
 
-func (d *decodeReader) init(r io.Reader, dec decoder, winsize uint, reset bool) error {
+func (d *decodeReader) init(r io.ByteReader, dec decoder, winsize uint, reset bool) error {
 	if reset {
 		d.filters = nil
 	}
@@ -146,13 +144,8 @@ func (d *decodeReader) init(r io.Reader, dec decoder, winsize uint, reset bool) 
 	d.outbuf = nil
 	d.tot = 0
 	d.win.reset(winsize, reset)
-	if d.r == nil {
-		d.r = bufio.NewReader(r)
-	} else {
-		d.r.Reset(r)
-	}
 	d.dec = dec
-	return d.dec.init(d.r, reset)
+	return d.dec.init(r, reset)
 }
 
 func (d *decodeReader) readErr() error {

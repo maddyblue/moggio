@@ -83,18 +83,39 @@ func (cr *cipherBlockReader) Read(p []byte) (n int, err error) {
 	return cr.read(p)
 }
 
-// newCipherBlockReader returns an io.Reader that decrypts the given io.Reader using
+// ReadByte returns the next decrypted byte.
+func (cr *cipherBlockReader) ReadByte() (byte, error) {
+	for {
+		if cr.n < len(cr.outbuf) {
+			c := cr.outbuf[cr.n]
+			cr.n++
+			return c, nil
+		}
+		if cr.err != nil {
+			err := cr.err
+			cr.err = nil
+			return 0, err
+		}
+		// refill outbuf
+		var n int
+		n, cr.err = cr.read(cr.outbuf[:cap(cr.outbuf)])
+		cr.outbuf = cr.outbuf[:n]
+		cr.n = 0
+	}
+}
+
+// newCipherBlockReader returns a cipherBlockReader that decrypts the given io.Reader using
 // the provided block mode cipher.
-func newCipherBlockReader(r io.Reader, mode cipher.BlockMode) io.Reader {
+func newCipherBlockReader(r io.Reader, mode cipher.BlockMode) *cipherBlockReader {
 	cr := &cipherBlockReader{r: r, mode: mode}
 	cr.outbuf = make([]byte, 0, mode.BlockSize())
 	cr.inbuf = make([]byte, 0, mode.BlockSize())
 	return cr
 }
 
-// newAesDecryptReader returns an io.Reader that decrypts input from a given io.Reader using AES.
+// newAesDecryptReader returns a cipherBlockReader that decrypts input from a given io.Reader using AES.
 // It will panic if the provided key is invalid.
-func newAesDecryptReader(r io.Reader, key, iv []byte) io.Reader {
+func newAesDecryptReader(r io.Reader, key, iv []byte) *cipherBlockReader {
 	block, err := aes.NewCipher(key)
 	if err != nil {
 		panic(err)

@@ -5,6 +5,7 @@
 package tag
 
 import (
+	"bytes"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -14,7 +15,7 @@ import (
 )
 
 var atomTypes = map[int]string{
-	0:  "uint8",
+	0:  "implicit", // automatic based on atom name
 	1:  "text",
 	13: "jpeg",
 	14: "png",
@@ -44,6 +45,9 @@ var atoms = atomNames(map[string]string{
 	"disk":    "disc",
 })
 
+// Detect PNG image if "implicit" class is used
+var pngHeader = []byte{137, 80, 78, 71, 13, 10, 26, 10}
+
 type atomNames map[string]string
 
 func (f atomNames) Name(n string) []string {
@@ -57,12 +61,18 @@ func (f atomNames) Name(n string) []string {
 }
 
 // metadataMP4 is the implementation of Metadata for MP4 tag (atom) data.
-type metadataMP4 map[string]interface{}
+type metadataMP4 struct {
+	fileType FileType
+	data     map[string]interface{}
+}
 
 // ReadAtoms reads MP4 metadata atoms from the io.ReadSeeker into a Metadata, returning
 // non-nil error if there was a problem.
 func ReadAtoms(r io.ReadSeeker) (Metadata, error) {
-	m := make(metadataMP4)
+	m := metadataMP4{
+		data:     make(map[string]interface{}),
+		fileType: UnknownFileType,
+	}
 	err := m.readAtoms(r)
 	return m, err
 }
@@ -123,9 +133,16 @@ func (m metadataMP4) readAtomData(r io.ReadSeeker, name string, size uint32) err
 		return err
 	}
 
+	if len(b) < 8 {
+		return fmt.Errorf("invalid encoding: expected at least %d bytes, got %d", 8, len(b))
+	}
+
 	// "data" + size (4 bytes each)
 	b = b[8:]
 
+	if len(b) < 3 {
+		return fmt.Errorf("invalid encoding: expected at least %d bytes, for class, got %d", 3, len(b))
+	}
 	class := getInt(b[1:4])
 	contentType, ok := atomTypes[class]
 	if !ok {
@@ -134,20 +151,45 @@ func (m metadataMP4) readAtomData(r io.ReadSeeker, name string, size uint32) err
 
 	// 4: atom version (1 byte) + atom flags (3 bytes)
 	// 4: NULL (usually locale indicator)
+	if len(b) < 8 {
+		return fmt.Errorf("invalid encoding: expected at least %d bytes, for atom version and flags, got %d", 8, len(b))
+	}
 	b = b[8:]
 
 	if name == "trkn" || name == "disk" {
-		m[name] = int(b[3])
-		m[name+"_count"] = int(b[5])
+		if len(b) < 6 {
+			return fmt.Errorf("invalid encoding: expected at least %d bytes, for track and disk numbers, got %d", 6, len(b))
+		}
+
+		m.data[name] = int(b[3])
+		m.data[name+"_count"] = int(b[5])
 		return nil
+	}
+
+	if contentType == "implicit" {
+		if name == "covr" {
+			if bytes.HasPrefix(b, pngHeader) {
+				contentType = "png"
+			}
+			// TODO(dhowden): Detect JPEG formats too (harder).
+		}
 	}
 
 	var data interface{}
 	switch contentType {
+	case "implicit":
+		if _, ok := atoms[name]; ok {
+			return fmt.Errorf("unhandled implicit content type for required atom: %q", name)
+		}
+		return nil
+
 	case "text":
 		data = string(b)
 
 	case "uint8":
+		if len(b) < 1 {
+			return fmt.Errorf("invalid encoding: expected at least %d bytes, for integer tag data, got %d", 1, len(b))
+		}
 		data = getInt(b[:1])
 
 	case "jpeg", "png":
@@ -157,7 +199,7 @@ func (m metadataMP4) readAtomData(r io.ReadSeeker, name string, size uint32) err
 			Data:     b,
 		}
 	}
-	m[name] = data
+	m.data[name] = data
 
 	return nil
 }
@@ -195,6 +237,10 @@ func readCustomAtom(r io.ReadSeeker, size uint32) (string, uint32, error) {
 			if err != nil {
 				return "", 0, err
 			}
+
+			if len(b) < 4 {
+				return "", 0, fmt.Errorf("invalid encoding: expected at least %d bytes, got %d", 4, len(b))
+			}
 			subNames[subName] = string(b[4:])
 
 		case "data":
@@ -219,14 +265,14 @@ func readCustomAtom(r io.ReadSeeker, size uint32) (string, uint32, error) {
 	return subNames["name"], dataSize, nil
 }
 
-func (metadataMP4) Format() Format     { return MP4 }
-func (metadataMP4) FileType() FileType { return AAC }
+func (metadataMP4) Format() Format       { return MP4 }
+func (m metadataMP4) FileType() FileType { return m.fileType }
 
-func (m metadataMP4) Raw() map[string]interface{} { return m }
+func (m metadataMP4) Raw() map[string]interface{} { return m.data }
 
 func (m metadataMP4) getString(n []string) string {
 	for _, k := range n {
-		if x, ok := m[k]; ok {
+		if x, ok := m.data[k]; ok {
 			return x.(string)
 		}
 	}
@@ -235,7 +281,7 @@ func (m metadataMP4) getString(n []string) string {
 
 func (m metadataMP4) getInt(n []string) int {
 	for _, k := range n {
-		if x, ok := m[k]; ok {
+		if x, ok := m.data[k]; ok {
 			return x.(int)
 		}
 	}
@@ -277,7 +323,7 @@ func (m metadataMP4) Year() int {
 
 func (m metadataMP4) Track() (int, int) {
 	x := m.getInt([]string{"trkn"})
-	if n, ok := m["trkn_count"]; ok {
+	if n, ok := m.data["trkn_count"]; ok {
 		return x, n.(int)
 	}
 	return x, 0
@@ -285,14 +331,14 @@ func (m metadataMP4) Track() (int, int) {
 
 func (m metadataMP4) Disc() (int, int) {
 	x := m.getInt([]string{"disk"})
-	if n, ok := m["disk_count"]; ok {
+	if n, ok := m.data["disk_count"]; ok {
 		return x, n.(int)
 	}
 	return x, 0
 }
 
 func (m metadataMP4) Lyrics() string {
-	t, ok := m["\xa9lyr"]
+	t, ok := m.data["\xa9lyr"]
 	if !ok {
 		return ""
 	}
@@ -300,9 +346,10 @@ func (m metadataMP4) Lyrics() string {
 }
 
 func (m metadataMP4) Picture() *Picture {
-	v, ok := m["covr"]
+	v, ok := m.data["covr"]
 	if !ok {
 		return nil
 	}
-	return v.(*Picture)
+	p, _ := v.(*Picture)
+	return p
 }

@@ -109,55 +109,61 @@ func (s *Stream) Free() {
 }
 
 // Stream.Drain blocks until all buffered data has finished playing.
-func (s *Stream) Drain() (int, error) {
+func (s *Stream) Drain() (error) {
 	var err C.int
-	written := C.pa_simple_drain(s.simple, &err)
+	_ = C.pa_simple_drain(s.simple, &err)
 	if err == C.PA_OK {
-		return int(written), nil
+		return nil
 	}
-	return int(written), errorFromCode(err)
+	return errorFromCode(err)
 }
 
 // Stream.Flush flushes the playback buffer, discarding any audio therein
-func (s *Stream) Flush() (int, error) {
+func (s *Stream) Flush() (error) {
 	var err C.int
-	flushed := C.pa_simple_flush(s.simple, &err)
+	_ = C.pa_simple_flush(s.simple, &err)
 	if err == C.PA_OK {
-		return int(flushed), nil
+		return nil
 	}
-	return int(flushed), errorFromCode(err)
+	return errorFromCode(err)
 }
 
 // Stream.Write writes the given data to the stream,
 // blocking until the data has been written.
 func (s *Stream) Write(data []byte) (int, error) {
 	var err C.int
-	written := C.pa_simple_write(
+	_ = C.pa_simple_write(
 		s.simple,
 		unsafe.Pointer(&data[0]),
 		C.size_t(len(data)),
 		&err,
 	)
+	// pulse simple does not return the number of bytes written,
+	// so we must assume that all is written on success,
+	// and nothing is written on failure.
 	if err == C.PA_OK {
-		return int(written), nil
+		return len(data), nil
 	}
-	return int(written), errorFromCode(err)
+	return 0, errorFromCode(err)
 }
 
 // Stream.Read reads data from the stream,
 // blocking until it has filled the provided slice.
 func (s *Stream) Read(data []byte) (int, error) {
 	var err C.int
-	written := C.pa_simple_read(
+	_ = C.pa_simple_read(
 		s.simple,
 		unsafe.Pointer(&data[0]),
 		C.size_t(len(data)),
 		&err,
 	)
+	// pulse simple does not return the number of bytes read,
+	// so we must assume that all is read on success,
+	// and nothing is read on failure.
 	if err == C.PA_OK {
-		return int(written), nil
+		return len(data), nil
 	}
-	return int(written), errorFromCode(err)
+	return 0, errorFromCode(err)
 }
 
 // Stream.Latency returns the playback latency in microseconds.

@@ -2,19 +2,28 @@
 
 
 [[projects]]
+  name = "cloud.google.com/go"
+  packages = ["compute/metadata"]
+  revision = "20d4028b8a750c2aca76bf9fefa8ed2d0109b573"
+  version = "v0.19.0"
+
+[[projects]]
   name = "github.com/boltdb/bolt"
   packages = ["."]
-  revision = "2f846c3551b76d7710f159be840d66c3d064abbe"
+  revision = "2f1ce7a837dcb8da3ec595b1dac9d0632f0f99e8"
+  version = "v1.3.1"
 
 [[projects]]
+  branch = "master"
   name = "github.com/bradfitz/slice"
   packages = ["."]
-  revision = "a665b5dbaad5fc7474c1193c67ed138df1e1b0e7"
+  revision = "d9036e2120b5ddfa53f3ebccd618c4af275f47da"
 
 [[projects]]
+  branch = "master"
   name = "github.com/dhowden/tag"
   packages = ["."]
-  revision = "5b94194b2975cafdeb53b6c05857789f854e5558"
+  revision = "ba105bfefce011decaeff834369cb48f49f47ac6"
 
 [[projects]]
   branch = "master"
@@ -25,7 +34,8 @@
 [[projects]]
   name = "github.com/golang/protobuf"
   packages = ["proto"]
-  revision = "127091107ff5f822298f1faa7487ffcf578adcf6"
+  revision = "925541529c1fa6821df4e44ce2723319eb2be768"
+  version = "v1.0.0"
 
 [[projects]]
   branch = "master"
@@ -50,17 +60,19 @@
   revision = "035e99fec7e03c0f061bb8df7e2bfc1da1f28e83"
 
 [[projects]]
+  branch = "master"
   name = "github.com/jfreymuth/go-vorbis"
   packages = [
     "ogg",
     "ogg/vorbis"
   ]
-  revision = "630983dd5ccd768b792190158382a157a4cb7eb9"
+  revision = "41342c90885515235113c2773f4c74120edd5c35"
 
 [[projects]]
   name = "github.com/julienschmidt/httprouter"
   packages = ["."]
-  revision = "77366a47451a56bb3ba682481eed85b64fea14e8"
+  revision = "8c199fb6259ffc1af525cc3ad52ee60ba8359669"
+  version = "v1.1"
 
 [[projects]]
   branch = "master"
@@ -69,9 +81,23 @@
   revision = "7fdfba007a2f3054ae56e63b5581a8b67023628f"
 
 [[projects]]
+  branch = "master"
   name = "github.com/mesilliac/pulse-simple"
   packages = ["."]
-  revision = "1e0dc13a19775c46d755afdac26621c3a349d566"
+  revision = "75ac54e19fdff88f4fbd82f45125134b602230b0"
+
+[[projects]]
+  name = "github.com/mewkiz/flac"
+  packages = [
+    "frame",
+    "internal/bits",
+    "internal/hashutil",
+    "internal/hashutil/crc16",
+    "internal/hashutil/crc8",
+    "meta"
+  ]
+  revision = "5d94ee8c15da5a101247ef7a62aa174291454b8c"
+  version = "v1.0.5"
 
 [[projects]]
   branch = "master"
@@ -92,14 +118,16 @@
   revision = "ad078cbf9073deba72ddd853d42628fc40fbb173"
 
 [[projects]]
+  branch = "master"
   name = "github.com/mjibson/go-dsp"
   packages = ["wav"]
-  revision = "5b3d8c8aa187b6a865859b683005e6330dcf52d4"
+  revision = "49dba83727078f13a0e99553e0f8140990115ac9"
 
 [[projects]]
+  branch = "master"
   name = "github.com/mjibson/goon"
   packages = ["."]
-  revision = "92ecc0cd3b9922e1727680b0a7097f99b191bca5"
+  revision = "0cd9745d6b9c43c1de754769708fb2ac349d84b2"
 
 [[projects]]
   branch = "master"
@@ -117,9 +145,10 @@
   revision = "10b2439b9af2ab409e7357fc4ce902935f554d1a"
 
 [[projects]]
+  branch = "master"
   name = "github.com/nwaples/rardecode"
   packages = ["."]
-  revision = "7efb1e632fbe042277a3e06bb0eef6b77bb4132a"
+  revision = "e06696f847aeda6f39a8f0b7cdff193b7690aef6"
 
 [[projects]]
   branch = "master"
@@ -128,20 +157,29 @@
   revision = "e53e59c700bfd3a54be020aa361349351b1221aa"
 
 [[projects]]
+  branch = "master"
   name = "github.com/pkg/browser"
   packages = ["."]
-  revision = "9302be274faad99162b9d48ec97b24306872ebb0"
+  revision = "c90ca0c84f15f81c982e32665bffd8d7aac8f097"
 
 [[projects]]
+  branch = "master"
+  name = "go4.org"
+  packages = ["reflectutil"]
+  revision = "fba789b7e39ba524b9e60c45c37a50fae63a2a09"
+
+[[projects]]
+  branch = "master"
   name = "golang.org/x/net"
   packages = [
     "context",
     "context/ctxhttp",
     "websocket"
   ]
-  revision = "b6d7b1396ec874c3b00f6c84cd4301a17c56c8ed"
+  revision = "d0aafc73d5cdc42264b0af071c261abac580695e"
 
 [[projects]]
+  branch = "master"
   name = "golang.org/x/oauth2"
   packages = [
     ".",
@@ -150,14 +188,16 @@
     "jws",
     "jwt"
   ]
-  revision = "1f9b3a17f090a52da60820f681d766e04a3349b5"
+  revision = "2f32c3ac0fa4fb807a0fcefb0b6f2468a0d99bd0"
 
 [[projects]]
+  branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix"]
-  revision = "50c6bc5e4292a1d4e65c6e9be5f53be28bcbe28e"
+  revision = "7dca6fe1f43775aa6d1334576870ff63f978f539"
 
 [[projects]]
+  branch = "master"
   name = "google.golang.org/api"
   packages = [
     "drive/v3",
@@ -165,7 +205,7 @@
     "googleapi",
     "googleapi/internal/uritemplates"
   ]
-  revision = "e6294e63a06b2be522ff3d328d8cacded0b1bd31"
+  revision = "7f657476956314fee258816aaf81c0ff65cf8bee"
 
 [[projects]]
   name = "google.golang.org/appengine"
@@ -187,15 +227,8 @@
     "urlfetch",
     "user"
   ]
-  revision = "6a436539be38c296a8075a871cc536686b458371"
-
-[[projects]]
-  name = "google.golang.org/cloud"
-  packages = [
-    "compute/metadata",
-    "internal"
-  ]
-  revision = "872c736f496c2ba12786bedbb8325576bbdb33cf"
+  revision = "150dc57a1b433e64154302bdc40b6bb8aefa313a"
+  version = "v1.0.0"
 
 [[projects]]
   name = "gopkg.in/mewkiz/flac.v1"
@@ -204,28 +237,12 @@
     "frame",
     "meta"
   ]
-  revision = "2da5e163354062e6e36a4fee26e126b694a6029b"
-  version = "v1.0.3"
-
-[[projects]]
-  name = "gopkg.in/mewpkg/bits.v1"
-  packages = ["."]
-  revision = "99e93b96ba1121341421023326c6634a2d16c6e1"
-  version = "v1.0.0"
-
-[[projects]]
-  name = "gopkg.in/mewpkg/hashutil.v1"
-  packages = [
-    ".",
-    "crc16",
-    "crc8"
-  ]
-  revision = "576638dc68739d767ffde05d1b4f62e3c0659639"
-  version = "v1.0.1"
+  revision = "5d94ee8c15da5a101247ef7a62aa174291454b8c"
+  version = "v1.0.5"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "35712ed92fc8088a6576ce5479a68b01efa201b351439c64c00a18cbc2a393a2"
+  inputs-digest = "6796d54a7c4a06362d48a706c5352a44176fa41e354eeec0a63561a8509fb878"
   solver-name = "gps-cdcl"
   solver-version = 1

@@ -19,12 +19,13 @@ func (d *ppm29Decoder) init(br *rarBitReader) error {
 	// use underlying ByteReader
 	d.br = br.r
 
+	var maxMB int
 	if reset {
-		// ignore MaxMB allocated mem
-		_, err = d.br.ReadByte()
+		c, err := d.br.ReadByte()
 		if err != nil {
 			return err
 		}
+		maxMB = int(c) + 1
 	}
 
 	if maxOrder&0x40 > 0 {
@@ -39,7 +40,7 @@ func (d *ppm29Decoder) init(br *rarBitReader) error {
 		maxOrder = 16 + (maxOrder-16)*3
 	}
 
-	return d.m.init(d.br, reset, maxOrder)
+	return d.m.init(d.br, reset, maxOrder, maxMB)
 }
 
 func (d *ppm29Decoder) reset() {

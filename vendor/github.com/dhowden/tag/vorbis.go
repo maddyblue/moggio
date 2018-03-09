@@ -29,6 +29,10 @@ func (m *metadataVorbis) readVorbisComment(r io.Reader) error {
 		return err
 	}
 
+	if vendorLen < 0 {
+		return fmt.Errorf("invalid encoding: expected positive length, got %d", vendorLen)
+	}
+
 	vendor, err := readString(r, vendorLen)
 	if err != nil {
 		return err
@@ -145,7 +149,7 @@ func parseComment(c string) (k, v string, err error) {
 }
 
 func (m *metadataVorbis) Format() Format {
-	return FLAC
+	return VORBIS
 }
 
 func (m *metadataVorbis) Raw() map[string]interface{} {
@@ -177,8 +181,9 @@ func (m *metadataVorbis) Album() string {
 }
 
 func (m *metadataVorbis) AlbumArtist() string {
-	// This field isn't included in the standard.
-	return ""
+	// This field isn't actually included in the standard, though
+	// it is commonly assigned to albumartist.
+	return m.c["albumartist"]
 }
 
 func (m *metadataVorbis) Composer() string {

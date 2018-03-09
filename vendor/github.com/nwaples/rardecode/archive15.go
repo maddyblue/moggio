@@ -1,6 +1,7 @@
 package rardecode
 
 import (
+	"bufio"
 	"bytes"
 	"crypto/sha1"
 	"errors"
@@ -73,18 +74,18 @@ func (h *fileHash32) valid() bool {
 
 // archive15 implements fileBlockReader for RAR 1.5 file format archives
 type archive15 struct {
-	r         io.Reader // reader for current block data
-	v         io.Reader // reader for current archive volume
-	dec       decoder   // current decoder
-	decVer    byte      // current decoder version
-	multi     bool      // archive is multi-volume
-	old       bool      // archive uses old naming scheme
-	solid     bool      // archive is a solid archive
-	encrypted bool
-	pass      []uint16              // password in UTF-16
-	checksum  fileHash32            // file checksum
-	buf       readBuf               // temporary buffer
-	keyCache  [cacheSize30]struct { // cache of previously calculated decryption keys
+	byteReader               // reader for current block data
+	v          *bufio.Reader // reader for current archive volume
+	dec        decoder       // current decoder
+	decVer     byte          // current decoder version
+	multi      bool          // archive is multi-volume
+	old        bool          // archive uses old naming scheme
+	solid      bool          // archive is a solid archive
+	encrypted  bool
+	pass       []uint16              // password in UTF-16
+	checksum   fileHash32            // file checksum
+	buf        readBuf               // temporary buffer
+	keyCache   [cacheSize30]struct { // cache of previously calculated decryption keys
 		salt []byte
 		key  []byte
 		iv   []byte
@@ -283,7 +284,7 @@ func (a *archive15) parseFileHeader(h *blockHeader15) (*fileBlockHeader, error) 
 		if len(b) < 8 {
 			return nil, errCorruptFileHeader
 		}
-		f.PackedSize |= int64(b.uint32()) << 32
+		_ = b.uint32() // already read large PackedSize in readBlockHeader
 		f.UnPackedSize |= int64(b.uint32()) << 32
 		f.UnKnownSize = f.UnPackedSize == -1
 	} else if int32(f.UnPackedSize) == -1 {
@@ -359,7 +360,7 @@ func (a *archive15) parseFileHeader(h *blockHeader15) (*fileBlockHeader, error) 
 func (a *archive15) readBlockHeader() (*blockHeader15, error) {
 	var err error
 	b := a.buf[:7]
-	r := a.v
+	r := io.Reader(a.v)
 	if a.encrypted {
 		salt := a.buf[:saltSize]
 		_, err = io.ReadFull(r, salt)
@@ -404,7 +405,7 @@ func (a *archive15) readBlockHeader() (*blockHeader15, error) {
 		}
 		h.dataSize = int64(h.data.uint32())
 	}
-	if h.htype == blockService && h.flags&fileLargeData > 0 {
+	if (h.htype == blockService || h.htype == blockFile) && h.flags&fileLargeData > 0 {
 		if len(h.data) < 25 {
 			return nil, errCorruptHeader
 		}
@@ -416,19 +417,13 @@ func (a *archive15) readBlockHeader() (*blockHeader15, error) {
 
 // next advances to the next file block in the archive
 func (a *archive15) next() (*fileBlockHeader, error) {
-	if a.r != nil {
-		// discard remaining bytes left in current file block
-		if _, err := io.Copy(ioutil.Discard, a.r); err != nil {
-			return nil, err
-		}
-	}
 	for {
 		// could return an io.EOF here as 1.5 archives may not have an end block.
 		h, err := a.readBlockHeader()
 		if err != nil {
 			return nil, err
 		}
-		a.r = limitReader(a.v, h.dataSize, io.ErrUnexpectedEOF) // reader for block data
+		a.byteReader = limitByteReader(a.v, h.dataSize) // reader for block data
 
 		switch h.htype {
 		case blockFile:
@@ -440,11 +435,11 @@ func (a *archive15) next() (*fileBlockHeader, error) {
 			a.solid = h.flags&arcSolid > 0
 		case blockEnd:
 			if h.flags&endArcNotLast == 0 || !a.multi {
-				return nil, io.EOF
+				return nil, errArchiveEnd
 			}
 			return nil, errArchiveContinues
 		default:
-			_, err = io.Copy(ioutil.Discard, a.r)
+			_, err = io.Copy(ioutil.Discard, a.byteReader)
 		}
 		if err != nil {
 			return nil, err
@@ -454,22 +449,16 @@ func (a *archive15) next() (*fileBlockHeader, error) {
 
 func (a *archive15) version() int { return fileFmt15 }
 
-func (a *archive15) reset(r io.Reader) {
+func (a *archive15) reset() {
 	a.encrypted = false // reset encryption when opening new volume file
-	a.v = r
 }
 
 func (a *archive15) isSolid() bool {
 	return a.solid
 }
 
-// Read reads bytes from the current file block into p.
-func (a *archive15) Read(p []byte) (int, error) {
-	return a.r.Read(p)
-}
-
 // newArchive15 creates a new fileBlockReader for a Version 1.5 archive
-func newArchive15(r io.Reader, password string) fileBlockReader {
+func newArchive15(r *bufio.Reader, password string) fileBlockReader {
 	a := new(archive15)
 	a.v = r
 	a.pass = utf16.Encode([]rune(password)) // convert to UTF-16

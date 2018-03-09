@@ -56,11 +56,17 @@ func (g *Goon) GetAll(q *datastore.Query, dst interface{}) ([]*datastore.Key, er
 
 	keys, err := q.GetAll(g.Context, dst)
 	if err != nil {
-		g.error(err)
-		return nil, err
+		if errFieldMismatch(err) {
+			if IgnoreFieldMismatch {
+				err = nil
+			}
+		} else {
+			g.error(err)
+			return keys, err
+		}
 	}
 	if dst == nil || len(keys) == 0 {
-		return keys, nil
+		return keys, err
 	}
 
 	keysOnly := ((v.Len() - vLenBefore) != len(keys))
@@ -109,11 +115,11 @@ func (g *Goon) GetAll(q *datastore.Query, dst interface{}) ([]*datastore.Key, er
 
 		if updateCache {
 			// Cache lock is handled before the for loop
-			g.cache[memkey(k)] = e
+			g.cache[MemcacheKey(k)] = e
 		}
 	}
 
-	return keys, nil
+	return keys, err
 }
 
 // Run runs the query.
@@ -151,7 +157,7 @@ func (t *Iterator) Cursor() (datastore.Cursor, error) {
 // https://developers.google.com/appengine/docs/go/datastore/reference#Iterator.Next
 func (t *Iterator) Next(dst interface{}) (*datastore.Key, error) {
 	k, err := t.i.Next(dst)
-	if err != nil {
+	if err != nil && (!IgnoreFieldMismatch || !errFieldMismatch(err)) {
 		return k, err
 	}
 
@@ -161,10 +167,10 @@ func (t *Iterator) Next(dst interface{}) (*datastore.Key, error) {
 
 		if !t.g.inTransaction {
 			t.g.cacheLock.Lock()
-			t.g.cache[memkey(k)] = dst
+			t.g.cache[MemcacheKey(k)] = dst
 			t.g.cacheLock.Unlock()
 		}
 	}
 
-	return k, err
+	return k, nil
 }
