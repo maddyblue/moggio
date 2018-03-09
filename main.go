@@ -23,9 +23,8 @@ import (
 	_ "github.com/mjibson/moggio/codec/wav"
 
 	// protocols
-	_ "github.com/mjibson/moggio/protocol/bandcamp"
-	"github.com/mjibson/moggio/protocol/drive"
-	"github.com/mjibson/moggio/protocol/dropbox"
+	// _ "github.com/mjibson/moggio/protocol/bandcamp"
+
 	_ "github.com/mjibson/moggio/protocol/file"
 	_ "github.com/mjibson/moggio/protocol/gmusic"
 	"github.com/mjibson/moggio/protocol/soundcloud"
@@ -61,14 +60,14 @@ func main() {
 		if len(sp) != 2 {
 			log.Fatal("bad drive string %s", *flagDrive)
 		}
-		drive.Init(sp[0], sp[1], redir)
+		//drive.Init(sp[0], sp[1], redir)
 	}
 	if *flagDropbox != "" {
 		sp := strings.Split(*flagDropbox, ":")
 		if len(sp) != 2 {
 			log.Fatal("bad drive string %s", *flagDropbox)
 		}
-		dropbox.Init(sp[0], sp[1], redir)
+		//dropbox.Init(sp[0], sp[1], redir)
 	}
 	if *flagSoundcloud != "" {
 		sp := strings.Split(*flagSoundcloud, ":")
