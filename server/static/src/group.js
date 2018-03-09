@@ -1,4 +1,4 @@
-var exports = module.exports = {};
+var exports = (module.exports = {});
 
 var FixedDataTable = require('fixed-data-table');
 var Moggio = require('./moggio.js');
@@ -24,23 +24,29 @@ function group(route, field, name) {
 				}
 			});
 			var list = _.keys(entries);
-			list.sort(function (a, b) {
+			list.sort(function(a, b) {
 				return a.toLowerCase().localeCompare(b.toLowerCase());
 			});
 			var lis = _.map(list, function(val) {
 				var params = {};
 				params[field] = val;
-				return <li key={val}><Link to={route} params={params}>{val}</Link></li>;
+				return (
+					<li key={val}>
+						<Link to={route} params={params}>
+							{val}
+						</Link>
+					</li>
+				);
 			});
 			return (
 				<div>
-					<div className="mdl-typography--display-3 mdl-color-text--grey-600"><Link to="app">Music</Link> &gt; {name}</div>
-					<ul>
-						{lis}
-					</ul>
+					<div className="mdl-typography--display-3 mdl-color-text--grey-600">
+						<Link to="app">Music</Link> &gt; {name}
+					</div>
+					<ul>{lis}</ul>
 				</div>
 			);
-		}
+		},
 	});
 }
 

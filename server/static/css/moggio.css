@@ -2,14 +2,15 @@
 	font-family: 'Material Icons';
 	font-style: normal;
 	font-weight: 400;
-	src: local('Material Icons'), local('MaterialIcons-Regular'), url(/static/fonts/MaterialIcons-Regular.woff) format('woff');
+	src: local('Material Icons'), local('MaterialIcons-Regular'),
+		url(/static/fonts/MaterialIcons-Regular.woff) format('woff');
 }
 
 .material-icons {
 	font-family: 'Material Icons';
 	font-weight: normal;
 	font-style: normal;
-	font-size: 24px;	/* Preferred icon size */
+	font-size: 24px; /* Preferred icon size */
 	display: inline-block;
 	width: 1em;
 	height: 1em;
@@ -33,25 +34,29 @@
 	font-family: 'Roboto';
 	font-style: normal;
 	font-weight: 300;
-	src: local('Roboto Light'), local('Roboto-Light'), url(/static/fonts/Roboto-Light.woff) format('woff');
+	src: local('Roboto Light'), local('Roboto-Light'),
+		url(/static/fonts/Roboto-Light.woff) format('woff');
 }
 @font-face {
 	font-family: 'Roboto';
 	font-style: normal;
 	font-weight: 400;
-	src: local('Roboto'), local('Roboto-Regular'), url(/static/fonts/Roboto-Regular.woff) format('woff');
+	src: local('Roboto'), local('Roboto-Regular'),
+		url(/static/fonts/Roboto-Regular.woff) format('woff');
 }
 @font-face {
 	font-family: 'Roboto';
 	font-style: normal;
 	font-weight: 500;
-	src: local('Roboto Medium'), local('Roboto-Medium'), url(/static/fonts/Roboto-Medium.woff) format('woff');
+	src: local('Roboto Medium'), local('Roboto-Medium'),
+		url(/static/fonts/Roboto-Medium.woff) format('woff');
 }
 @font-face {
 	font-family: 'Roboto';
 	font-style: normal;
 	font-weight: 700;
-	src: local('Roboto Bold'), local('Roboto-Bold'), url(/static/fonts/Roboto-Bold.woff) format('woff');
+	src: local('Roboto Bold'), local('Roboto-Bold'),
+		url(/static/fonts/Roboto-Bold.woff) format('woff');
 }
 
 .top-main {
@@ -108,13 +113,13 @@ table.tracks button {
 }
 
 .sort-asc::after {
-	content: "▲";
+	content: '▲';
 	padding-left: 5px;
 	font-size: 14px;
 }
 
 .sort-desc::after {
-	content: "▼";
+	content: '▼';
 	padding-left: 5px;
 	font-size: 14px;
 }
@@ -134,17 +139,27 @@ table.tracks button {
 }
 
 .public_fixedDataTable_bodyRow .nowrap div:after {
-	content: "";
+	content: '';
 	position: absolute;
 	top: 0;
 	right: 0;
 	height: 100%;
 	width: 15px;
-	background: linear-gradient(to right, rgba(255, 255, 255, 0), rgb(255, 255, 255));
+	background: linear-gradient(
+		to right,
+		rgba(255, 255, 255, 0),
+		rgb(255, 255, 255)
+	);
 }
 
-.public_fixedDataTable_bodyRow.public_fixedDataTableRow_highlighted .nowrap div:after {
-	background: linear-gradient(to right, rgba(245, 245, 245,0), rgb(245, 245, 245));
+.public_fixedDataTable_bodyRow.public_fixedDataTableRow_highlighted
+	.nowrap
+	div:after {
+	background: linear-gradient(
+		to right,
+		rgba(245, 245, 245, 0),
+		rgb(245, 245, 245)
+	);
 }
 
 .public_fixedDataTableCell_wrap2 {
@@ -181,7 +196,7 @@ table.tracks button {
 	left: 0;
 	right: 0;
 	bottom: 0;
-	background-color: rgba(0, 0, 0, .5);
+	background-color: rgba(0, 0, 0, 0.5);
 	z-index: 1000;
 }
 

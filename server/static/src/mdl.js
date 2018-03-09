@@ -1,6 +1,6 @@
 var React = require('react');
 
-var exports = module.exports = {};
+var exports = (module.exports = {});
 
 function propClasses(prefix, props) {
 	var cn = '';
@@ -8,7 +8,7 @@ function propClasses(prefix, props) {
 		if (!props[i]) {
 			continue;
 		}
-		
+
 		cn += ' ' + prefix + i;
 	}
 	return cn;
@@ -19,12 +19,7 @@ exports.TextField = React.createClass({
 		componentHandler.upgradeDom();
 	},
 	render: function() {
-		var {
-			children,
-			error,
-			floating,
-			pattern,
-			...others } = this.props;
+		var { children, error, floating, pattern, ...others } = this.props;
 		var cn = 'mdl-textfield mdl-js-textfield';
 		if (floating) {
 			cn += ' mdl-textfield--floating-label';
@@ -33,33 +28,24 @@ exports.TextField = React.createClass({
 			error = <span className="mdl-textfield__error">{error}</span>;
 		}
 		return (
-			<div
-				className={cn}
-				>
+			<div className={cn}>
 				<input className="mdl-textfield__input" pattern={pattern} {...others} />
 				<label className="mdl-textfield__label">{children}</label>
 				{error}
 			</div>
 		);
-	}
+	},
 });
 
 exports.Button = React.createClass({
 	render: function() {
-		var {
-			children,
-			disabled,
-			...others } = this.props;
+		var { children, disabled, ...others } = this.props;
 		var cn = 'mdl-button mdl-js-button mdl-js-ripple-effect';
 		cn += propClasses('mdl-button--', others);
 		return (
-			<button
-				className={cn}
-				disabled={disabled}
-				{...others}
-				>
+			<button className={cn} disabled={disabled} {...others}>
 				{children}
 			</button>
 		);
-	}
+	},
 });

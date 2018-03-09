@@ -1,4 +1,4 @@
-var exports = module.exports = {};
+var exports = (module.exports = {});
 
 var FixedDataTable = require('fixed-data-table');
 var Moggio = require('./moggio.js');
@@ -13,11 +13,11 @@ var Column = FixedDataTable.Column;
 var Link = Router.Link;
 var Table = FixedDataTable.Table;
 
-var Tracks = exports.Tracks = React.createClass({
+var Tracks = (exports.Tracks = React.createClass({
 	mixins: [Reflux.listenTo(Stores.active, 'setActive')],
 	getDefaultProps: function() {
 		return {
-			tracks: []
+			tracks: [],
 		};
 	},
 	getInitialState: function() {
@@ -71,13 +71,9 @@ var Tracks = exports.Tracks = React.createClass({
 			var params;
 			if (this.props.isqueue) {
 				var idx = this.getIdx(index);
-				params = [
-					['rem', idx.toString()],
-				];
+				params = [['rem', idx.toString()]];
 			} else {
-				params = [
-					['add', this.getter(index).ID.UID]
-				];
+				params = [['add', this.getter(index).ID.UID]];
 			}
 			Moggio.POST('/api/queue/change', params);
 		}.bind(this);
@@ -85,9 +81,9 @@ var Tracks = exports.Tracks = React.createClass({
 	sort: function(field) {
 		return function() {
 			if (this.state.sort == field) {
-				this.update({asc: !this.state.asc});
+				this.update({ asc: !this.state.asc });
 			} else {
-				this.update({sort: field});
+				this.update({ sort: field });
 			}
 		}.bind(this);
 	},
@@ -107,7 +103,7 @@ var Tracks = exports.Tracks = React.createClass({
 	getTableWidth: function() {
 		var n = React.findDOMNode(this.refs.table);
 		var w = window.innerWidth - n.offsetLeft;
-		return {tableWidth: w};
+		return { tableWidth: w };
 	},
 	componentDidMount: function() {
 		window.addEventListener('resize', this.handleResize);
@@ -124,7 +120,7 @@ var Tracks = exports.Tracks = React.createClass({
 		if (this.refs && this.refs.table) {
 			var d = this.refs.table.getDOMNode();
 			height = window.innerHeight - d.offsetTop - 82;
-			this.setState({height: height});
+			this.setState({ height: height });
 		}
 		if (obj) {
 			this.setState(obj);
@@ -144,30 +140,34 @@ var Tracks = exports.Tracks = React.createClass({
 				return t.indexOf(s) > -1;
 			});
 		}
-		var useIdx = (obj.sort == 'Track' && this.props.useIdxAsNum) || this.props.isqueue;
+		var useIdx =
+			(obj.sort == 'Track' && this.props.useIdxAsNum) || this.props.isqueue;
 		tracks = _.sortBy(tracks, function(v) {
 			return v.Info.Track;
 		});
-		tracks = _.sortBy(tracks, function(v) {
-			if (useIdx) {
-				return v.idx;
-			}
-			var d = v.Info[obj.sort];
-			if (obj.sort == "Source") {
-				d = v.ID.UID;
-			}
-			if (_.isString(d)) {
-				d = d.toLocaleLowerCase();
-			}
-			return d;
-		}.bind(this));
+		tracks = _.sortBy(
+			tracks,
+			function(v) {
+				if (useIdx) {
+					return v.idx;
+				}
+				var d = v.Info[obj.sort];
+				if (obj.sort == 'Source') {
+					d = v.ID.UID;
+				}
+				if (_.isString(d)) {
+					d = d.toLocaleLowerCase();
+				}
+				return d;
+			}.bind(this)
+		);
 		if (!obj.asc) {
 			tracks.reverse();
 		}
-		this.setState({tracks: tracks});
+		this.setState({ tracks: tracks });
 	},
 	search: function(event) {
-		this.update({search: event.target.value});
+		this.update({ search: event.target.value });
 	},
 	getter: function(index) {
 		return this.state.tracks[index];
@@ -176,11 +176,21 @@ var Tracks = exports.Tracks = React.createClass({
 		return this.getter(index).idx - 1;
 	},
 	timeCellRenderer: function(str, key, data, index) {
-		return <div><Moggio.Time time={data.Info.Time} /></div>;
+		return (
+			<div>
+				<Moggio.Time time={data.Info.Time} />
+			</div>
+		);
 	},
 	timeHeader: function() {
 		return function() {
-			return <Moggio.Icon name='schedule' className={this.sortClass('Time')} onClick={this.sort('Time')} />;
+			return (
+				<Moggio.Icon
+					name="schedule"
+					className={this.sortClass('Time')}
+					onClick={this.sort('Time')}
+				/>
+			);
 		}.bind(this);
 	},
 	mkHeader: function(name, text) {
@@ -193,7 +203,11 @@ var Tracks = exports.Tracks = React.createClass({
 			};
 		}
 		return function() {
-			return <div className={this.sortClass(name)} onClick={this.sort(name)}>{text}</div>;
+			return (
+				<div className={this.sortClass(name)} onClick={this.sort(name)}>
+					{text}
+				</div>
+			);
 		}.bind(this);
 	},
 	trackRenderer: function(str, key, data, index) {
@@ -204,11 +218,13 @@ var Tracks = exports.Tracks = React.createClass({
 			track = '';
 		}
 		return (
-			<div style={{padding: '0'}}>
-				<span className="nohover" style={{padding: '12px'}}>{track}</span>
+			<div style={{ padding: '0' }}>
+				<span className="nohover" style={{ padding: '12px' }}>
+					{track}
+				</span>
 				<span className="hover">
 					<Button onClick={this.playTrack(index)} icon={true}>
-						<Moggio.Icon name="play_arrow"/>
+						<Moggio.Icon name="play_arrow" />
 					</Button>
 				</span>
 			</div>
@@ -217,7 +233,7 @@ var Tracks = exports.Tracks = React.createClass({
 	titleCellRenderer: function(str, key, data, index) {
 		var image;
 		if (data.Info.ImageURL) {
-			image = <img className="track-image" src={data.Info.ImageURL}/>;
+			image = <img className="track-image" src={data.Info.ImageURL} />;
 		} else {
 			image = <span className="track-image mdl-color--grey-300" />;
 		}
@@ -234,13 +250,29 @@ var Tracks = exports.Tracks = React.createClass({
 		);
 	},
 	artistCellRenderer: function(str, key, data, index) {
-		return <div><Link to="artist" params={data.Info}>{data.Info.Artist}</Link></div>;
+		return (
+			<div>
+				<Link to="artist" params={data.Info}>
+					{data.Info.Artist}
+				</Link>
+			</div>
+		);
 	},
 	albumCellRenderer: function(str, key, data, index) {
-		return <div><Link to="album" params={data.Info}>{data.Info.Album}</Link></div>;
+		return (
+			<div>
+				<Link to="album" params={data.Info}>
+					{data.Info.Album}
+				</Link>
+			</div>
+		);
 	},
 	sourceCellRenderer: function(str, key, data, index) {
-		return <div title={data.ID.ID + "|" + data.ID.Key + "|" + data.ID.Protocol}>{data.ID.Protocol}</div>;
+		return (
+			<div title={data.ID.ID + '|' + data.ID.Key + '|' + data.ID.Protocol}>
+				{data.ID.Protocol}
+			</div>
+		);
 	},
 	rowClassNameGetter: function(index) {
 		var g = this.getter(index);
@@ -255,20 +287,36 @@ var Tracks = exports.Tracks = React.createClass({
 		if (!this.props.isqueue) {
 			queue = (
 				<div>
-					<Button onClick={this.play} raised={true} primary={true}>play</Button>
+					<Button onClick={this.play} raised={true} primary={true}>
+						play
+					</Button>
 					&nbsp;
-					<Button onClick={this.add} raised={true} accent={true}>add</Button>
-					&nbsp;
-					({this.state.tracks.length} tracks)
+					<Button onClick={this.add} raised={true} accent={true}>
+						add
+					</Button>
+					&nbsp; ({this.state.tracks.length} tracks)
 				</div>
 			);
-		};
-		var track = this.props.isqueue ? <th></th> : <th className={this.sortClass('Track')} onClick={this.sort('Track')}>#</th>;
+		}
+		var track = this.props.isqueue ? (
+			<th />
+		) : (
+			<th className={this.sortClass('Track')} onClick={this.sort('Track')}>
+				#
+			</th>
+		);
 		return (
 			<div>
 				{queue}
-				<TextField style={{width: this.state.tableWidth - 2}} onChange={this.search} value={this.state.search}>search</TextField>
-				<Table ref="table"
+				<TextField
+					style={{ width: this.state.tableWidth - 2 }}
+					onChange={this.search}
+					value={this.state.search}
+				>
+					search
+				</TextField>
+				<Table
+					ref="table"
 					headerHeight={50}
 					rowHeight={50}
 					rowGetter={this.getter}
@@ -277,7 +325,7 @@ var Tracks = exports.Tracks = React.createClass({
 					width={this.state.tableWidth}
 					height={height}
 					overflowX={'hidden'}
-					>
+				>
 					<Column
 						width={50}
 						dataKey={'Track'}
@@ -324,8 +372,8 @@ var Tracks = exports.Tracks = React.createClass({
 				</Table>
 			</div>
 		);
-	}
-});
+	},
+}));
 
 exports.TrackList = React.createClass({
 	mixins: [Reflux.listenTo(Stores.tracks, 'setState')],
@@ -335,11 +383,13 @@ exports.TrackList = React.createClass({
 	render: function() {
 		return (
 			<div>
-				<div className="mdl-typography--display-3 mdl-color-text--grey-600">Music</div>
+				<div className="mdl-typography--display-3 mdl-color-text--grey-600">
+					Music
+				</div>
 				<Tracks tracks={this.state.Tracks} />
 			</div>
 		);
-	}
+	},
 });
 
 function searchClass(field, sort) {
@@ -358,11 +408,13 @@ function searchClass(field, sort) {
 			});
 			return (
 				<div>
-					<div className="mdl-typography--display-3 mdl-color-text--grey-600"><Link to="app">Music</Link> &gt; {prop}</div>
+					<div className="mdl-typography--display-3 mdl-color-text--grey-600">
+						<Link to="app">Music</Link> &gt; {prop}
+					</div>
 					<Tracks tracks={tracks} initSort={sort} />
 				</div>
 			);
-		}
+		},
 	});
 }
 

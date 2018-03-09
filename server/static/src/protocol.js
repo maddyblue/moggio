@@ -1,4 +1,4 @@
-var exports = module.exports = {};
+var exports = (module.exports = {});
 
 var Moggio = require('./moggio.js');
 var React = require('react');
@@ -23,36 +23,57 @@ exports.Protocols = React.createClass({
 		var selectedIndex = _.indexOf(keys, this.state.Selected);
 		var dropdown;
 		if (keys.length) {
-			var tabs = keys.map(function(protocol) {
-				var click = function(evt) {
-					evt.preventDefault();
-					this.setState({Selected: protocol});
-				}.bind(this);
-				var cn = 'mdl-tabs__tab';
-				if (this.state.Selected == protocol) {
-					cn += ' is-active';
-				}
-				return <a href key={protocol} className={cn} onClick={click}>{protocol}</a>;
-			}.bind(this));
+			var tabs = keys.map(
+				function(protocol) {
+					var click = function(evt) {
+						evt.preventDefault();
+						this.setState({ Selected: protocol });
+					}.bind(this);
+					var cn = 'mdl-tabs__tab';
+					if (this.state.Selected == protocol) {
+						cn += ' is-active';
+					}
+					return (
+						<a href key={protocol} className={cn} onClick={click}>
+							{protocol}
+						</a>
+					);
+				}.bind(this)
+			);
 			dropdown = (
 				<div className="mdl-tabs mdl-js-tabs mdl-js-ripple-effect">
-					<div className="mdl-tabs__tab-bar">
-						{tabs}
-					</div>
+					<div className="mdl-tabs__tab-bar">{tabs}</div>
 				</div>
 			);
 		}
 		var protocols = [];
-		_.each(this.state.Current, function(instances, protocol) {
-			_.each(instances, function(key) {
-				protocols.push(<ProtocolRow key={protocol + "\n" + key} protocol={protocol} name={key} />);
-			}, this);
-		}, this);
+		_.each(
+			this.state.Current,
+			function(instances, protocol) {
+				_.each(
+					instances,
+					function(key) {
+						protocols.push(
+							<ProtocolRow
+								key={protocol + '\n' + key}
+								protocol={protocol}
+								name={key}
+							/>
+						);
+					},
+					this
+				);
+			},
+			this
+		);
 		var selected;
 		if (this.state.Selected) {
 			selected = (
 				<div className="mdl-tabs__panel is-active">
-					<Protocol protocol={this.state.Selected} params={this.state.Available[this.state.Selected]} />
+					<Protocol
+						protocol={this.state.Selected}
+						params={this.state.Available[this.state.Selected]}
+					/>
 				</div>
 			);
 		}
@@ -69,7 +90,9 @@ exports.Protocols = React.createClass({
 			});
 			inprogress = (
 				<div>
-					<div className="mdl-typography--display-3 mdl-color-text--grey-600">Adding In Progress...</div>
+					<div className="mdl-typography--display-3 mdl-color-text--grey-600">
+						Adding In Progress...
+					</div>
 					<table className="mdl-data-table mdl-js-data-table">
 						<thead>
 							<tr>
@@ -77,34 +100,36 @@ exports.Protocols = React.createClass({
 								<th className="mdl-data-table__cell--non-numeric">name</th>
 							</tr>
 						</thead>
-						<tbody>
-							{insts}
-						</tbody>
+						<tbody>{insts}</tbody>
 					</table>
 				</div>
 			);
 		}
-		return <div>
-			<div className="mdl-typography--display-3 mdl-color-text--grey-600">New Protocol</div>
-			{dropdown}
-			{selected}
-			{inprogress}
-			<div className="mdl-typography--display-3 mdl-color-text--grey-600">Existing Protocols</div>
-			<table className="mdl-data-table mdl-js-data-table">
-				<thead>
-					<tr>
-						<th className="mdl-data-table__cell--non-numeric">protocol</th>
-						<th className="mdl-data-table__cell--non-numeric">name</th>
-						<th className="mdl-data-table__cell--non-numeric">remove</th>
-						<th className="mdl-data-table__cell--non-numeric">refresh</th>
-					</tr>
-				</thead>
-				<tbody>
-					{protocols}
-				</tbody>
-			</table>
-		</div>;
-	}
+		return (
+			<div>
+				<div className="mdl-typography--display-3 mdl-color-text--grey-600">
+					New Protocol
+				</div>
+				{dropdown}
+				{selected}
+				{inprogress}
+				<div className="mdl-typography--display-3 mdl-color-text--grey-600">
+					Existing Protocols
+				</div>
+				<table className="mdl-data-table mdl-js-data-table">
+					<thead>
+						<tr>
+							<th className="mdl-data-table__cell--non-numeric">protocol</th>
+							<th className="mdl-data-table__cell--non-numeric">name</th>
+							<th className="mdl-data-table__cell--non-numeric">remove</th>
+							<th className="mdl-data-table__cell--non-numeric">refresh</th>
+						</tr>
+					</thead>
+					<tbody>{protocols}</tbody>
+				</table>
+			</div>
+		);
+	},
 });
 
 var Protocol = React.createClass({
@@ -119,27 +144,45 @@ var Protocol = React.createClass({
 			protocol: this.props.protocol,
 			params: this.state.params,
 		};
-		Moggio.POST('/api/protocol/add', params, function() {
-			this.setState(this.getInitialState());
-		}.bind(this));
+		Moggio.POST(
+			'/api/protocol/add',
+			params,
+			function() {
+				this.setState(this.getInitialState());
+			}.bind(this)
+		);
 	},
 	render: function() {
 		if (!this.props.params) {
-			return <div/>;
+			return <div />;
 		}
 		var params = [];
 		if (this.props.params.Params) {
-			params = this.props.params.Params.map(function(param, idx) {
-				var change = function(event) {
-					var p = this.state.params.slice();
-					p[idx] = event.target.value;
-					this.setState({
-						params: p,
-						save: true,
-					});
-				}.bind(this);
-				return <div key={idx}><TextField style={{width: '75%'}} onChange={change} value={this.state.params[idx]} floating={true} type={param}>{param}</TextField></div>;
-			}.bind(this));
+			params = this.props.params.Params.map(
+				function(param, idx) {
+					var change = function(event) {
+						var p = this.state.params.slice();
+						p[idx] = event.target.value;
+						this.setState({
+							params: p,
+							save: true,
+						});
+					}.bind(this);
+					return (
+						<div key={idx}>
+							<TextField
+								style={{ width: '75%' }}
+								onChange={change}
+								value={this.state.params[idx]}
+								floating={true}
+								type={param}
+							>
+								{param}
+							</TextField>
+						</div>
+					);
+				}.bind(this)
+			);
 		}
 		if (this.props.params.OAuthURL) {
 			params.push(
@@ -148,14 +191,20 @@ var Protocol = React.createClass({
 				</Button>
 			);
 		} else {
-			params.push(<Button key="save" raised={true} colored={true} onClick={this.save} disabled={!this.state.save}>save</Button>);
+			params.push(
+				<Button
+					key="save"
+					raised={true}
+					colored={true}
+					onClick={this.save}
+					disabled={!this.state.save}
+				>
+					save
+				</Button>
+			);
 		}
-		return (
-			<div>
-				{params}
-			</div>
-		);
-	}
+		return <div>{params}</div>;
+	},
 });
 
 var ProtocolRow = React.createClass({
@@ -174,7 +223,9 @@ var ProtocolRow = React.createClass({
 	render: function() {
 		return (
 			<tr>
-				<td className="mdl-data-table__cell--non-numeric">{this.props.protocol}</td>
+				<td className="mdl-data-table__cell--non-numeric">
+					{this.props.protocol}
+				</td>
 				<td className="mdl-data-table__cell--non-numeric">{this.props.name}</td>
 				<td className="mdl-data-table__cell--non-numeric">
 					<Button onClick={this.remove} icon={true}>
@@ -188,5 +239,5 @@ var ProtocolRow = React.createClass({
 				</td>
 			</tr>
 		);
-	}
+	},
 });

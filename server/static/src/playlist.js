@@ -1,4 +1,4 @@
-var exports = module.exports = {};
+var exports = (module.exports = {});
 
 var List = require('./list.js');
 var Moggio = require('./moggio.js');
@@ -18,12 +18,12 @@ exports.Queue = React.createClass({
 		Moggio.POST('/api/queue/change', params);
 	},
 	save: function() {
-		var name = prompt("Playlist name:");
+		var name = prompt('Playlist name:');
 		if (!name) {
 			return;
 		}
 		if (this.state.Playlists[name]) {
-			if (!window.confirm("Overwrite existing playlist?")) {
+			if (!window.confirm('Overwrite existing playlist?')) {
 				return;
 			}
 		}
@@ -36,25 +36,33 @@ exports.Queue = React.createClass({
 	render: function() {
 		return (
 			<div>
-				<div className="mdl-typography--display-3 mdl-color-text--grey-600">Queue</div>
-				<Button raised={true} onClick={this.clear}>clear</Button>
+				<div className="mdl-typography--display-3 mdl-color-text--grey-600">
+					Queue
+				</div>
+				<Button raised={true} onClick={this.clear}>
+					clear
+				</Button>
 				&nbsp;
-				<Button raised={true} onClick={this.save}>save</Button>
+				<Button raised={true} onClick={this.save}>
+					save
+				</Button>
 				<List.Tracks tracks={this.state.Queue} noIdx={true} isqueue={true} />
 			</div>
 		);
-	}
+	},
 });
 
 exports.Playlist = React.createClass({
 	mixins: [Reflux.listenTo(Stores.playlist, 'setState')],
 	getInitialState: function() {
-		return Stores.playlist.data || {
-			Playlists: {}
-		};
+		return (
+			Stores.playlist.data || {
+				Playlists: {},
+			}
+		);
 	},
 	clear: function() {
-		if (!confirm("Delete playlist?")) {
+		if (!confirm('Delete playlist?')) {
 			return;
 		}
 		var params = [['clear']];
@@ -63,10 +71,17 @@ exports.Playlist = React.createClass({
 	render: function() {
 		return (
 			<div>
-				<div className="mdl-typography--display-3 mdl-color-text--grey-600">{this.props.params.Playlist}</div>
-				<Button raised={true} onClick={this.clear}>delete playlist</Button>
-				<List.Tracks tracks={this.state.Playlists[this.props.params.Playlist]} useIdxAsNum={true} />
+				<div className="mdl-typography--display-3 mdl-color-text--grey-600">
+					{this.props.params.Playlist}
+				</div>
+				<Button raised={true} onClick={this.clear}>
+					delete playlist
+				</Button>
+				<List.Tracks
+					tracks={this.state.Playlists[this.props.params.Playlist]}
+					useIdxAsNum={true}
+				/>
 			</div>
 		);
-	}
+	},
 });
