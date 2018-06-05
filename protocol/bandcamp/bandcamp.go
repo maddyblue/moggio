@@ -14,7 +14,7 @@ import (
 	"time"
 
 	"github.com/mjibson/moggio/codec"
-	"github.com/mjibson/moggio/codec/mp3"
+	"github.com/mjibson/moggio/codec/mpa"
 	"github.com/mjibson/moggio/protocol"
 	"golang.org/x/oauth2"
 )
@@ -60,7 +60,7 @@ func (b *Bandcamp) GetSong(id codec.ID) (codec.Song, error) {
 	if t == nil {
 		return nil, fmt.Errorf("missing %v", id)
 	}
-	return mp3.NewSong(func() (io.ReadCloser, int64, error) {
+	return mpa.NewSong(func() (io.ReadCloser, int64, error) {
 		log.Println("BANDCAMP", id)
 		res, err := http.Get(t.File.Mp3_128)
 		if err != nil {

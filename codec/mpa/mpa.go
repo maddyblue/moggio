@@ -1,14 +1,13 @@
-package mp3
+package mpa
 
 import (
 	"bytes"
-	"encoding/binary"
 	"io"
 	"math"
 	"time"
 
 	"github.com/dhowden/tag"
-	"github.com/hajimehoshi/go-mp3"
+	"github.com/korandiz/mpa"
 	"github.com/korandiz/mpseek"
 	"github.com/mjibson/moggio/codec"
 )
@@ -33,7 +32,8 @@ func NewSongs(rf codec.Reader) (codec.Songs, error) {
 type Song struct {
 	Reader  codec.Reader
 	r       io.ReadCloser
-	decoder *mp3.Decoder
+	decoder *mpa.Decoder
+	buff    [2][]float32
 	info    *codec.SongInfo
 }
 
@@ -47,13 +47,13 @@ func (s *Song) Init() (sampleRate, channels int, err error) {
 	if err != nil {
 		return 0, 0, err
 	}
-	s.decoder, err = mp3.NewDecoder(r)
-	if err != nil {
+	s.decoder = &mpa.Decoder{Input: r}
+	s.r = r
+	if err := s.decode(); err != nil {
 		r.Close()
 		return 0, 0, err
 	}
-	s.r = r
-	return s.decoder.SampleRate(), 2, nil
+	return s.decoder.SamplingFrequency(), s.decoder.NChannels(), nil
 }
 
 func (s *Song) Info() (info codec.SongInfo, err error) {
@@ -73,18 +73,37 @@ func (s *Song) Info() (info codec.SongInfo, err error) {
 	return *si, nil
 }
 
-func (s *Song) Play(n int) (r []float32, err error) {
-	var samples [2]int16
-	for len(r) < n {
-		if err := binary.Read(s.decoder, binary.LittleEndian, &samples); err == io.EOF {
-			break
-		} else if err != nil {
-			return nil, err
+func (s *Song) decode() error {
+	s.buff[0] = nil
+	s.buff[1] = nil
+	for {
+		if err := s.decoder.DecodeFrame(); err != nil {
+			switch err.(type) {
+			case mpa.MalformedStream:
+				continue
+			}
+			return err
 		}
-		r = append(r,
-			(float32(samples[0]))/(math.MaxInt16-math.MinInt16),
-			(float32(samples[1]))/(math.MaxInt16-math.MinInt16),
-		)
+		break
+	}
+	for i := 0; i < 2; i++ {
+		s.buff[i] = make([]float32, s.decoder.NSamples())
+		s.decoder.ReadSamples(i, s.buff[i])
+	}
+	return nil
+}
+
+func (s *Song) Play(n int) (r []float32, err error) {
+	for len(r) < n {
+		if len(s.buff[0]) == 0 {
+			if err = s.decode(); err != nil {
+				return
+			}
+		}
+		for len(s.buff[0]) > 0 && len(r) < n {
+			r = append(r, s.buff[0][0], s.buff[1][0])
+			s.buff[0], s.buff[1] = s.buff[0][1:], s.buff[1][1:]
+		}
 	}
 	return
 }
@@ -93,5 +112,5 @@ func (s *Song) Close() {
 	if s.r != nil {
 		s.r.Close()
 	}
-	s.decoder, s.r = nil, nil
+	s.decoder, s.buff[0], s.buff[1], s.r = nil, nil, nil, nil
 }

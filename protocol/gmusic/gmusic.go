@@ -11,7 +11,7 @@ import (
 
 	"github.com/mjibson/gmusic"
 	"github.com/mjibson/moggio/codec"
-	"github.com/mjibson/moggio/codec/mp3"
+	"github.com/mjibson/moggio/codec/mpa"
 	"github.com/mjibson/moggio/protocol"
 	"golang.org/x/oauth2"
 )
@@ -66,7 +66,7 @@ func (g *GMusic) GetSong(id codec.ID) (codec.Song, error) {
 	if f == nil {
 		return nil, fmt.Errorf("missing %v", id)
 	}
-	return mp3.NewSong(func() (io.ReadCloser, int64, error) {
+	return mpa.NewSong(func() (io.ReadCloser, int64, error) {
 		log.Println("GMUSIC", id)
 		r, err := g.GMusic.GetStream(string(id))
 		if err != nil {

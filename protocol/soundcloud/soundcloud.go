@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/mjibson/moggio/codec"
-	"github.com/mjibson/moggio/codec/mp3"
+	"github.com/mjibson/moggio/codec/mpa"
 	"github.com/mjibson/moggio/protocol"
 	"github.com/mjibson/moggio/protocol/soundcloud/soundcloud"
 	"golang.org/x/oauth2"
@@ -116,7 +116,7 @@ func (s *Soundcloud) GetSong(id codec.ID) (codec.Song, error) {
 	if f == nil {
 		return nil, fmt.Errorf("bad id: %v", id)
 	}
-	return mp3.NewSong(func() (io.ReadCloser, int64, error) {
+	return mpa.NewSong(func() (io.ReadCloser, int64, error) {
 		res, err := client.Get(f.StreamURL + "?client_id=" + oauthClientID)
 		if err != nil {
 			return nil, 0, err

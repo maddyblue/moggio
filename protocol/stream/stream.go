@@ -18,7 +18,7 @@ import (
 	"time"
 
 	"github.com/mjibson/moggio/codec"
-	"github.com/mjibson/moggio/codec/mp3"
+	"github.com/mjibson/moggio/codec/mpa"
 	"github.com/mjibson/moggio/protocol"
 	"golang.org/x/oauth2"
 )
@@ -218,7 +218,7 @@ func (s *Stream) Info(codec.ID) (*codec.SongInfo, error) {
 }
 
 func (s *Stream) GetSong(codec.ID) (codec.Song, error) {
-	return mp3.NewSong(s.reader())
+	return mpa.NewSong(s.reader())
 }
 
 func (s *Stream) reader() codec.Reader {
