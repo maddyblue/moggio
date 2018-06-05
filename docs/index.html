@@ -1,0 +1,123 @@
+---
+---
+
+{% assign releases = site.github.releases | where:"draft",false %}
+{% assign release = releases[0] %}
+{% assign relname = release.tag_name %}
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<title>moggio</title>
+
+		<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:regular,bold,italic,thin,light,bolditalic,black,medium&amp;lang=en">
+		<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+		<link rel="stylesheet" href="https://code.getmdl.io/1.1.1/material.deep_purple-pink.min.css">
+		<link rel="stylesheet" href="styles.css">
+		<style>
+		</style>
+	</head>
+	<body class="mdl-demo mdl-color--grey-100 mdl-color-text--grey-700 mdl-base">
+		<div class="mdl-layout mdl-js-layout mdl-layout--fixed-header">
+			<header class="mdl-layout__header mdl-layout__header--scroll mdl-color--primary">
+				<div class="mdl-layout--large-screen-only mdl-layout__header-row">
+				</div>
+				<div class="mdl-layout--large-screen-only mdl-layout__header-row">
+					<h3>moggio: a multi-source music player</h3>
+				</div>
+				<div class="mdl-layout--large-screen-only mdl-layout__header-row">
+				</div>
+				<div class="mdl-layout__tab-bar mdl-js-ripple-effect mdl-color--primary-dark">
+					<a href="#overview" class="mdl-layout__tab is-active">Overview</a>
+				</div>
+			</header>
+			<main class="mdl-layout__content">
+				<div class="mdl-layout__tab-panel is-active" id="overview">
+					<section class="section--center mdl-grid mdl-grid--no-spacing mdl-shadow--2dp">
+						<div class="mdl-card mdl-cell mdl-cell--12-col">
+							<div class="mdl-card__supporting-text">
+								<h4>Overview</h4>
+								<p>moggio plays music of many kinds from many sources. If you have most of your collection in Google Music, but also use Soundcloud and enjoy Shoutcast streaming, moggio allows you to use one application to listen to everything together.</p>
+								<p>Its interface is a website running on your computer, so it looks and acts the same anywhere you run it. You can configure your operating system with global hotkeys to script actions (next, pause, etc.). The website uses this API, so anything possible in the main interface can be scripted with hotkeys. Since it's just a website, your phone can act as a remote control to the computer where your speakers are.</p>
+								<p>Code at: <a href="https://github.com/mjibson/moggio">github.com/mjibson/moggio</a>.</p>
+							</div>
+						</div>
+					</section>
+					<section class="section--center mdl-grid mdl-grid--no-spacing mdl-shadow--2dp">
+						<div class="mdl-card mdl-cell mdl-cell--12-col">
+							<div class="mdl-card__supporting-text">
+								<h4>Download</h4>
+								<p>Version <a href="https://github.com/mjibson/moggio/releases/tag/{{ relname }}">{{ relname }}</a> ({{ release.published_at | date_to_string }})</p>
+								<ul>
+									<li><a href="https://github.com/mjibson/moggio/releases/download/{{relname}}/moggio-linux-amd64"><strong>Linux</strong> 64-bit</a></li>
+									<li><a href="https://github.com/mjibson/moggio/releases/download/{{relname}}/moggio-windows-amd64.exe"><strong>Windows</strong> 64-bit</a></li>
+									<li><a href="https://github.com/mjibson/moggio/releases/download/{{relname}}/moggio.zip"><strong>Mac</strong></a></li>
+								</ul>
+								
+								<p>Changes:</p>
+								
+								<p>{{ release.body | newline_to_br }}</p>
+				
+								<p>Also:
+								
+								<p><a href="https://github.com/mjibson/moggio/releases/download/{{relname}}/moggio-windows-386.exe">Windows 32-bit</a>
+							</div>
+						</div>
+					</section>
+					<section class="section--center mdl-grid mdl-grid--no-spacing mdl-shadow--2dp">
+						<div class="mdl-card mdl-cell mdl-cell--12-col">
+							<div class="mdl-card__supporting-text">
+								<h4>Sources</h4>
+								moggio can play music from these places.
+								<ul class="mdl-list">
+									<li class="mdl-list__item">Bandcamp</li>
+									<li class="mdl-list__item">Dropbox</li>
+									<li class="mdl-list__item">Google Drive</li>
+									<li class="mdl-list__item">Google Music</li>
+									<li class="mdl-list__item">Shoutcast Streaming</li>
+									<li class="mdl-list__item">Soundcloud</li>
+									<li class="mdl-list__item">Your computer</li>
+								</ul>
+							</div>
+						</div>
+					</section>
+					<section class="section--center mdl-grid mdl-grid--no-spacing mdl-shadow--2dp">
+						<div class="mdl-card mdl-cell mdl-cell--12-col">
+							<div class="mdl-card__supporting-text">
+								<h4>Formats</h4>
+								moggio can play music in these formats.
+								<ul class="mdl-list">
+									<li class="mdl-list__item">FLAC</li>
+									<li class="mdl-list__item">MP3</li>
+									<li class="mdl-list__item">NSF (Nintendo Sound Format)</li>
+									<li class="mdl-list__item">Ogg Vorbis - Linux/Mac only</li>
+									<li class="mdl-list__item">SPC (Super Nintendo) - Linux/Mac only</li>
+									<li class="mdl-list__item">WAV</li>
+								</ul>
+								<h4>Archive Formats</h4>
+								Music archived in these formats will be extracted.
+									<ul class="mdl-list">
+										<li class="mdl-list__item">RAR</li>
+										<li class="mdl-list__item">RSN (used to package Super Nintendo SPCs)</li>
+									</ul>
+							</div>
+						</div>
+					</section>
+				</div>
+				<div class="mdl-layout__tab-panel" id="docs">
+					<section class="section--center mdl-grid mdl-grid--no-spacing mdl-shadow--2dp">
+						<div class="mdl-card mdl-cell mdl-cell--12-col">
+							<div class="mdl-card__supporting-text">
+								<h4>Documentation</h4>
+							</div>
+						</div>
+					</section>
+				</div>
+			</main>
+		</div>
+		<script src="https://code.getmdl.io/1.1.1/material.min.js"></script>
+	</body>
+</html>
