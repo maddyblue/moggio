@@ -4,8 +4,8 @@
 [[projects]]
   name = "cloud.google.com/go"
   packages = ["compute/metadata"]
-  revision = "20d4028b8a750c2aca76bf9fefa8ed2d0109b573"
-  version = "v0.19.0"
+  revision = "0fd7230b2a7505833d5f69b75cbd6c9582401479"
+  version = "v0.23.0"
 
 [[projects]]
   name = "github.com/boltdb/bolt"
@@ -23,7 +23,7 @@
   branch = "master"
   name = "github.com/dhowden/tag"
   packages = ["."]
-  revision = "ba105bfefce011decaeff834369cb48f49f47ac6"
+  revision = "e80a3fa76a9645b4a90127deab5b271d8c5bcf85"
 
 [[projects]]
   branch = "master"
@@ -34,24 +34,8 @@
 [[projects]]
   name = "github.com/golang/protobuf"
   packages = ["proto"]
-  revision = "925541529c1fa6821df4e44ce2723319eb2be768"
-  version = "v1.0.0"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/hajimehoshi/go-mp3"
-  packages = [
-    ".",
-    "internal/bits",
-    "internal/consts",
-    "internal/frame",
-    "internal/frameheader",
-    "internal/huffman",
-    "internal/imdct",
-    "internal/maindata",
-    "internal/sideinfo"
-  ]
-  revision = "3c185f92b8dbceefa913b64cae634ba47f452769"
+  revision = "b4deda0973fb4c70b50d226b1af49f3da59f5265"
+  version = "v1.1.0"
 
 [[projects]]
   branch = "master"
@@ -76,6 +60,12 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/korandiz/mpa"
+  packages = ["."]
+  revision = "0947560b56fbf84d8b6a23f27eaceeb853c209e2"
+
+[[projects]]
+  branch = "master"
   name = "github.com/korandiz/mpseek"
   packages = ["."]
   revision = "7fdfba007a2f3054ae56e63b5581a8b67023628f"
@@ -89,6 +79,7 @@
 [[projects]]
   name = "github.com/mewkiz/flac"
   packages = [
+    ".",
     "frame",
     "internal/bits",
     "internal/hashutil",
@@ -98,12 +89,6 @@
   ]
   revision = "5d94ee8c15da5a101247ef7a62aa174291454b8c"
   version = "v1.0.5"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/mjibson/appstats"
-  packages = ["."]
-  revision = "0542d5f0e87ea3a8fa4174322b9532f5d04f9fa8"
 
 [[projects]]
   branch = "master"
@@ -121,13 +106,7 @@
   branch = "master"
   name = "github.com/mjibson/go-dsp"
   packages = ["wav"]
-  revision = "49dba83727078f13a0e99553e0f8140990115ac9"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/mjibson/goon"
-  packages = ["."]
-  revision = "0cd9745d6b9c43c1de754769708fb2ac349d84b2"
+  revision = "11479a337f1259210b7c8f93f7bf2b0cc87b066e"
 
 [[projects]]
   branch = "master"
@@ -166,7 +145,7 @@
   branch = "master"
   name = "go4.org"
   packages = ["reflectutil"]
-  revision = "fba789b7e39ba524b9e60c45c37a50fae63a2a09"
+  revision = "9599cf28b011184741f249bd9f9330756b506cbc"
 
 [[projects]]
   branch = "master"
@@ -176,7 +155,7 @@
     "context/ctxhttp",
     "websocket"
   ]
-  revision = "d0aafc73d5cdc42264b0af071c261abac580695e"
+  revision = "1e491301e022f8f977054da4c2d852decd59571f"
 
 [[projects]]
   branch = "master"
@@ -188,13 +167,13 @@
     "jws",
     "jwt"
   ]
-  revision = "2f32c3ac0fa4fb807a0fcefb0b6f2468a0d99bd0"
+  revision = "1e0a3fa8ba9a5c9eb35c271780101fdaf1b205d7"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix"]
-  revision = "7dca6fe1f43775aa6d1334576870ff63f978f539"
+  revision = "c11f84a56e43e20a78cee75a7c034031ecf57d1f"
 
 [[projects]]
   branch = "master"
@@ -205,44 +184,28 @@
     "googleapi",
     "googleapi/internal/uritemplates"
   ]
-  revision = "7f657476956314fee258816aaf81c0ff65cf8bee"
+  revision = "00e3bb8d04691e25ee2fccf98c866bcb7925c3ec"
 
 [[projects]]
   name = "google.golang.org/appengine"
   packages = [
     ".",
-    "datastore",
     "internal",
     "internal/app_identity",
     "internal/base",
     "internal/datastore",
     "internal/log",
-    "internal/memcache",
     "internal/modules",
     "internal/remote_api",
     "internal/urlfetch",
-    "internal/user",
-    "log",
-    "memcache",
-    "urlfetch",
-    "user"
+    "urlfetch"
   ]
   revision = "150dc57a1b433e64154302bdc40b6bb8aefa313a"
   version = "v1.0.0"
 
-[[projects]]
-  name = "gopkg.in/mewkiz/flac.v1"
-  packages = [
-    ".",
-    "frame",
-    "meta"
-  ]
-  revision = "5d94ee8c15da5a101247ef7a62aa174291454b8c"
-  version = "v1.0.5"
-
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "6796d54a7c4a06362d48a706c5352a44176fa41e354eeec0a63561a8509fb878"
+  inputs-digest = "c75944c33a521aea743d21fe90399d2fd2a03d98e99c0240d7b731c9c5e22407"
   solver-name = "gps-cdcl"
   solver-version = 1

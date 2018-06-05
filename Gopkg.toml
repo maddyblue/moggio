@@ -26,12 +26,20 @@
 
 
 [[constraint]]
-  branch = "master"
-  name = "github.com/facebookgo/httpcontrol"
+  name = "github.com/boltdb/bolt"
+  version = "1.3.1"
 
 [[constraint]]
   branch = "master"
-  name = "github.com/hajimehoshi/go-mp3"
+  name = "github.com/bradfitz/slice"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/dhowden/tag"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/facebookgo/httpcontrol"
 
 [[constraint]]
   branch = "master"
@@ -39,11 +47,27 @@
 
 [[constraint]]
   branch = "master"
+  name = "github.com/jfreymuth/go-vorbis"
+
+[[constraint]]
+  name = "github.com/julienschmidt/httprouter"
+  version = "1.1.0"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/korandiz/mpa"
+
+[[constraint]]
+  branch = "master"
   name = "github.com/korandiz/mpseek"
 
 [[constraint]]
   branch = "master"
-  name = "github.com/mjibson/appstats"
+  name = "github.com/mesilliac/pulse-simple"
+
+[[constraint]]
+  name = "github.com/mewkiz/flac"
+  version = "1.0.5"
 
 [[constraint]]
   branch = "master"
@@ -55,15 +79,35 @@
 
 [[constraint]]
   branch = "master"
+  name = "github.com/mjibson/go-dsp"
+
+[[constraint]]
+  branch = "master"
   name = "github.com/mjibson/nsf"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/nwaples/rardecode"
 
 [[constraint]]
   branch = "master"
   name = "github.com/oov/directsound-go"
 
 [[constraint]]
-  name = "gopkg.in/mewkiz/flac.v1"
-  version = "1.0.3"
+  branch = "master"
+  name = "github.com/pkg/browser"
+
+[[constraint]]
+  branch = "master"
+  name = "golang.org/x/net"
+
+[[constraint]]
+  branch = "master"
+  name = "golang.org/x/oauth2"
+
+[[constraint]]
+  branch = "master"
+  name = "google.golang.org/api"
 
 [prune]
   go-tests = true

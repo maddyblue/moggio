@@ -396,8 +396,7 @@ func ReadID3v2Tags(r io.ReadSeeker) (Metadata, error) {
 		return nil, err
 	}
 
-	var ur io.Reader
-	ur = r
+	var ur io.Reader = r
 	if h.Unsynchronisation {
 		ur = &unsynchroniser{Reader: r}
 	}
@@ -409,16 +408,17 @@ func ReadID3v2Tags(r io.ReadSeeker) (Metadata, error) {
 	return metadataID3v2{header: h, frames: f}, nil
 }
 
+var id3v2genreRe = regexp.MustCompile(`(.*[^(]|.* |^)\(([0-9]+)\) *(.*)$`)
+
 //  id3v2genre parse a id3v2 genre tag and expand the numeric genres
 func id3v2genre(genre string) string {
 	c := true
 	for c {
 		orig := genre
-		re := regexp.MustCompile("(.*[^(]|.* |^)\\(([0-9]+)\\) *(.*)$")
-		if match := re.FindStringSubmatch(genre); len(match) > 0 {
-			if genreId, err := strconv.Atoi(match[2]); err == nil {
-				if genreId < len(id3v2Genres) {
-					genre = id3v2Genres[genreId]
+		if match := id3v2genreRe.FindStringSubmatch(genre); len(match) > 0 {
+			if genreID, err := strconv.Atoi(match[2]); err == nil {
+				if genreID < len(id3v2Genres) {
+					genre = id3v2Genres[genreID]
 					if match[1] != "" {
 						genre = strings.TrimSpace(match[1]) + " " + genre
 					}

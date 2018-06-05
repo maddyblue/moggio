@@ -7,7 +7,6 @@ package tag
 import (
 	"errors"
 	"io"
-	"os"
 )
 
 // blockType is a type which represents an enumeration of valid FLAC blocks
@@ -15,13 +14,13 @@ type blockType byte
 
 // FLAC block types.
 const (
-	streamInfoBlock    blockType = 0
-	paddingBlock                 = 1
-	applicationBlock             = 2
-	seektableBlock               = 3
-	vorbisCommentBlock           = 4 // Supported
-	cueSheetBlock                = 5
-	pictureBlock                 = 6 // Supported
+	// Stream Info Block           0
+	// Padding Block               1
+	// Application Block           2
+	// Seektable Block             3
+	// Cue Sheet Block             5
+	vorbisCommentBlock blockType = 4
+	pictureBlock       blockType = 6
 )
 
 // ReadFLACTags reads FLAC metadata from the io.ReadSeeker, returning the resulting
@@ -80,7 +79,7 @@ func (m *metadataFLAC) readFLACMetadataBlock(r io.ReadSeeker) (last bool, err er
 		err = m.readPictureBlock(r)
 
 	default:
-		_, err = r.Seek(int64(blockLen), os.SEEK_CUR)
+		_, err = r.Seek(int64(blockLen), io.SeekCurrent)
 	}
 	return
 }
