@@ -18,5 +18,4 @@ build()
 
 go version
 build windows amd64
-build windows 386
 build linux amd64
