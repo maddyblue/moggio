@@ -19,8 +19,9 @@ import (
 	"golang.org/x/oauth2"
 )
 
-func (srv *Server) commands() {
-	srv.state = stateStop
+func (srv *Server) commands(initialState State) {
+	srv.state = initialState
+	log.Println("initial state:", initialState)
 	var next, stop, tick, play, pause, prev func()
 	var timer <-chan time.Time
 	waiters := make(map[*websocket.Conn]chan struct{})
@@ -633,6 +634,10 @@ func (srv *Server) commands() {
 			c.err <- nil
 		}()
 	}
+	switch initialState {
+	case statePlay:
+		play()
+	}
 	ch := make(chan interface{})
 	go func() {
 		for c := range srv.ch {
@@ -672,15 +677,12 @@ func (srv *Server) commands() {
 				doDroadcast = true
 				switch c {
 				case cmdPlay:
-					save = false
 					play()
 				case cmdStop:
-					save = false
 					stop()
 				case cmdNext:
 					next()
 				case cmdPause:
-					save = false
 					pause()
 				case cmdPrev:
 					prev()

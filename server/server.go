@@ -194,11 +194,12 @@ func New(stateFile, central string) (*Server, error) {
 		return nil, err
 	}
 	srv.db = db
-	if err := srv.restore(); err != nil {
+	initialState, err := srv.restore()
+	if err != nil {
 		log.Println(err)
 	}
 	log.Println("started from", stateFile)
-	go srv.commands()
+	go srv.commands(initialState)
 	go srv.audio()
 	return &srv, nil
 }
@@ -206,9 +207,10 @@ func New(stateFile, central string) (*Server, error) {
 const (
 	dbBucket = "bucket"
 	dbServer = "server"
+	dbState  = "state"
 )
 
-func (srv *Server) restore() error {
+func (srv *Server) restore() (State, error) {
 	decode := func(name string, dst interface{}) error {
 		var data []byte
 		err := srv.db.View(func(tx *bolt.Tx) error {
@@ -230,9 +232,13 @@ func (srv *Server) restore() error {
 		return gob.NewDecoder(gr).Decode(dst)
 	}
 	if err := decode(dbServer, srv); err != nil {
-		return err
+		return 0, err
 	}
-	return nil
+	var initialState State
+	if err := decode(dbState, &initialState); err != nil {
+		initialState = stateStop
+	}
+	return initialState, nil
 }
 
 func (srv *Server) save() error {
@@ -241,6 +247,7 @@ func (srv *Server) save() error {
 	}()
 	store := map[string]interface{}{
 		dbServer: srv,
+		dbState:  srv.state,
 	}
 	tostore := make(map[string][]byte)
 	for name, data := range store {
@@ -291,7 +298,9 @@ func (srv *Server) getInstance(name, key string) (protocol.Instance, error) {
 
 type PlaylistChange [][]string
 
-func (srv *Server) playlistChange(p Playlist, plc PlaylistChange) (pl Playlist, cleared bool, err error) {
+func (srv *Server) playlistChange(
+	p Playlist, plc PlaylistChange,
+) (pl Playlist, cleared bool, err error) {
 	m := make([]SongID, len(p))
 	copy(m, p)
 	for _, c := range plc {
