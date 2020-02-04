@@ -98,6 +98,7 @@ func (srv *Server) commands(initialState State) {
 			log.Println("pause: resume")
 			srv.audioch <- audioPlay{}
 			srv.state = statePlay
+			play()
 		case statePlay:
 			log.Println("pause: pause")
 			srv.audioch <- audioStop{}
