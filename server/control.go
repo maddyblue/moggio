@@ -645,7 +645,7 @@ func (srv *Server) commands(initialState State) {
 			go func(c interface{}) {
 				timer := time.AfterFunc(time.Second*10, func() {
 					log.Printf("%T: %#v\n", c, c)
-					panic("delay timer expired")
+					//panic("delay timer expired")
 				})
 				ch <- c
 				timer.Stop()
