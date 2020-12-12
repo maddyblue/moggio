@@ -352,12 +352,9 @@ type Status struct {
 	// Elapsed time of current song.
 	Elapsed time.Duration
 	// Duration of current song.
-	Time       time.Duration
-	Random     bool
-	Repeat     bool
-	Username   string
-	Hostname   string
-	CentralURL string
+	Time   time.Duration
+	Random bool
+	Repeat bool
 }
 
 func (srv *Server) request(path string, body interface{}) (io.ReadCloser, error) {

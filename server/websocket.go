@@ -2,7 +2,6 @@ package server
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/mjibson/moggio/codec"
 	"github.com/mjibson/moggio/protocol"
@@ -45,18 +44,14 @@ func (srv *Server) makeWaitData(wt waitType) *waitData {
 			srv.inprogress,
 		}
 	case waitStatus:
-		hostname, _ := os.Hostname()
 		data = &Status{
-			State:      srv.state,
-			Song:       srv.songID,
-			SongInfo:   srv.info,
-			Elapsed:    srv.elapsed,
-			Time:       srv.info.Time,
-			Random:     srv.Random,
-			Repeat:     srv.Repeat,
-			Username:   srv.Username,
-			Hostname:   hostname,
-			CentralURL: srv.centralURL,
+			State:    srv.state,
+			Song:     srv.songID,
+			SongInfo: srv.info,
+			Elapsed:  srv.elapsed,
+			Time:     srv.info.Time,
+			Random:   srv.Random,
+			Repeat:   srv.Repeat,
 		}
 	case waitTracks:
 		var songs []listItem
