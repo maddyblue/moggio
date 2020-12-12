@@ -635,6 +635,17 @@ func (srv *Server) commands(initialState State) {
 			c.err <- nil
 		}()
 	}
+	getStatus := func(c cmdGetStatus) {
+		c.status <- Status{
+			State:    srv.state,
+			Song:     srv.songID,
+			SongInfo: srv.info,
+			Elapsed:  srv.elapsed,
+			Time:     srv.info.Time,
+			Random:   srv.Random,
+			Repeat:   srv.Repeat,
+		}
+	}
 	switch initialState {
 	case statePlay:
 		play()
@@ -747,6 +758,8 @@ func (srv *Server) commands(initialState State) {
 				save = false
 			case cmdProtocolRefresh:
 				protocolRefresh(c)
+			case cmdGetStatus:
+				getStatus(c)
 			default:
 				panic(c)
 			}

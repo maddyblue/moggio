@@ -174,10 +174,19 @@ func (srv *Server) Cmd(body io.Reader, form url.Values, ps httprouter.Params) (i
 			return nil, err
 		}
 		srv.ch <- cmdMinDuration(d)
+	case "status":
+		sc := cmdGetStatus{status: make(chan Status)}
+		srv.ch <- sc
+		status := <-sc.status
+		return status, nil
 	default:
 		return nil, fmt.Errorf("unknown command: %v", cmd)
 	}
 	return nil, nil
+}
+
+type cmdGetStatus struct {
+	status chan Status
 }
 
 func (srv *Server) QueueChange(body io.Reader, form url.Values, ps httprouter.Params) (interface{}, error) {
