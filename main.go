@@ -89,7 +89,7 @@ func main() {
 			*stateFile = filepath.Join(os.Getenv("HOME"), ".moggio.state")
 		}
 	}
-	log.Fatal(server.ListenAndServe(*stateFile, *flagAddr, "", *flagDev))
+	log.Fatal(server.ListenAndServe(*stateFile, *flagAddr, *flagDev))
 }
 
 //go:generate browserify -t [ reactify --es6 ] server/static/src/nav.js -o server/static/js/moggio.js

@@ -8,14 +8,10 @@ import (
 	"encoding/gob"
 	"encoding/json"
 	"fmt"
-	"io"
-	"io/ioutil"
 	"log"
 	"math"
 	"math/big"
 	"math/rand"
-	"net/http"
-	"net/url"
 	"path/filepath"
 	"runtime"
 	"strconv"
@@ -43,8 +39,8 @@ func printErr(e error) {
 	println(string(b))
 }
 
-func ListenAndServe(stateFile, addr, central string, devMode bool) error {
-	server, err := New(stateFile, central)
+func ListenAndServe(stateFile, addr string, devMode bool) error {
+	server, err := New(stateFile)
 	if err != nil {
 		return err
 	}
@@ -128,9 +124,6 @@ type Server struct {
 	Queue     Playlist
 	Playlists map[string]Playlist
 
-	Username string
-	Token    string
-
 	Repeat      bool
 	Random      bool
 	Protocols   map[string]map[string]protocol.Instance
@@ -143,7 +136,6 @@ type Server struct {
 	info          codec.SongInfo
 	elapsed       time.Duration
 
-	centralURL  string
 	inprogress  map[codec.ID]bool
 	ch          chan interface{}
 	audioch     chan interface{}
@@ -179,14 +171,13 @@ func (srv *Server) playlistInfo(p Playlist) PlaylistInfo {
 
 var dir = filepath.Join("server")
 
-func New(stateFile, central string) (*Server, error) {
+func New(stateFile string) (*Server, error) {
 	srv := Server{
 		ch:          make(chan interface{}),
 		audioch:     make(chan interface{}),
 		Protocols:   protocol.Map(),
 		Playlists:   make(map[string]Playlist),
 		MinDuration: time.Second * 30,
-		centralURL:  central,
 		inprogress:  make(map[codec.ID]bool),
 	}
 	db, err := bolt.Open(stateFile, 0600, nil)
@@ -355,34 +346,6 @@ type Status struct {
 	Time   time.Duration
 	Random bool
 	Repeat bool
-}
-
-func (srv *Server) request(path string, body interface{}) (io.ReadCloser, error) {
-	// TODO: srv.Token is subject to a race condition because this function is
-	// called in go routines in the control loop, and srv.Token is set in the
-	// main go routine.
-	tv := url.Values{"token": []string{srv.Token}}.Encode()
-	var br io.Reader
-	if body != nil {
-		b, err := json.Marshal(body)
-		if err != nil {
-			return nil, err
-		}
-		br = bytes.NewReader(b)
-	}
-	r, err := http.Post(srv.centralURL+path+"?"+tv, "application/json", br)
-	if err != nil {
-		return nil, err
-	}
-	if r.StatusCode != 200 {
-		b, err := ioutil.ReadAll(r.Body)
-		r.Body.Close()
-		if err != nil {
-			return nil, err
-		}
-		return nil, fmt.Errorf("%s: %v: %s", path, r.Status, b)
-	}
-	return r.Body, nil
 }
 
 func (srv *Server) getSong(id SongID) (*codec.SongInfo, error) {

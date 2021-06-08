@@ -3,8 +3,6 @@ package server
 import (
 	"bytes"
 	"compress/gzip"
-	"encoding/gob"
-	"encoding/json"
 	"fmt"
 	"log"
 	"math/rand"
@@ -316,20 +314,6 @@ func (srv *Server) commands(initialState State) {
 			return
 		}
 		delete(prots, c.key)
-		if srv.Token != "" {
-			d := models.Delete{
-				Protocol: c.protocol,
-				Name:     c.key,
-			}
-			go func() {
-				r, err := srv.request("/api/source/delete", &d)
-				if err != nil {
-					srv.ch <- cmdError(err)
-					return
-				}
-				r.Close()
-			}()
-		}
 		broadcast(waitTracks)
 		broadcast(waitProtocols)
 	}
@@ -369,12 +353,6 @@ func (srv *Server) commands(initialState State) {
 	}
 	protocolAddInstance := func(c cmdProtocolAddInstance) {
 		srv.Protocols[c.Name][c.Instance.Key()] = c.Instance
-		if srv.Token != "" {
-			srv.ch <- cmdPutSource{
-				protocol: c.Name,
-				key:      c.Instance.Key(),
-			}
-		}
 		broadcast(waitTracks)
 		broadcast(waitProtocols)
 	}
@@ -455,101 +433,6 @@ func (srv *Server) commands(initialState State) {
 		}
 		srv.audioch <- c
 	}
-	setUsername := func(c cmdSetUsername) {
-		srv.Username = string(c)
-	}
-	makeSource := func(protocol, key string) ([]*models.Source, error) {
-		// name and key may be empty to match all
-		var ss []*models.Source
-		for prot, m := range srv.Protocols {
-			if prot != protocol && protocol != "" {
-				continue
-			}
-			for name, p := range m {
-				if name != key && key != "" {
-					continue
-				}
-				buf := new(bytes.Buffer)
-				gw := gzip.NewWriter(buf)
-				if err := gob.NewEncoder(gw).Encode(p); err != nil {
-					return nil, err
-				}
-				if err := gw.Close(); err != nil {
-					return nil, err
-				}
-				ss = append(ss, &models.Source{
-					Protocol: prot,
-					Name:     name,
-					Blob:     buf.Bytes(),
-				})
-			}
-		}
-		return ss, nil
-	}
-	sendSource := func(ss []*models.Source) error {
-		r, err := srv.request("/api/source/set", &ss)
-		if err != nil {
-			return err
-		}
-		r.Close()
-		return nil
-	}
-	putSource := func(c cmdPutSource) {
-		ss, err := makeSource(c.protocol, c.key)
-		if err != nil {
-			broadcastErr(fmt.Errorf("could not set sources: %v", err))
-			return
-		}
-		if err := sendSource(ss); err != nil {
-			broadcastErr(fmt.Errorf("could not set sources: %v", err))
-		}
-	}
-	tokenRegister := func(c cmdTokenRegister) {
-		srv.Token = ""
-		if c != "" {
-			srv.Token = string(c)
-			ss, err := makeSource("", "")
-			if err != nil {
-				broadcastErr(err)
-				return
-			}
-			go func() {
-				if err := sendSource(ss); err != nil {
-					srv.ch <- cmdError(err)
-					return
-				}
-				r, err := srv.request("/api/source/get", nil)
-				if err != nil {
-					srv.ch <- cmdError(fmt.Errorf("could not get sources: %v", err))
-					return
-				}
-				defer r.Close()
-				if err := json.NewDecoder(r).Decode(&ss); err != nil {
-					srv.ch <- cmdError(err)
-					return
-				}
-				srv.ch <- cmdSetSources(ss)
-			}()
-		}
-		go func() {
-			srv.ch <- cmdSetUsername("")
-			if c == "" {
-				return
-			}
-			r, err := srv.request("/api/username", nil)
-			if err != nil {
-				srv.ch <- cmdError(err)
-				return
-			}
-			defer r.Close()
-			var u cmdSetUsername
-			if err := json.NewDecoder(r).Decode(&u); err != nil {
-				srv.ch <- cmdError(err)
-				return
-			}
-			srv.ch <- u
-		}()
-	}
 	setSources := func(c cmdSetSources) {
 		ps := protocol.Map()
 		for _, s := range c {
@@ -625,12 +508,6 @@ func (srv *Server) commands(initialState State) {
 			}
 			if c.doDelete {
 				srv.ch <- cmdRemoveDeleted{}
-			}
-			if srv.Token != "" {
-				srv.ch <- cmdPutSource{
-					protocol: c.protocol,
-					key:      c.key,
-				}
 			}
 			c.err <- nil
 		}()
@@ -733,10 +610,6 @@ func (srv *Server) commands(initialState State) {
 				doSeek(c)
 			case cmdMinDuration:
 				setMinDuration(c)
-			case cmdTokenRegister:
-				tokenRegister(c)
-			case cmdSetUsername:
-				setUsername(c)
 			case cmdSetSources:
 				setSources(c)
 			case cmdProtocolAdd:
@@ -752,9 +625,6 @@ func (srv *Server) commands(initialState State) {
 				save = false
 			case cmdWaitData:
 				sendWaitData(c)
-				save = false
-			case cmdPutSource:
-				putSource(c)
 				save = false
 			case cmdProtocolRefresh:
 				protocolRefresh(c)
@@ -821,10 +691,6 @@ type cmdSetTime struct {
 
 type cmdError error
 
-type cmdTokenRegister string
-
-type cmdSetUsername string
-
 type cmdSetSources []*models.Source
 
 type cmdProtocolAdd struct {
@@ -839,10 +705,6 @@ type cmdRemoveInProgress codec.ID
 type cmdWaitData struct {
 	wt   waitType
 	done chan<- *waitData
-}
-
-type cmdPutSource struct {
-	protocol, key string
 }
 
 type cmdProtocolRefresh struct {

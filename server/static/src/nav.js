@@ -125,36 +125,6 @@ var App = React.createClass({
         );
       }.bind(this)
     );
-    if (this.state.CentralURL) {
-      if (this.state.Username) {
-        var un = (
-          <span key="username" className="mdl-navigation__link">
-            {this.state.Username}
-            <br />
-            <a href="" onClick={this.logout}>
-              [logout]
-            </a>
-          </span>
-        );
-        menuItems.unshift(un);
-      } else {
-        var origin =
-          location.protocol + "//" + location.host + "/api/token/register";
-        var params = "?redirect=" + encodeURIComponent(origin);
-        if (this.state.Hostname) {
-          params += "&hostname=" + encodeURIComponent(this.state.Hostname);
-        }
-        menuItems.unshift(
-          <a
-            key="username"
-            href={this.state.CentralURL + "/token" + params}
-            className="mdl-navigation__link"
-          >
-            login
-          </a>
-        );
-      }
-    }
     var playlists;
     if (this.state.Playlists) {
       var entries = _.map(
