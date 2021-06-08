@@ -11,17 +11,31 @@ import (
 )
 
 type output struct {
-	st *pulse.Stream
+	st         *pulse.Stream
+	sampleRate uint32
+	channels   uint8
+}
+
+func (o *output) init() {
+	if o.st != nil {
+		o.st.Drain()
+		o.st.Free()
+		o.st = nil
+	}
+	ss := pulse.SampleSpec{pulse.SAMPLE_FLOAT32LE, o.sampleRate, o.channels}
+	var err error
+	o.st, err = pulse.Playback("moggio", "moggio", &ss)
+	if err != nil {
+		log.Println(err)
+		return
+	}
 }
 
 func get(sampleRate, channels int) (Output, error) {
 	o := new(output)
-	var err error
-	ss := pulse.SampleSpec{pulse.SAMPLE_FLOAT32LE, uint32(sampleRate), uint8(channels)}
-	o.st, err = pulse.Playback("moggio", "moggio", &ss)
-	if err != nil {
-		return nil, err
-	}
+	o.sampleRate = uint32(sampleRate)
+	o.channels = uint8(channels)
+	o.init()
 	return o, nil
 }
 
@@ -30,9 +44,9 @@ func (o *output) Push(samples []float32) {
 	for _, s := range samples {
 		_ = binary.Write(buf, binary.LittleEndian, s)
 	}
-	_, err := o.st.Write(buf.Bytes())
-	if err != nil {
+	if _, err := o.st.Write(buf.Bytes()); err != nil {
 		log.Println(err)
+		o.init()
 	}
 }
 
