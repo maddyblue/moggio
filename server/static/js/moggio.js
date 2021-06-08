@@ -7331,7 +7331,7 @@ var RouteHandler = require('./RouteHandler');
  *       <Route name="about" handler={About}/>
  *     </Route>
  *   ];
- *   
+ *
  *   Router.run(routes, function (Handler) {
  *     React.render(<Handler/>, document.body);
  *   });
@@ -8554,9 +8554,9 @@ var createRouter = require('./createRouter');
  *   Router.run(routes, function (Handler) {
  *     React.render(<Handler/>, document.body);
  *   });
- * 
+ *
  * Using HTML5 history and a custom "cursor" prop:
- * 
+ *
  *   Router.run(routes, Router.HistoryLocation, function (Handler) {
  *     React.render(<Handler cursor={cursor}/>, document.body);
  *   });
@@ -31936,18 +31936,18 @@ function group(route, field, name) {
 				var params = {};
 				params[field] = val;
 				return (
-					React.createElement("li", {key: val}, 
-						React.createElement(Link, {to: route, params: params}, 
+					React.createElement("li", {key: val},
+						React.createElement(Link, {to: route, params: params},
 							val
 						)
 					)
 				);
 			});
 			return (
-				React.createElement("div", null, 
-					React.createElement("div", {className: "mdl-typography--display-3 mdl-color-text--grey-600"}, 
+				React.createElement("div", null,
+					React.createElement("div", {className: "mdl-typography--display-3 mdl-color-text--grey-600"},
 						React.createElement(Link, {to: "app"}, "Music"), " > ", name
-					), 
+					),
 					React.createElement("ul", null, lis)
 				)
 			);
@@ -32138,7 +32138,7 @@ var Tracks = (exports.Tracks = React.createClass({displayName: "Tracks",
 	},
 	timeCellRenderer: function(str, key, data, index) {
 		return (
-			React.createElement("div", null, 
+			React.createElement("div", null,
 				React.createElement(Moggio.Time, {time: data.Info.Time})
 			)
 		);
@@ -32147,8 +32147,8 @@ var Tracks = (exports.Tracks = React.createClass({displayName: "Tracks",
 		return function() {
 			return (
 				React.createElement(Moggio.Icon, {
-					name: "schedule", 
-					className: this.sortClass('Time'), 
+					name: "schedule",
+					className: this.sortClass('Time'),
 					onClick: this.sort('Time')}
 				)
 			);
@@ -32165,7 +32165,7 @@ var Tracks = (exports.Tracks = React.createClass({displayName: "Tracks",
 		}
 		return function() {
 			return (
-				React.createElement("div", {className: this.sortClass(name), onClick: this.sort(name)}, 
+				React.createElement("div", {className: this.sortClass(name), onClick: this.sort(name)},
 					text
 				)
 			);
@@ -32179,12 +32179,12 @@ var Tracks = (exports.Tracks = React.createClass({displayName: "Tracks",
 			track = '';
 		}
 		return (
-			React.createElement("div", {style: { padding: '0'}}, 
-				React.createElement("span", {className: "nohover", style: { padding: '12px'}}, 
+			React.createElement("div", {style: { padding: '0'}},
+				React.createElement("span", {className: "nohover", style: { padding: '12px'}},
 					track
-				), 
-				React.createElement("span", {className: "hover"}, 
-					React.createElement(Button, {onClick: this.playTrack(index), icon: true}, 
+				),
+				React.createElement("span", {className: "hover"},
+					React.createElement(Button, {onClick: this.playTrack(index), icon: true},
 						React.createElement(Moggio.Icon, {name: "play_arrow"})
 					)
 				)
@@ -32199,11 +32199,11 @@ var Tracks = (exports.Tracks = React.createClass({displayName: "Tracks",
 			image = React.createElement("span", {className: "track-image mdl-color--grey-300"});
 		}
 		return (
-			React.createElement("div", {className: "track-title"}, 
-				image, 
-				data.Info.Title, 
-				React.createElement("span", {className: "hover pull-right"}, 
-					React.createElement(Button, {onClick: this.appendTrack(index), icon: true}, 
+			React.createElement("div", {className: "track-title"},
+				image,
+				data.Info.Title,
+				React.createElement("span", {className: "hover pull-right"},
+					React.createElement(Button, {onClick: this.appendTrack(index), icon: true},
 						React.createElement(Moggio.Icon, {name: this.props.isqueue ? 'clear' : 'add'})
 					)
 				)
@@ -32212,8 +32212,8 @@ var Tracks = (exports.Tracks = React.createClass({displayName: "Tracks",
 	},
 	artistCellRenderer: function(str, key, data, index) {
 		return (
-			React.createElement("div", null, 
-				React.createElement(Link, {to: "artist", params: data.Info}, 
+			React.createElement("div", null,
+				React.createElement(Link, {to: "artist", params: data.Info},
 					data.Info.Artist
 				)
 			)
@@ -32221,8 +32221,8 @@ var Tracks = (exports.Tracks = React.createClass({displayName: "Tracks",
 	},
 	albumCellRenderer: function(str, key, data, index) {
 		return (
-			React.createElement("div", null, 
-				React.createElement(Link, {to: "album", params: data.Info}, 
+			React.createElement("div", null,
+				React.createElement(Link, {to: "album", params: data.Info},
 					data.Info.Album
 				)
 			)
@@ -32230,7 +32230,7 @@ var Tracks = (exports.Tracks = React.createClass({displayName: "Tracks",
 	},
 	sourceCellRenderer: function(str, key, data, index) {
 		return (
-			React.createElement("div", {title: data.ID.ID + '|' + data.ID.Key + '|' + data.ID.Protocol}, 
+			React.createElement("div", {title: data.ID.ID + '|' + data.ID.Key + '|' + data.ID.Protocol},
 				data.ID.Protocol
 			)
 		);
@@ -32247,14 +32247,14 @@ var Tracks = (exports.Tracks = React.createClass({displayName: "Tracks",
 		var queue;
 		if (!this.props.isqueue) {
 			queue = (
-				React.createElement("div", null, 
-					React.createElement(Button, {onClick: this.play, raised: true, primary: true}, 
+				React.createElement("div", null,
+					React.createElement(Button, {onClick: this.play, raised: true, primary: true},
 						"play"
-					), 
-					" ", 
-					React.createElement(Button, {onClick: this.add, raised: true, accent: true}, 
+					),
+					" ",
+					React.createElement(Button, {onClick: this.add, raised: true, accent: true},
 						"add"
-					), 
+					),
 					"  (", this.state.tracks.length, " tracks)"
 				)
 			);
@@ -32262,72 +32262,72 @@ var Tracks = (exports.Tracks = React.createClass({displayName: "Tracks",
 		var track = this.props.isqueue ? (
 			React.createElement("th", null)
 		) : (
-			React.createElement("th", {className: this.sortClass('Track'), onClick: this.sort('Track')}, 
+			React.createElement("th", {className: this.sortClass('Track'), onClick: this.sort('Track')},
 				"#"
 			)
 		);
 		return (
-			React.createElement("div", null, 
-				queue, 
+			React.createElement("div", null,
+				queue,
 				React.createElement(TextField, {
-					style: { width: this.state.tableWidth - 2}, 
-					onChange: this.search, 
+					style: { width: this.state.tableWidth - 2},
+					onChange: this.search,
 					value: this.state.search
-				}, 
+				},
 					"search"
-				), 
+				),
 				React.createElement(Table, {
-					ref: "table", 
-					headerHeight: 50, 
-					rowHeight: 50, 
-					rowGetter: this.getter, 
-					rowsCount: this.state.tracks.length, 
-					rowClassNameGetter: this.rowClassNameGetter, 
-					width: this.state.tableWidth, 
-					height: height, 
+					ref: "table",
+					headerHeight: 50,
+					rowHeight: 50,
+					rowGetter: this.getter,
+					rowsCount: this.state.tracks.length,
+					rowClassNameGetter: this.rowClassNameGetter,
+					width: this.state.tableWidth,
+					height: height,
 					overflowX: 'hidden'
-				}, 
+				},
 					React.createElement(Column, {
-						width: 50, 
-						dataKey: 'Track', 
-						headerRenderer: this.mkHeader('Track', '#'), 
+						width: 50,
+						dataKey: 'Track',
+						headerRenderer: this.mkHeader('Track', '#'),
 						cellRenderer: this.trackRenderer}
-					), 
+					),
 					React.createElement(Column, {
-						width: 200, 
-						flexGrow: 3, 
-						cellClassName: "nowrap", 
-						dataKey: 'Title', 
-						headerRenderer: this.mkHeader('Title'), 
+						width: 200,
+						flexGrow: 3,
+						cellClassName: "nowrap",
+						dataKey: 'Title',
+						headerRenderer: this.mkHeader('Title'),
 						cellRenderer: this.titleCellRenderer}
-					), 
+					),
 					React.createElement(Column, {
-						width: 65, 
-						dataKey: 'Time', 
-						cellRenderer: this.timeCellRenderer, 
+						width: 65,
+						dataKey: 'Time',
+						cellRenderer: this.timeCellRenderer,
 						headerRenderer: this.timeHeader()}
-					), 
+					),
 					React.createElement(Column, {
-						width: 100, 
-						flexGrow: 1, 
-						dataKey: 'Artist', 
-						cellRenderer: this.artistCellRenderer, 
-						cellClassName: "nowrap", 
+						width: 100,
+						flexGrow: 1,
+						dataKey: 'Artist',
+						cellRenderer: this.artistCellRenderer,
+						cellClassName: "nowrap",
 						headerRenderer: this.mkHeader('Artist')}
-					), 
+					),
 					React.createElement(Column, {
-						width: 100, 
-						flexGrow: 1, 
-						dataKey: 'Album', 
-						cellRenderer: this.albumCellRenderer, 
-						cellClassName: "nowrap", 
+						width: 100,
+						flexGrow: 1,
+						dataKey: 'Album',
+						cellRenderer: this.albumCellRenderer,
+						cellClassName: "nowrap",
 						headerRenderer: this.mkHeader('Album')}
-					), 
+					),
 					React.createElement(Column, {
-						width: 100, 
-						cellClassName: "nowrap", 
-						dataKey: 'Source', 
-						cellRenderer: this.sourceCellRenderer, 
+						width: 100,
+						cellClassName: "nowrap",
+						dataKey: 'Source',
+						cellRenderer: this.sourceCellRenderer,
 						headerRenderer: this.mkHeader('Source')}
 					)
 				)
@@ -32343,10 +32343,10 @@ exports.TrackList = React.createClass({displayName: "TrackList",
 	},
 	render: function() {
 		return (
-			React.createElement("div", null, 
-				React.createElement("div", {className: "mdl-typography--display-3 mdl-color-text--grey-600"}, 
+			React.createElement("div", null,
+				React.createElement("div", {className: "mdl-typography--display-3 mdl-color-text--grey-600"},
 					"Music"
-				), 
+				),
 				React.createElement(Tracks, {tracks: this.state.Tracks})
 			)
 		);
@@ -32368,10 +32368,10 @@ function searchClass(field, sort) {
 				}
 			});
 			return (
-				React.createElement("div", null, 
-					React.createElement("div", {className: "mdl-typography--display-3 mdl-color-text--grey-600"}, 
+				React.createElement("div", null,
+					React.createElement("div", {className: "mdl-typography--display-3 mdl-color-text--grey-600"},
 						React.createElement(Link, {to: "app"}, "Music"), " > ", prop
-					), 
+					),
 					React.createElement(Tracks, {tracks: tracks, initSort: sort})
 				)
 			);
@@ -32413,9 +32413,9 @@ exports.TextField = React.createClass({displayName: "TextField",
 			error = React.createElement("span", {className: "mdl-textfield__error"}, error);
 		}
 		return (
-			React.createElement("div", {className: cn}, 
-				React.createElement("input", React.__spread({className: "mdl-textfield__input", pattern: pattern},  others)), 
-				React.createElement("label", {className: "mdl-textfield__label"}, children), 
+			React.createElement("div", {className: cn},
+				React.createElement("input", React.__spread({className: "mdl-textfield__input", pattern: pattern},  others)),
+				React.createElement("label", {className: "mdl-textfield__label"}, children),
 				error
 			)
 		);
@@ -32428,7 +32428,7 @@ exports.Button = React.createClass({displayName: "Button",
 		var cn = 'mdl-button mdl-js-button mdl-js-ripple-effect';
 		cn += propClasses('mdl-button--', others);
 		return (
-			React.createElement("button", React.__spread({className: cn, disabled: disabled},  others), 
+			React.createElement("button", React.__spread({className: cn, disabled: disabled},  others),
 				children
 			)
 		);
@@ -32522,7 +32522,7 @@ exports.Icon = React.createClass({displayName: "Icon",
 			cn += ' ' + this.props.className;
 		}
 		return (
-			React.createElement("i", React.__spread({},  this.props, {className: cn}), 
+			React.createElement("i", React.__spread({},  this.props, {className: cn}),
 				this.props.name
 			)
 		);
@@ -32538,7 +32538,7 @@ exports.Time = React.createClass({displayName: "Time",
 			s = '0' + s;
 		}
 		return (
-			React.createElement("span", null, 
+			React.createElement("span", null,
 				m, ":", s
 			)
 		);
@@ -32636,10 +32636,10 @@ var App = React.createClass({displayName: "App",
 		var overlay;
 		if (!this.state.connected) {
 			overlay = (
-				React.createElement("div", {id: "overlay"}, 
-					React.createElement("div", {id: "overlay-text"}, 
-						"moggio lost connection with server", 
-						React.createElement("p", null), 
+				React.createElement("div", {id: "overlay"},
+					React.createElement("div", {id: "overlay-text"},
+						"moggio lost connection with server",
+						React.createElement("p", null),
 						"attempting to reconnect..."
 					)
 				)
@@ -32649,11 +32649,11 @@ var App = React.createClass({displayName: "App",
 		if (this.state.error) {
 			var time = new Date(this.state.error.Time);
 			error = (
-				React.createElement("div", {style: { padding: '10px'}}, 
-					React.createElement(Button, {onClick: this.clearError, raised: true, primary: true}, 
+				React.createElement("div", {style: { padding: '10px'}},
+					React.createElement(Button, {onClick: this.clearError, raised: true, primary: true},
 						"clear"
-					), 
-					React.createElement("span", {style: { paddingLeft: '10px'}}, 
+					),
+					React.createElement("span", {style: { paddingLeft: '10px'}},
 						"error at ", time.toString(), ": ", this.state.error.Error
 					)
 				)
@@ -32664,45 +32664,15 @@ var App = React.createClass({displayName: "App",
 			function(v, k) {
 				return (
 					React.createElement(Link, {
-						key: k, 
-						className: 'mdl-navigation__link' + this.routeClass(v.route), 
+						key: k,
+						className: 'mdl-navigation__link' + this.routeClass(v.route),
 						to: v.route
-					}, 
+					},
 						v.text
 					)
 				);
 			}.bind(this)
 		);
-		if (this.state.CentralURL) {
-			if (this.state.Username) {
-				var un = (
-					React.createElement("span", {key: "username", className: "mdl-navigation__link"}, 
-						this.state.Username, 
-						React.createElement("br", null), 
-						React.createElement("a", {href: "", onClick: this.logout}, 
-							"[logout]"
-						)
-					)
-				);
-				menuItems.unshift(un);
-			} else {
-				var origin =
-					location.protocol + '//' + location.host + '/api/token/register';
-				var params = '?redirect=' + encodeURIComponent(origin);
-				if (this.state.Hostname) {
-					params += '&hostname=' + encodeURIComponent(this.state.Hostname);
-				}
-				menuItems.unshift(
-					React.createElement("a", {
-						key: "username", 
-						href: this.state.CentralURL + '/token' + params, 
-						className: "mdl-navigation__link"
-					}, 
-						"login"
-					)
-				);
-			}
-		}
 		var playlists;
 		if (this.state.Playlists) {
 			var entries = _.map(
@@ -32711,13 +32681,13 @@ var App = React.createClass({displayName: "App",
 					var params = { Playlist: key };
 					return (
 						React.createElement(Link, {
-							key: 'playlist-' + key, 
-							className: 
-								'mdl-navigation__link' + this.routeClass('playlist', params), 
-							
-							to: "playlist", 
+							key: 'playlist-' + key,
+							className:
+								'mdl-navigation__link' + this.routeClass('playlist', params),
+
+							to: "playlist",
 							params: params
-						}, 
+						},
 							key
 						)
 					);
@@ -32728,37 +32698,37 @@ var App = React.createClass({displayName: "App",
 		var update;
 		if (this.state.update) {
 			update = (
-				React.createElement("span", {className: "mdl-layout-title"}, 
-					"new version: ", 
+				React.createElement("span", {className: "mdl-layout-title"},
+					"new version: ",
 					React.createElement("a", {href: this.state.update.link}, this.state.update.name)
 				)
 			);
 		}
 		return (
-			React.createElement("div", null, 
-				overlay, 
-				React.createElement("div", {className: "top-main"}, 
+			React.createElement("div", null,
+				overlay,
+				React.createElement("div", {className: "top-main"},
 					React.createElement("div", {
 						className: "mdl-layout mdl-js-layout mdl-layout--fixed-drawer" + ' ' +
 					"mdl-layout--overlay-drawer-button"
-					}, 
-						React.createElement("div", {className: "mdl-layout__drawer"}, 
-							React.createElement("span", {className: "mdl-layout-title"}, "moggio"), 
-							React.createElement("nav", {className: "mdl-navigation"}, menuItems), 
-							React.createElement("span", {className: "mdl-layout-title"}, "Playlists"), 
-							playlists, 
+					},
+						React.createElement("div", {className: "mdl-layout__drawer"},
+							React.createElement("span", {className: "mdl-layout-title"}, "moggio"),
+							React.createElement("nav", {className: "mdl-navigation"}, menuItems),
+							React.createElement("span", {className: "mdl-layout-title"}, "Playlists"),
+							playlists,
 							update
-						), 
-						React.createElement("main", {className: "mdl-layout__content"}, 
-							React.createElement("div", {className: "page-content"}, 
-								error, 
+						),
+						React.createElement("main", {className: "mdl-layout__content"},
+							React.createElement("div", {className: "page-content"},
+								error,
 								React.createElement(RouteHandler, React.__spread({},  this.props))
 							)
 						)
 					)
-				), 
+				),
 
-				React.createElement("footer", null, 
+				React.createElement("footer", null,
 					React.createElement(Player, null)
 				)
 			)
@@ -32841,7 +32811,7 @@ var Player = React.createClass({displayName: "Player",
 			var ialbum, iartist, joiner;
 			if (info.Album) {
 				ialbum = (
-					React.createElement(Link, {to: "album", params: info}, 
+					React.createElement(Link, {to: "album", params: info},
 						info.Album
 					)
 				);
@@ -32851,15 +32821,15 @@ var Player = React.createClass({displayName: "Player",
 			}
 			if (info.Artist) {
 				iartist = (
-					React.createElement(Link, {to: "artist", params: info}, 
+					React.createElement(Link, {to: "artist", params: info},
 						info.Artist
 					)
 				);
 			}
 			album = (
-				React.createElement("div", null, 
-					iartist, 
-					joiner, 
+				React.createElement("div", null,
+					iartist,
+					joiner,
 					ialbum
 				)
 			);
@@ -32913,11 +32883,11 @@ var Player = React.createClass({displayName: "Player",
 		};
 		window.requestAnimationFrame(this.renderSeek);
 		return (
-			React.createElement("div", null, 
-				React.createElement("div", {id: "seek", className: "mdl-color--grey-500", onClick: this.seek}, 
+			React.createElement("div", null,
+				React.createElement("div", {id: "seek", className: "mdl-color--grey-500", onClick: this.seek},
 					React.createElement("div", {id: "seek-pos", className: "mdl-color--orange-500"})
-				), 
-				img, 
+				),
+				img,
 				React.createElement("div", {
 					style: {
 						position: 'absolute',
@@ -32927,45 +32897,45 @@ var Player = React.createClass({displayName: "Player",
 						height: '70px',
 						textAlign: 'center',
 					}
-				}, 
-					React.createElement("div", {style: statusStyle}, 
-						title, 
+				},
+					React.createElement("div", {style: statusStyle},
+						title,
 						album
-					), 
-					React.createElement("div", {style: rightStyle}, 
-						React.createElement(Button, {onClick: this.openQueue, style: btnStyle, icon: true}, 
+					),
+					React.createElement("div", {style: rightStyle},
+						React.createElement(Button, {onClick: this.openQueue, style: btnStyle, icon: true},
 							React.createElement("i", {className: "material-icons"}, "queue_music")
 						)
-					), 
-					React.createElement("div", {style: ctrlStyle, className: "mdl-color--grey-100"}, 
+					),
+					React.createElement("div", {style: ctrlStyle, className: "mdl-color--grey-100"},
 						React.createElement(Button, {
-							onClick: this.cmd('repeat'), 
-							style: btnStyle, 
-							accent: this.state.Repeat, 
+							onClick: this.cmd('repeat'),
+							style: btnStyle,
+							accent: this.state.Repeat,
 							icon: true
-						}, 
+						},
 							React.createElement("i", {className: "material-icons"}, "repeat")
-						), 
-						React.createElement(Button, {onClick: this.cmd('prev'), style: btnStyle, icon: true}, 
+						),
+						React.createElement(Button, {onClick: this.cmd('prev'), style: btnStyle, icon: true},
 							React.createElement("i", {className: "material-icons"}, "skip_previous")
-						), 
+						),
 						React.createElement(Button, {
-							onClick: this.cmd('pause'), 
-							style: btnStyle, 
-							accent: true, 
+							onClick: this.cmd('pause'),
+							style: btnStyle,
+							accent: true,
 							icon: true
-						}, 
+						},
 							React.createElement("i", {className: "material-icons"}, play)
-						), 
-						React.createElement(Button, {onClick: this.cmd('next'), style: btnStyle, icon: true}, 
+						),
+						React.createElement(Button, {onClick: this.cmd('next'), style: btnStyle, icon: true},
 							React.createElement("i", {className: "material-icons"}, "skip_next")
-						), 
+						),
 						React.createElement(Button, {
-							onClick: this.cmd('random'), 
-							style: btnStyle, 
-							accent: this.state.Random, 
+							onClick: this.cmd('random'),
+							style: btnStyle,
+							accent: this.state.Random,
 							icon: true
-						}, 
+						},
 							React.createElement("i", {className: "material-icons"}, "shuffle")
 						)
 					)
@@ -32976,18 +32946,18 @@ var Player = React.createClass({displayName: "Player",
 });
 
 var routes = (
-	React.createElement(Route, {name: "app", path: "/", handler: App}, 
-		React.createElement(DefaultRoute, {handler: List.TrackList}), 
-		React.createElement(Route, {name: "album", path: "/album/:Album", handler: List.Album}), 
-		React.createElement(Route, {name: "albums", path: "/albums", handler: Group.Albums}), 
-		React.createElement(Route, {name: "artist", path: "/artist/:Artist", handler: List.Artist}), 
-		React.createElement(Route, {name: "artists", path: "/artists", handler: Group.Artists}), 
+	React.createElement(Route, {name: "app", path: "/", handler: App},
+		React.createElement(DefaultRoute, {handler: List.TrackList}),
+		React.createElement(Route, {name: "album", path: "/album/:Album", handler: List.Album}),
+		React.createElement(Route, {name: "albums", path: "/albums", handler: Group.Albums}),
+		React.createElement(Route, {name: "artist", path: "/artist/:Artist", handler: List.Artist}),
+		React.createElement(Route, {name: "artists", path: "/artists", handler: Group.Artists}),
 		React.createElement(Route, {
-			name: "playlist", 
-			path: "/playlist/:Playlist", 
+			name: "playlist",
+			path: "/playlist/:Playlist",
 			handler: Playlist.Playlist}
-		), 
-		React.createElement(Route, {name: "protocols", handler: Protocol.Protocols}), 
+		),
+		React.createElement(Route, {name: "protocols", handler: Protocol.Protocols}),
 		React.createElement(Route, {name: "queue", handler: Playlist.Queue})
 	)
 );
@@ -33035,17 +33005,17 @@ exports.Queue = React.createClass({displayName: "Queue",
 	},
 	render: function() {
 		return (
-			React.createElement("div", null, 
-				React.createElement("div", {className: "mdl-typography--display-3 mdl-color-text--grey-600"}, 
+			React.createElement("div", null,
+				React.createElement("div", {className: "mdl-typography--display-3 mdl-color-text--grey-600"},
 					"Queue"
-				), 
-				React.createElement(Button, {raised: true, onClick: this.clear}, 
+				),
+				React.createElement(Button, {raised: true, onClick: this.clear},
 					"clear"
-				), 
-				" ", 
-				React.createElement(Button, {raised: true, onClick: this.save}, 
+				),
+				" ",
+				React.createElement(Button, {raised: true, onClick: this.save},
 					"save"
-				), 
+				),
 				React.createElement(List.Tracks, {tracks: this.state.Queue, noIdx: true, isqueue: true})
 			)
 		);
@@ -33070,15 +33040,15 @@ exports.Playlist = React.createClass({displayName: "Playlist",
 	},
 	render: function() {
 		return (
-			React.createElement("div", null, 
-				React.createElement("div", {className: "mdl-typography--display-3 mdl-color-text--grey-600"}, 
+			React.createElement("div", null,
+				React.createElement("div", {className: "mdl-typography--display-3 mdl-color-text--grey-600"},
 					this.props.params.Playlist
-				), 
-				React.createElement(Button, {raised: true, onClick: this.clear}, 
+				),
+				React.createElement(Button, {raised: true, onClick: this.clear},
 					"delete playlist"
-				), 
+				),
 				React.createElement(List.Tracks, {
-					tracks: this.state.Playlists[this.props.params.Playlist], 
+					tracks: this.state.Playlists[this.props.params.Playlist],
 					useIdxAsNum: true}
 				)
 			)
@@ -33123,14 +33093,14 @@ exports.Protocols = React.createClass({displayName: "Protocols",
 						cn += ' is-active';
 					}
 					return (
-						React.createElement("a", {href: true, key: protocol, className: cn, onClick: click}, 
+						React.createElement("a", {href: true, key: protocol, className: cn, onClick: click},
 							protocol
 						)
 					);
 				}.bind(this)
 			);
 			dropdown = (
-				React.createElement("div", {className: "mdl-tabs mdl-js-tabs mdl-js-ripple-effect"}, 
+				React.createElement("div", {className: "mdl-tabs mdl-js-tabs mdl-js-ripple-effect"},
 					React.createElement("div", {className: "mdl-tabs__tab-bar"}, tabs)
 				)
 			);
@@ -33144,8 +33114,8 @@ exports.Protocols = React.createClass({displayName: "Protocols",
 					function(key) {
 						protocols.push(
 							React.createElement(ProtocolRow, {
-								key: protocol + '\n' + key, 
-								protocol: protocol, 
+								key: protocol + '\n' + key,
+								protocol: protocol,
 								name: key}
 							)
 						);
@@ -33158,9 +33128,9 @@ exports.Protocols = React.createClass({displayName: "Protocols",
 		var selected;
 		if (this.state.Selected) {
 			selected = (
-				React.createElement("div", {className: "mdl-tabs__panel is-active"}, 
+				React.createElement("div", {className: "mdl-tabs__panel is-active"},
 					React.createElement(Protocol, {
-						protocol: this.state.Selected, 
+						protocol: this.state.Selected,
 						params: this.state.Available[this.state.Selected]}
 					)
 				)
@@ -33171,49 +33141,49 @@ exports.Protocols = React.createClass({displayName: "Protocols",
 			var insts = _.map(this.state.InProgress, function(v, id) {
 				var sp = id.split('\n');
 				return (
-					React.createElement("tr", {key: sp}, 
-						React.createElement("td", null, sp[0]), 
+					React.createElement("tr", {key: sp},
+						React.createElement("td", null, sp[0]),
 						React.createElement("td", null, sp[1])
 					)
 				);
 			});
 			inprogress = (
-				React.createElement("div", null, 
-					React.createElement("div", {className: "mdl-typography--display-3 mdl-color-text--grey-600"}, 
+				React.createElement("div", null,
+					React.createElement("div", {className: "mdl-typography--display-3 mdl-color-text--grey-600"},
 						"Adding In Progress..."
-					), 
-					React.createElement("table", {className: "mdl-data-table mdl-js-data-table"}, 
-						React.createElement("thead", null, 
-							React.createElement("tr", null, 
-								React.createElement("th", {className: "mdl-data-table__cell--non-numeric"}, "protocol"), 
+					),
+					React.createElement("table", {className: "mdl-data-table mdl-js-data-table"},
+						React.createElement("thead", null,
+							React.createElement("tr", null,
+								React.createElement("th", {className: "mdl-data-table__cell--non-numeric"}, "protocol"),
 								React.createElement("th", {className: "mdl-data-table__cell--non-numeric"}, "name")
 							)
-						), 
+						),
 						React.createElement("tbody", null, insts)
 					)
 				)
 			);
 		}
 		return (
-			React.createElement("div", null, 
-				React.createElement("div", {className: "mdl-typography--display-3 mdl-color-text--grey-600"}, 
+			React.createElement("div", null,
+				React.createElement("div", {className: "mdl-typography--display-3 mdl-color-text--grey-600"},
 					"New Protocol"
-				), 
-				dropdown, 
-				selected, 
-				inprogress, 
-				React.createElement("div", {className: "mdl-typography--display-3 mdl-color-text--grey-600"}, 
+				),
+				dropdown,
+				selected,
+				inprogress,
+				React.createElement("div", {className: "mdl-typography--display-3 mdl-color-text--grey-600"},
 					"Existing Protocols"
-				), 
-				React.createElement("table", {className: "mdl-data-table mdl-js-data-table"}, 
-					React.createElement("thead", null, 
-						React.createElement("tr", null, 
-							React.createElement("th", {className: "mdl-data-table__cell--non-numeric"}, "protocol"), 
-							React.createElement("th", {className: "mdl-data-table__cell--non-numeric"}, "name"), 
-							React.createElement("th", {className: "mdl-data-table__cell--non-numeric"}, "remove"), 
+				),
+				React.createElement("table", {className: "mdl-data-table mdl-js-data-table"},
+					React.createElement("thead", null,
+						React.createElement("tr", null,
+							React.createElement("th", {className: "mdl-data-table__cell--non-numeric"}, "protocol"),
+							React.createElement("th", {className: "mdl-data-table__cell--non-numeric"}, "name"),
+							React.createElement("th", {className: "mdl-data-table__cell--non-numeric"}, "remove"),
 							React.createElement("th", {className: "mdl-data-table__cell--non-numeric"}, "refresh")
 						)
-					), 
+					),
 					React.createElement("tbody", null, protocols)
 				)
 			)
@@ -33258,14 +33228,14 @@ var Protocol = React.createClass({displayName: "Protocol",
 						});
 					}.bind(this);
 					return (
-						React.createElement("div", {key: idx}, 
+						React.createElement("div", {key: idx},
 							React.createElement(TextField, {
-								style: { width: '75%'}, 
-								onChange: change, 
-								value: this.state.params[idx], 
-								floating: true, 
+								style: { width: '75%'},
+								onChange: change,
+								value: this.state.params[idx],
+								floating: true,
 								type: param
-							}, 
+							},
 								param
 							)
 						)
@@ -33275,19 +33245,19 @@ var Protocol = React.createClass({displayName: "Protocol",
 		}
 		if (this.props.params.OAuthURL) {
 			params.push(
-				React.createElement(Button, {key: "oauth", raised: true}, 
+				React.createElement(Button, {key: "oauth", raised: true},
 					React.createElement("a", {href: this.props.params.OAuthURL}, "connect")
 				)
 			);
 		} else {
 			params.push(
 				React.createElement(Button, {
-					key: "save", 
-					raised: true, 
-					colored: true, 
-					onClick: this.save, 
+					key: "save",
+					raised: true,
+					colored: true,
+					onClick: this.save,
 					disabled: !this.state.save
-				}, 
+				},
 					"save"
 				)
 			);
@@ -33311,18 +33281,18 @@ var ProtocolRow = React.createClass({displayName: "ProtocolRow",
 	},
 	render: function() {
 		return (
-			React.createElement("tr", null, 
-				React.createElement("td", {className: "mdl-data-table__cell--non-numeric"}, 
+			React.createElement("tr", null,
+				React.createElement("td", {className: "mdl-data-table__cell--non-numeric"},
 					this.props.protocol
-				), 
-				React.createElement("td", {className: "mdl-data-table__cell--non-numeric"}, this.props.name), 
-				React.createElement("td", {className: "mdl-data-table__cell--non-numeric"}, 
-					React.createElement(Button, {onClick: this.remove, icon: true}, 
+				),
+				React.createElement("td", {className: "mdl-data-table__cell--non-numeric"}, this.props.name),
+				React.createElement("td", {className: "mdl-data-table__cell--non-numeric"},
+					React.createElement(Button, {onClick: this.remove, icon: true},
 						React.createElement("i", {className: "material-icons"}, "clear")
 					)
-				), 
-				React.createElement("td", {className: "mdl-data-table__cell--non-numeric"}, 
-					React.createElement(Button, {onClick: this.refresh, icon: true}, 
+				),
+				React.createElement("td", {className: "mdl-data-table__cell--non-numeric"},
+					React.createElement(Button, {onClick: this.refresh, icon: true},
 						React.createElement("i", {className: "material-icons"}, "refresh")
 					)
 				)
