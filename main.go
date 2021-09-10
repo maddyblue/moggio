@@ -93,4 +93,3 @@ func main() {
 }
 
 //go:generate browserify -t [ reactify --es6 ] server/static/src/nav.js -o server/static/js/moggio.js
-//go:generate esc -o server/static.go -pkg server -prefix server server/static/index.html server/static/css server/static/fonts server/static/js

@@ -2,11 +2,11 @@ package server
 
 import (
 	"bytes"
+	"embed"
 	"encoding/json"
 	"fmt"
 	"html/template"
 	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
@@ -20,23 +20,23 @@ import (
 
 var MoggioVersion string
 
+//go:embed static/index.html
+var indexTemplate string
+
 var indexHTML []byte
 
+//go:embed static
+var embedFS embed.FS
+
 func (srv *Server) GetMux(devMode bool) *http.ServeMux {
-	var err error
-	webFS := FS(devMode)
+	var webFS http.FileSystem
 	if devMode {
 		log.Println("using local web assets")
+		webFS = http.Dir("static")
+	} else {
+		webFS = http.FS(embedFS)
 	}
-	index, err := webFS.Open("/static/index.html")
-	if err != nil {
-		log.Fatal(err)
-	}
-	b, err := ioutil.ReadAll(index)
-	if err != nil {
-		log.Fatal(err)
-	}
-	tmpl := template.Must(template.New("").Parse(string(b)))
+	tmpl := template.Must(template.New("").Parse(indexTemplate))
 	var buf bytes.Buffer
 	if err := tmpl.Execute(&buf, struct {
 		Version string
