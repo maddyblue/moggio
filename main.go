@@ -22,8 +22,6 @@ import (
 	_ "github.com/mjibson/moggio/codec/wav"
 
 	// protocols
-	// _ "github.com/mjibson/moggio/protocol/bandcamp"
-
 	_ "github.com/mjibson/moggio/protocol/file"
 	_ "github.com/mjibson/moggio/protocol/stream"
 )
