@@ -7,7 +7,6 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"strings"
 	"time"
 
 	"github.com/facebookgo/httpcontrol"
@@ -44,11 +43,6 @@ func main() {
 			RetryAfterTimeout:     true,
 		},
 	}
-	redir := *flagAddr
-	if strings.HasPrefix(redir, ":") {
-		redir = "localhost" + redir
-	}
-	redir = "http://" + redir + "/api/oauth/"
 	if *stateFile == "" {
 		switch {
 		case *flagDev:
