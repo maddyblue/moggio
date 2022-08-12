@@ -15,6 +15,7 @@ require (
 	github.com/facebookgo/subset v0.0.0-20200203212716-c811ad88dec4 // indirect
 	github.com/helinwang/portaudio v0.0.0-20160225001950-035e99fec7e0
 	github.com/jfreymuth/go-vorbis v0.0.0-20161124120736-41342c908855
+	github.com/jfreymuth/pulse v0.1.0 // indirect
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/korandiz/mpa v1.0.0
 	github.com/korandiz/mpseek v1.0.0
