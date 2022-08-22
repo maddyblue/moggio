@@ -4,6 +4,7 @@
 package output
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"time"
@@ -20,17 +21,20 @@ type output struct {
 	channels    uint8
 }
 
-func (o *output) init() {
-	if o.client != nil {
+func (o *output) init() error {
+	if o.stream != nil {
 		o.stream.Drain()
 		o.stream.Close()
+		o.stream = nil
+	}
+	if o.client != nil {
+		o.client.Close()
 		o.stream = nil
 	}
 	var err error
 	o.client, err = pulse.NewClient(pulse.ClientApplicationName("moggio"))
 	if err != nil {
-		log.Println(err)
-		return
+		return fmt.Errorf("pulse client: %w", err)
 	}
 	var channels pulse.PlaybackOption
 	switch o.channels {
@@ -39,20 +43,35 @@ func (o *output) init() {
 	case 2:
 		channels = pulse.PlaybackStereo
 	default:
-		log.Println("unsupported channels")
-		return
+		return errors.New("unsupported channels")
 	}
-	o.stream, err = o.client.NewPlayback(
-		pulse.Float32Reader(o.reader),
-		channels,
-		pulse.PlaybackSampleRate(int(o.sampleRate)),
-		pulse.PlaybackLatency(.1),
-	)
-	if err != nil {
-		log.Println(err)
-		return
+	// The pulse package sometimes gets stuck here waiting on a recv, so allow it
+	// to timeout and error (no idea what happens to the abandoned one).
+	type newStream struct {
+		stream *pulse.PlaybackStream
+		err    error
 	}
-	o.samplesChan = make(chan []float32)
+	ch := make(chan newStream, 1)
+	go func() {
+		stream, err := o.client.NewPlayback(
+			pulse.Float32Reader(o.reader),
+			channels,
+			pulse.PlaybackSampleRate(int(o.sampleRate)),
+			pulse.PlaybackLatency(.1),
+		)
+		ch <- newStream{stream, err}
+	}()
+	select {
+	case newStream := <-ch:
+		if newStream.err != nil {
+			return fmt.Errorf("pulse stream new: %w", newStream.err)
+		}
+		o.stream = newStream.stream
+		o.samplesChan = make(chan []float32)
+		return nil
+	case <-time.After(time.Second):
+		return errors.New("pulse stream: timeout making new stream")
+	}
 }
 
 func (o *output) reader(out []float32) (int, error) {
@@ -75,12 +94,31 @@ func get(sampleRate, channels int) (Output, error) {
 	o := new(output)
 	o.sampleRate = uint32(sampleRate)
 	o.channels = uint8(channels)
-	o.init()
-	return o, nil
+	err := o.init()
+	return o, err
 }
 
 func (o *output) Push(samples []float32) {
-	o.samplesChan <- samples
+	select {
+	case o.samplesChan <- samples:
+	case <-time.After(100 * time.Millisecond):
+		if o.stream != nil {
+			if err := o.stream.Error(); err != nil {
+				log.Println("pulse stream error:", err)
+			}
+		}
+		// Restart the stream.
+		log.Println("restarting pulse client")
+		if err := o.init(); err != nil {
+			log.Println("could not restart pulse:", err)
+			return
+		}
+		go func() {
+			o.samplesChan <- samples
+		}()
+		o.stream.Start()
+		log.Println("restarted pulse")
+	}
 }
 
 func (o *output) Start() {
