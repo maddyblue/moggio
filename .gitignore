@@ -1,4 +1,2 @@
-mog.state
-server/static/scripts/.*
-_third_party/github.com/golang/protobuf
-_third_party/google.golang.org/appengine
+moggio
+moggio.state
