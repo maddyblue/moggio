@@ -86,7 +86,6 @@ func (o *output) Push(samples []float32) {
 func (o *output) Start() {
 	// This waits until the buffer is full, so fill it in the background.
 	samples := make([]float32, o.stream.BufferSize())
-	fmt.Println("dummy", len(samples))
 	go o.Push(samples)
 	o.stream.Start()
 }
