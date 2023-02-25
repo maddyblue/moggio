@@ -22,19 +22,21 @@ require (
 	github.com/nwaples/rardecode v1.1.3
 	github.com/oov/directsound-go v0.0.0-20141101201356-e53e59c700bf
 	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8
-	golang.org/x/net v0.0.0-20220811182439-13a9a731de15
+	golang.org/x/net v0.7.0
 	golang.org/x/oauth2 v0.0.0-20220808172628-8227340efae7
 )
 
 require (
 	github.com/facebookgo/ensure v0.0.0-20200202191622-63f1cf65ac4c // indirect
 	github.com/facebookgo/freeport v0.0.0-20150612182905-d4adf43b75b9 // indirect
+	github.com/facebookgo/stack v0.0.0-20160209184415-751773369052 // indirect
+	github.com/facebookgo/subset v0.0.0-20200203212716-c811ad88dec4 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/icza/bitio v1.1.0 // indirect
 	github.com/mewkiz/pkg v0.0.0-20211102230744-16a6ce8f1b77 // indirect
 	github.com/mjibson/mog v0.0.0-00010101000000-000000000000 // indirect
 	go4.org v0.0.0-20201209231011-d4a079459e60 // indirect
-	golang.org/x/sys v0.0.0-20220811171246-fbc7d0a398ab // indirect
+	golang.org/x/sys v0.5.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 )
